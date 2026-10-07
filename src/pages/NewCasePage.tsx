@@ -95,7 +95,8 @@ export function NewCasePage() {
     };
 
     const created = addCase(input);
-    navigate(`/app/cases/${created.id}`);
+    // Next step in the workflow: attach the case papers.
+    navigate(`/app/cases/${created.id}?tab=documents`);
   };
 
   return (

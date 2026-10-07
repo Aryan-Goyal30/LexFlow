@@ -88,7 +88,7 @@ export function CasesPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <table className="w-full min-w-[820px] text-left text-sm">
               <thead>
                 <tr className="border-b border-brand-100 bg-brand-50/60 text-xs uppercase tracking-wide text-brand-500">
                   <th className="px-5 py-3 font-semibold">Case</th>
@@ -96,7 +96,8 @@ export function CasesPage() {
                   <th className="px-5 py-3 font-semibold">Practice Area</th>
                   <th className="px-5 py-3 font-semibold">Priority</th>
                   <th className="px-5 py-3 font-semibold">Status</th>
-                  <th className="px-5 py-3 font-semibold">Opened</th>
+                  <th className="px-5 py-3 font-semibold">Next Hearing</th>
+                  <th className="px-5 py-3 text-right font-semibold">Docs</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-100">
@@ -118,7 +119,12 @@ export function CasesPage() {
                     <td className="px-5 py-3.5">
                       <StatusBadge status={c.status} />
                     </td>
-                    <td className="px-5 py-3.5 text-brand-600">{formatDate(c.openedOn)}</td>
+                    <td className="px-5 py-3.5 text-brand-600">
+                      {c.nextHearing ? formatDate(c.nextHearing) : '—'}
+                    </td>
+                    <td className="px-5 py-3.5 text-right tabular-nums text-brand-600">
+                      {c.documents.length}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -3,7 +3,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CasesPage } from './pages/CasesPage';
-import { CaseDetailsPage } from './pages/CaseDetailsPage';
+import { CaseWorkspacePage } from './pages/CaseWorkspacePage';
 import { NewCasePage } from './pages/NewCasePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -16,11 +16,12 @@ export const router = createBrowserRouter([
     path: '/app',
     element: <AppLayout />,
     children: [
-      { index: true, element: <Navigate to="/app/dashboard" replace /> },
-      { path: 'dashboard', element: <DashboardPage /> },
+      // Cases are the home of the product; the dashboard is a secondary overview.
+      { index: true, element: <Navigate to="/app/cases" replace /> },
       { path: 'cases', element: <CasesPage /> },
       { path: 'cases/new', element: <NewCasePage /> },
-      { path: 'cases/:caseId', element: <CaseDetailsPage /> },
+      { path: 'cases/:caseId', element: <CaseWorkspacePage /> },
+      { path: 'dashboard', element: <DashboardPage /> },
     ],
   },
   {

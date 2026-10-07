@@ -57,6 +57,8 @@ export interface CaseDocument {
   type: string;
   uploadedOn: string; // ISO date
   size: string;
+  /** Object URL for a file uploaded this session. Seed documents have none. */
+  url?: string;
 }
 
 export interface Case {

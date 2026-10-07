@@ -20,6 +20,12 @@ export function initials(name: string): string {
     .join('');
 }
 
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 /** Generates a sequential-looking case number for newly created cases. */
 export function generateCaseNumber(existingCount: number): string {
   const year = new Date().getFullYear();

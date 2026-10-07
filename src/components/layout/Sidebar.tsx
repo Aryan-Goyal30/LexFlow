@@ -3,7 +3,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   CalendarClock,
-  FileText,
+  BookOpenText,
   Users,
   Bell,
   ShieldCheck,
@@ -17,11 +17,13 @@ interface NavItem {
   enabled: boolean;
 }
 
+// Documents, analysis and research live inside each case's workspace. The
+// "Soon" items are firm-wide views planned for later milestones.
 const navItems: NavItem[] = [
-  { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard, enabled: true },
   { to: '/app/cases', label: 'Cases', icon: FolderKanban, enabled: true },
+  { to: '/app/dashboard', label: 'Overview', icon: LayoutDashboard, enabled: true },
+  { to: '/app/research', label: 'Precedent Library', icon: BookOpenText, enabled: false },
   { to: '/app/hearings', label: 'Hearings', icon: CalendarClock, enabled: false },
-  { to: '/app/documents', label: 'Documents', icon: FileText, enabled: false },
   { to: '/app/clients', label: 'Clients', icon: Users, enabled: false },
   { to: '/app/notifications', label: 'Notifications', icon: Bell, enabled: false },
   { to: '/app/admin', label: 'Administration', icon: ShieldCheck, enabled: false },
@@ -55,7 +57,7 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
           </span>
           <div className="leading-tight">
             <p className="font-serif text-lg font-bold text-white">LexFlow</p>
-            <p className="text-[11px] uppercase tracking-wider text-brand-300">Case Management</p>
+            <p className="text-[11px] uppercase tracking-wider text-brand-300">Case &amp; Research</p>
           </div>
         </div>
 
@@ -98,7 +100,7 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
         </nav>
 
         <div className="border-t border-white/10 px-5 py-4 text-[11px] text-brand-400">
-          LexFlow v0.1 · Prototype
+          LexFlow v0.2 · Prototype
         </div>
       </aside>
     </>
