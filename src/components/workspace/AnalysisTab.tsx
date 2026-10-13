@@ -1,5 +1,6 @@
-import { CheckCircle2, Circle, Sparkles } from 'lucide-react';
-import type { Case } from '../../types';
+import { useId } from 'react';
+import { CheckCircle2, Circle, Loader2, Sparkles } from 'lucide-react';
+import type { Case, CaseDocument } from '../../types';
 import type { CaseAnalysis } from '../../types/ai';
 import type { AiAssistant } from '../../hooks/useAiAssistant';
 import { Card, CardBody, CardHeader } from '../ui/Card';
@@ -11,7 +12,7 @@ import { PrecedentCard } from './PrecedentCard';
 const OUTPUT_SECTIONS = [
   {
     title: 'Key facts',
-    detail: 'Extracted from the case record and each document, each linked to its source.',
+    detail: 'Drawn from the case record and each document, each linked to its source.',
   },
   {
     title: 'Legal issues',
@@ -19,7 +20,7 @@ const OUTPUT_SECTIONS = [
   },
   {
     title: 'Relevant precedents',
-    detail: 'Judgments retrieved from the legal knowledge base, ranked by relevance.',
+    detail: 'Judgments retrieved from a collection of past judgments, ranked by relevance.',
   },
   {
     title: 'Similarities & differences',
@@ -32,11 +33,13 @@ const OUTPUT_SECTIONS = [
   {
     title: 'Outcome assessment',
     detail:
-      'An evidence-supported view, offered only where precedents support it. Later milestone.',
+      'An evidence-supported view, offered only where precedents support it. A later stage, after search quality has been evaluated.',
   },
 ];
 
 export function AnalysisTab({ legalCase: c, ai }: { legalCase: Case; ai: AiAssistant }) {
+  const { status, result, error } = ai.analysis;
+  const unavailableId = useId();
   const uploaded = c.documents.filter((d) => d.url).length;
   const inputs = [
     {
@@ -49,11 +52,18 @@ export function AnalysisTab({ legalCase: c, ai }: { legalCase: Case; ai: AiAssis
       ready: c.documents.length > 0,
       note: `${c.documents.length} on file, ${uploaded} uploaded this session`,
     },
-    { label: 'Matter timeline', ready: c.timeline.length > 0, note: `${c.timeline.length} events` },
+    {
+      label: 'Matter timeline',
+      ready: c.timeline.length > 0,
+      note: `${c.timeline.length} events`,
+    },
     {
       label: 'Parties & forum',
       ready: Boolean(c.courtName && c.opposingParty),
-      note: c.courtName ?? 'Court not set',
+      note:
+        c.courtName && c.opposingParty
+          ? c.courtName
+          : `Missing: ${[!c.courtName && 'court', !c.opposingParty && 'opposing party'].filter(Boolean).join(' and ')}`,
     },
   ];
 
@@ -61,41 +71,54 @@ export function AnalysisTab({ legalCase: c, ai }: { legalCase: Case; ai: AiAssis
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
         <Card>
-          <CardHeader title="Case Analysis" action={<AiStatusPill status={ai.status} />} />
+          <CardHeader title="Case Analysis" action={<AiStatusPill status={status} />} />
           <CardBody className="space-y-4">
             <p className="text-sm leading-relaxed text-brand-700">
-              Reads this case and its documents, extracts the facts and legal issues, retrieves
-              relevant precedents, and lays out how they compare — for you to review and verify.
+              Once an AI service is connected, the assistant will read this case and its documents,
+              pick out the facts and legal issues, find relevant precedents, and set out how they
+              compare, for you to review and verify.
             </p>
 
-            {ai.status === 'not_connected' && (
+            {status === 'not_connected' && (
               <NotConnectedNotice feature="AI analysis">
-                The workspace and data contract are ready; the model and legal knowledge base are a
-                later milestone. Until then, nothing here is generated and no analysis is shown.
+                No AI service is connected in this version of LexFlow, so nothing on this tab is
+                generated. The Analysis Inputs panel is read directly from the case record.
               </NotConnectedNotice>
             )}
-            {ai.status === 'error' && ai.error && (
-              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-600/20">
-                {ai.error}
+            {status === 'error' && error && (
+              <p
+                role="alert"
+                className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-600/20"
+              >
+                {error} No analysis is shown.
               </p>
             )}
 
             <div className="flex flex-wrap items-center gap-3">
               <Button
-                onClick={ai.runAnalysis}
-                disabled={!ai.connected || ai.status === 'running'}
-                title={ai.connected ? undefined : 'No AI service is connected'}
+                onClick={() => void ai.runAnalysis()}
+                disabled={!ai.connected || status === 'running'}
+                aria-describedby={!ai.connected ? unavailableId : undefined}
               >
-                <Sparkles className="h-4 w-4" />
-                {ai.analysis ? 'Re-run analysis' : 'Analyse case'}
+                {status === 'running' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Sparkles className="h-4 w-4" aria-hidden="true" />
+                )}
+                {status === 'running' ? 'Analysing…' : result ? 'Re-run analysis' : 'Analyse case'}
               </Button>
+              {!ai.connected && (
+                <span id={unavailableId} className="text-xs text-brand-500">
+                  Unavailable: no AI service is connected.
+                </span>
+              )}
             </div>
             <DecisionSupportNote />
           </CardBody>
         </Card>
 
-        {ai.analysis ? (
-          <AnalysisResults analysis={ai.analysis} />
+        {status === 'ready' && result ? (
+          <AnalysisResults analysis={result} documents={c.documents} />
         ) : (
           <Card>
             <CardHeader title="What the analysis will contain" />
@@ -116,65 +139,111 @@ export function AnalysisTab({ legalCase: c, ai }: { legalCase: Case; ai: AiAssis
       <Card className="self-start">
         <CardHeader title="Analysis Inputs" />
         <CardBody className="space-y-3">
-          <p className="text-xs text-brand-500">What the assistant will read from this case.</p>
-          {inputs.map((input) => (
-            <div key={input.label} className="flex items-start gap-2.5">
-              {input.ready ? (
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-              ) : (
-                <Circle className="mt-0.5 h-4 w-4 shrink-0 text-brand-300" />
-              )}
-              <div>
-                <p className="text-sm font-medium text-brand-800">{input.label}</p>
-                <p className="text-xs text-brand-500">{input.note}</p>
-              </div>
-            </div>
-          ))}
+          <p className="text-xs text-brand-500">
+            What the assistant would read from this case. This panel uses real case data.
+          </p>
+          <ul className="space-y-3">
+            {inputs.map((input) => (
+              <li key={input.label} className="flex items-start gap-2.5">
+                {input.ready ? (
+                  <CheckCircle2
+                    className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+                    aria-label="Ready"
+                  />
+                ) : (
+                  <Circle className="mt-0.5 h-4 w-4 shrink-0 text-brand-300" aria-label="Missing" />
+                )}
+                <div>
+                  <p className="text-sm font-medium text-brand-800">{input.label}</p>
+                  <p className="text-xs text-brand-500">{input.note}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </CardBody>
       </Card>
     </div>
   );
 }
 
-/** Renders a real analysis once a connected service returns one. */
-function AnalysisResults({ analysis }: { analysis: CaseAnalysis }) {
+/**
+ * Renders an analysis returned by a connected service. Only fields in the
+ * CaseAnalysis contract are used, and every fact shows which document it came
+ * from. outcomeAssessment is deliberately not displayed: it is a later stage
+ * (see DEVELOPMENT_BRIEF.md) and must not appear before it is evaluated.
+ */
+function AnalysisResults({
+  analysis,
+  documents,
+}: {
+  analysis: CaseAnalysis;
+  documents: CaseDocument[];
+}) {
+  const documentName = (id?: string) =>
+    id ? (documents.find((d) => d.id === id)?.name ?? 'a document no longer on file') : null;
+
   return (
     <>
       <Card>
         <CardHeader title={`Key Facts (${analysis.facts.length})`} />
         <CardBody>
-          <ul className="list-disc space-y-1.5 pl-4 text-sm text-brand-700">
-            {analysis.facts.map((fact) => (
-              <li key={fact.id}>{fact.statement}</li>
-            ))}
-          </ul>
+          {analysis.facts.length === 0 ? (
+            <p className="text-sm text-brand-500">No facts were extracted.</p>
+          ) : (
+            <ul className="space-y-2.5 text-sm text-brand-700">
+              {analysis.facts.map((fact) => {
+                const source = documentName(fact.sourceDocumentId);
+                return (
+                  <li key={fact.id}>
+                    <p>{fact.statement}</p>
+                    <p className="text-xs text-brand-500">
+                      {source ? `Source: ${source}` : 'No source document cited. Verify manually.'}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </CardBody>
       </Card>
       <Card>
         <CardHeader title={`Legal Issues (${analysis.issues.length})`} />
         <CardBody>
-          <ol className="list-decimal space-y-1.5 pl-4 text-sm text-brand-700">
-            {analysis.issues.map((issue) => (
-              <li key={issue.id}>{issue.question}</li>
-            ))}
-          </ol>
+          {analysis.issues.length === 0 ? (
+            <p className="text-sm text-brand-500">No legal issues were identified.</p>
+          ) : (
+            <ol className="list-decimal space-y-1.5 pl-4 text-sm text-brand-700">
+              {analysis.issues.map((issue) => (
+                <li key={issue.id}>{issue.question}</li>
+              ))}
+            </ol>
+          )}
         </CardBody>
       </Card>
       <Card>
         <CardHeader title={`Relevant Precedents (${analysis.precedents.length})`} />
         <CardBody className="space-y-3">
-          {analysis.precedents.map((p) => (
-            <PrecedentCard key={p.id} precedent={p} />
-          ))}
+          {analysis.precedents.length === 0 ? (
+            <p className="text-sm text-brand-500">No relevant precedents were found.</p>
+          ) : (
+            analysis.precedents.map((p) => <PrecedentCard key={p.id} precedent={p} />)
+          )}
         </CardBody>
       </Card>
       {analysis.contradictions.length > 0 && (
         <Card>
           <CardHeader title={`Contradictions (${analysis.contradictions.length})`} />
           <CardBody>
-            <ul className="list-disc space-y-1.5 pl-4 text-sm text-brand-700">
+            <ul className="space-y-2.5 text-sm text-brand-700">
               {analysis.contradictions.map((item) => (
-                <li key={item.id}>{item.description}</li>
+                <li key={item.id}>
+                  <p>{item.description}</p>
+                  {item.sourceDocumentIds.length > 0 && (
+                    <p className="text-xs text-brand-500">
+                      Sources: {item.sourceDocumentIds.map((id) => documentName(id)).join('; ')}
+                    </p>
+                  )}
+                </li>
               ))}
             </ul>
           </CardBody>
