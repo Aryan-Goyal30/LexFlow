@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useId } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, BookOpenText, FileText, LayoutList, Scale, Sparkles } from 'lucide-react';
 import type { Case } from '../types';
@@ -5,17 +6,23 @@ import { useCases } from '../context/CasesContext';
 import { useAiAssistant } from '../hooks/useAiAssistant';
 import { Card } from '../components/ui/Card';
 import { StatusBadge, PriorityBadge } from '../components/ui/Badge';
-import { Button } from '../components/ui/Button';
+import { ButtonLink } from '../components/ui/Button';
 import { Tabs, type TabItem } from '../components/ui/Tabs';
+import { tabId, tabPanelId } from '../components/ui/tabIds';
 import { OverviewTab } from '../components/workspace/OverviewTab';
 import { DocumentsTab } from '../components/workspace/DocumentsTab';
 import { AnalysisTab } from '../components/workspace/AnalysisTab';
 import { ResearchTab } from '../components/workspace/ResearchTab';
-import { formatDate } from '../lib/format';
+import { formatDate, isPastDate } from '../lib/format';
+import { HOME_PATH } from '../lib/paths';
 
 type WorkspaceTab = 'overview' | 'documents' | 'analysis' | 'research';
 
-const TAB_KEYS: WorkspaceTab[] = ['overview', 'documents', 'analysis', 'research'];
+const TAB_KEYS: readonly string[] = ['overview', 'documents', 'analysis', 'research'];
+
+function isWorkspaceTab(value: string | null): value is WorkspaceTab {
+  return value !== null && TAB_KEYS.includes(value);
+}
 
 export function CaseWorkspacePage() {
   const { caseId } = useParams<{ caseId: string }>();
@@ -25,14 +32,15 @@ export function CaseWorkspacePage() {
   if (!legalCase) {
     return (
       <Card className="flex flex-col items-center justify-center px-6 py-16 text-center">
-        <Scale className="h-10 w-10 text-brand-300" strokeWidth={1.5} />
-        <p className="mt-3 text-sm font-medium text-brand-700">Case not found</p>
-        <p className="mt-1 text-sm text-brand-500">
-          This matter may have been removed or the link is incorrect.
+        <Scale className="h-10 w-10 text-brand-300" strokeWidth={1.5} aria-hidden="true" />
+        <h1 className="mt-3 text-sm font-medium text-brand-700">Case not found</h1>
+        <p className="mt-1 max-w-md text-sm text-brand-500">
+          The link may be wrong, or the case was created in an earlier session. Cases are kept in
+          memory only, so a page refresh removes any case created since the app loaded.
         </p>
-        <Link to="/app/cases" className="mt-4">
-          <Button variant="secondary">Back to Cases</Button>
-        </Link>
+        <ButtonLink to={HOME_PATH} variant="secondary" className="mt-4">
+          Back to Cases
+        </ButtonLink>
       </Card>
     );
   }
@@ -43,29 +51,56 @@ export function CaseWorkspacePage() {
 
 function Workspace({ legalCase: c }: { legalCase: Case }) {
   const ai = useAiAssistant(c);
+  const idBase = useId();
   const [params, setParams] = useSearchParams();
-  const requested = params.get('tab') as WorkspaceTab | null;
-  const tab: WorkspaceTab = requested && TAB_KEYS.includes(requested) ? requested : 'overview';
+  const requested = params.get('tab');
+  const tab: WorkspaceTab = isWorkspaceTab(requested) ? requested : 'overview';
 
+  // An unknown ?tab= value shows Overview; tidy the address bar to match,
+  // replacing the entry so Back doesn't return to the broken URL.
+  useEffect(() => {
+    if (requested !== null && !isWorkspaceTab(requested)) {
+      setParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('tab');
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  }, [requested, setParams]);
+
+  // Each tab change is a history entry, so Back and Forward move between tabs.
+  // Re-selecting the current tab adds nothing.
+  const selectTab = useCallback(
+    (key: WorkspaceTab) => {
+      if (key === tab) return;
+      setParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (key === 'overview') next.delete('tab');
+        else next.set('tab', key);
+        return next;
+      });
+    },
+    [tab, setParams],
+  );
+
+  const notConnected = ai.connected ? undefined : 'Not connected';
   const tabs: TabItem<WorkspaceTab>[] = [
     { key: 'overview', label: 'Overview', icon: LayoutList },
     { key: 'documents', label: 'Documents', icon: FileText, meta: c.documents.length },
-    {
-      key: 'analysis',
-      label: 'AI Analysis',
-      icon: Sparkles,
-      meta: ai.connected ? undefined : 'Not connected',
-    },
-    { key: 'research', label: 'Research', icon: BookOpenText },
+    { key: 'analysis', label: 'AI Analysis', icon: Sparkles, meta: notConnected },
+    { key: 'research', label: 'Research', icon: BookOpenText, meta: notConnected },
   ];
 
   return (
     <>
       <Link
-        to="/app/cases"
+        to={HOME_PATH}
         className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-800"
       >
-        <ArrowLeft className="h-4 w-4" />
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         All Cases
       </Link>
 
@@ -80,17 +115,25 @@ function Workspace({ legalCase: c }: { legalCase: Case }) {
         <h1 className="mt-2 text-2xl font-bold text-brand-900">{c.title}</h1>
         <p className="mt-1 text-sm text-brand-500">
           {c.practiceArea} · {c.clientName} · Opened {formatDate(c.openedOn)}
-          {c.nextHearing && <> · Next hearing {formatDate(c.nextHearing)}</>}
+          {c.nextHearing && (
+            <>
+              {' '}
+              · Next hearing {formatDate(c.nextHearing)}
+              {isPastDate(c.nextHearing) && ' (date has passed)'}
+            </>
+          )}
         </p>
       </header>
 
-      <Tabs
-        items={tabs}
-        active={tab}
-        onChange={(key) => setParams(key === 'overview' ? {} : { tab: key }, { replace: true })}
-      />
+      <Tabs items={tabs} active={tab} onChange={selectTab} idBase={idBase} label="Case workspace" />
 
-      <div className="pt-6" role="tabpanel">
+      <div
+        className="pt-6"
+        role="tabpanel"
+        id={tabPanelId(idBase)}
+        aria-labelledby={tabId(idBase, tab)}
+        tabIndex={0}
+      >
         {tab === 'overview' && <OverviewTab legalCase={c} />}
         {tab === 'documents' && <DocumentsTab legalCase={c} />}
         {tab === 'analysis' && <AnalysisTab legalCase={c} ai={ai} />}

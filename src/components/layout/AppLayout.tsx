@@ -1,20 +1,21 @@
 import { useState } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { useAuth } from '../../context/AuthContext';
 
 /**
  * Authenticated application shell: fixed sidebar + top bar, scrollable content
- * region rendered via <Outlet />. Redirects to the login screen when there is no
- * session.
+ * region rendered via <Outlet />. Without a (mock) session it redirects to the
+ * sign-in screen, remembering the requested page so sign-in can return to it.
  */
 export function AppLayout() {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/" replace state={{ from: location.pathname + location.search }} />;
   }
 
   return (

@@ -1,12 +1,16 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { Scale, ShieldCheck, FolderKanban, CalendarClock, Loader2 } from 'lucide-react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Scale, FileText, FolderKanban, CalendarClock, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
+import { safeReturnPath } from '../lib/paths';
 
 export function LoginPage() {
   const { isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Set by the route guard when a signed-out user opened a page inside the app.
+  const returnTo = safeReturnPath((location.state as { from?: unknown } | null)?.from);
 
   const [email, setEmail] = useState('aryan.goyal@lexflow.in');
   const [password, setPassword] = useState('demo1234');
@@ -14,7 +18,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   if (isAuthenticated) {
-    return <Navigate to="/app/dashboard" replace />;
+    return <Navigate to={returnTo} replace />;
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -27,7 +31,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       await login(email, password);
-      navigate('/app/dashboard', { replace: true });
+      navigate(returnTo, { replace: true });
     } catch {
       setError('Unable to sign in. Please try again.');
     } finally {
@@ -68,14 +72,14 @@ export function LoginPage() {
               Hearing schedules and matter timelines
             </li>
             <li className="flex items-center gap-3">
-              <ShieldCheck className="h-4 w-4 text-accent-500" />
-              Role-based access for advocates, paralegals &amp; clients
+              <FileText className="h-4 w-4 text-accent-500" />A workspace for each case and its
+              documents
             </li>
           </ul>
         </div>
 
         <p className="text-xs text-brand-400">
-          © {new Date().getFullYear()} LexFlow · Academic prototype (v0.1)
+          © {new Date().getFullYear()} LexFlow · Academic prototype (v0.2)
         </p>
       </div>
 
@@ -127,7 +131,10 @@ export function LoginPage() {
             </div>
 
             {error && (
-              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-600/20">
+              <p
+                role="alert"
+                className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-600/20"
+              >
                 {error}
               </p>
             )}
@@ -139,7 +146,8 @@ export function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-xs text-brand-400">
-            Authentication is mocked in v0.1 — no real credentials are stored.
+            This prototype only simulates sign-in. Any email and password are accepted and nothing
+            is verified, so don't enter a real password.
           </p>
         </div>
       </div>

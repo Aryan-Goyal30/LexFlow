@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -6,8 +6,10 @@ import { CasesPage } from './pages/CasesPage';
 import { CaseWorkspacePage } from './pages/CaseWorkspacePage';
 import { NewCasePage } from './pages/NewCasePage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { HOME_PATH } from './lib/paths';
 
-export const router = createBrowserRouter([
+/** The route table, exported so tests can run it in a memory router. */
+export const routes: RouteObject[] = [
   {
     path: '/',
     element: <LoginPage />,
@@ -16,8 +18,8 @@ export const router = createBrowserRouter([
     path: '/app',
     element: <AppLayout />,
     children: [
-      // Cases are the home of the product; the dashboard is a secondary overview.
-      { index: true, element: <Navigate to="/app/cases" replace /> },
+      // Cases are the home of the product; the practice overview is secondary.
+      { index: true, element: <Navigate to={HOME_PATH} replace /> },
       { path: 'cases', element: <CasesPage /> },
       { path: 'cases/new', element: <NewCasePage /> },
       { path: 'cases/:caseId', element: <CaseWorkspacePage /> },
@@ -28,4 +30,6 @@ export const router = createBrowserRouter([
     path: '*',
     element: <NotFoundPage />,
   },
-]);
+];
+
+export const router = createBrowserRouter(routes);
