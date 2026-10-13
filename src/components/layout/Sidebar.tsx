@@ -21,7 +21,7 @@ interface NavItem {
 // "Soon" items are firm-wide views planned for later milestones.
 const navItems: NavItem[] = [
   { to: '/app/cases', label: 'Cases', icon: FolderKanban, enabled: true },
-  { to: '/app/dashboard', label: 'Overview', icon: LayoutDashboard, enabled: true },
+  { to: '/app/dashboard', label: 'Practice Overview', icon: LayoutDashboard, enabled: true },
   { to: '/app/research', label: 'Precedent Library', icon: BookOpenText, enabled: false },
   { to: '/app/hearings', label: 'Hearings', icon: CalendarClock, enabled: false },
   { to: '/app/clients', label: 'Clients', icon: Users, enabled: false },

@@ -1,12 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, FolderOpen } from 'lucide-react';
 import { useCases } from '../context/CasesContext';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { ButtonLink } from '../components/ui/Button';
 import { StatusBadge, PriorityBadge } from '../components/ui/Badge';
-import { formatDate } from '../lib/format';
+import { formatDate, isPastDate } from '../lib/format';
 import type { CaseStatus } from '../types';
 
 const STATUS_FILTERS: Array<CaseStatus | 'All'> = [
@@ -21,6 +21,7 @@ export function CasesPage() {
   const { cases } = useCases();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<CaseStatus | 'All'>('All');
+  const searchId = useId();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -40,23 +41,28 @@ export function CasesPage() {
     <>
       <PageHeader
         title="Cases"
-        description={`${cases.length} matter${cases.length === 1 ? '' : 's'} on file`}
+        description={`${cases.length} matter${cases.length === 1 ? '' : 's'} on file. Sample cases are fictional and their dates are fixed.`}
         actions={
-          <Link to="/app/cases/new">
-            <Button>
-              <Plus className="h-4 w-4" />
-              New Case
-            </Button>
-          </Link>
+          <ButtonLink to="/app/cases/new">
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            New Case
+          </ButtonLink>
         }
       />
 
       <Card className="mb-4 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" />
+            <label htmlFor={searchId} className="sr-only">
+              Search cases
+            </label>
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400"
+              aria-hidden="true"
+            />
             <input
-              type="text"
+              id={searchId}
+              type="search"
               placeholder="Search cases…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -64,11 +70,12 @@ export function CasesPage() {
             />
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by status">
             {STATUS_FILTERS.map((status) => (
               <button
                 key={status}
                 type="button"
+                aria-pressed={statusFilter === status}
                 onClick={() => setStatusFilter(status)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                   statusFilter === status
@@ -86,7 +93,7 @@ export function CasesPage() {
       <Card className="overflow-hidden">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <FolderOpen className="h-10 w-10 text-brand-300" strokeWidth={1.5} />
+            <FolderOpen className="h-10 w-10 text-brand-300" strokeWidth={1.5} aria-hidden="true" />
             <p className="mt-3 text-sm font-medium text-brand-700">No matching cases</p>
             <p className="mt-1 text-sm text-brand-500">
               Try a different search term or status filter.
@@ -126,7 +133,16 @@ export function CasesPage() {
                       <StatusBadge status={c.status} />
                     </td>
                     <td className="px-5 py-3.5 text-brand-600">
-                      {c.nextHearing ? formatDate(c.nextHearing) : '—'}
+                      {c.nextHearing ? (
+                        <>
+                          {formatDate(c.nextHearing)}
+                          {isPastDate(c.nextHearing) && (
+                            <span className="block text-xs text-brand-400">Date has passed</span>
+                          )}
+                        </>
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td className="px-5 py-3.5 text-right tabular-nums text-brand-600">
                       {c.documents.length}

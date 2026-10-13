@@ -13,8 +13,8 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { StatCard } from '../components/ui/StatCard';
 import { Card, CardBody, CardHeader } from '../components/ui/Card';
 import { StatusBadge, PriorityBadge } from '../components/ui/Badge';
-import { Button } from '../components/ui/Button';
-import { formatDate } from '../lib/format';
+import { ButtonLink } from '../components/ui/Button';
+import { formatDate, todayIsoDate } from '../lib/format';
 
 export function DashboardPage() {
   const { cases } = useCases();
@@ -24,9 +24,12 @@ export function DashboardPage() {
   const inProgressCount = cases.filter((c) => c.status === 'In Progress').length;
   const closedCount = cases.filter((c) => c.status === 'Closed').length;
 
+  // Compare YYYY-MM-DD strings in local time; parsing them with new Date()
+  // would read them as UTC midnight and misjudge "today" in some time zones.
+  const today = todayIsoDate();
   const upcomingHearings = cases
     .flatMap((c) => c.hearings.map((h) => ({ ...h, caseId: c.id, caseTitle: c.title })))
-    .filter((h) => new Date(h.date) >= new Date(new Date().toDateString()))
+    .filter((h) => h.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 5);
 
@@ -37,15 +40,13 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader
-        title={`Welcome back, ${firstName}`}
-        description="Here's an overview of your practice activity."
+        title="Practice Overview"
+        description={`Welcome back, ${firstName}. Counts and hearings across all your cases.`}
         actions={
-          <Link to="/app/cases/new">
-            <Button>
-              <Plus className="h-4 w-4" />
-              New Case
-            </Button>
-          </Link>
+          <ButtonLink to="/app/cases/new">
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            New Case
+          </ButtonLink>
         }
       />
 
@@ -105,7 +106,10 @@ export function DashboardPage() {
           <CardHeader title="Upcoming Hearings" />
           <CardBody className="p-0">
             {upcomingHearings.length === 0 ? (
-              <p className="px-5 py-6 text-sm text-brand-500">No hearings scheduled.</p>
+              <p className="px-5 py-6 text-sm text-brand-500">
+                No upcoming hearings. The sample cases have fixed dates, so their hearings may
+                already have passed.
+              </p>
             ) : (
               <ul className="divide-y divide-brand-100">
                 {upcomingHearings.map((h) => (

@@ -1,7 +1,7 @@
 import { User2, Gavel, CalendarClock, Clock, Building2, type LucideIcon } from 'lucide-react';
 import type { Case } from '../../types';
 import { Card, CardBody, CardHeader } from '../ui/Card';
-import { formatDate } from '../../lib/format';
+import { formatDate, isPastDate } from '../../lib/format';
 
 export function OverviewTab({ legalCase: c }: { legalCase: Case }) {
   return (
@@ -42,7 +42,11 @@ export function OverviewTab({ legalCase: c }: { legalCase: Case }) {
             <DetailRow
               icon={CalendarClock}
               label="Next Hearing"
-              value={c.nextHearing ? formatDate(c.nextHearing) : 'None scheduled'}
+              value={
+                c.nextHearing
+                  ? `${formatDate(c.nextHearing)}${isPastDate(c.nextHearing) ? ' (date has passed)' : ''}`
+                  : 'None scheduled'
+              }
             />
           </CardBody>
         </Card>
