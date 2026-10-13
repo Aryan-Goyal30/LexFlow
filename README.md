@@ -1,63 +1,163 @@
 # LexFlow — Legal Case Workspace & Research Assistant
 
-**v0.2 — Case workspace prototype, AI-ready architecture**
+**v0.2 — Case workspace prototype, Phase 0 (stabilisation) complete**
 
-LexFlow helps a lawyer work an active case from intake to argument. Each case
-has its own **workspace** where the advocate manages the case record, collects
-the case papers, and — once the AI pipeline is connected — analyses the case and
-researches relevant precedents.
+LexFlow helps a lawyer work an active case. Each case has its own **workspace**
+where the advocate manages the case record and collects the case papers. AI
+analysis and precedent research are designed into the workspace but are **not
+connected to any AI service yet**.
 
-The primary workflow:
+The intended workflow:
 
-**create / open a case → manage case information → upload documents →
+**create or open a case → manage case information → upload documents →
 analyse the case → research precedents → review the analysis**
 
-The demo data is set in an **Indian legal context** (Supreme Court of India,
-High Courts, District & Sessions Courts; "Advocate" terminology; Indian names,
-firms and case references). All people, organisations and matters in the seed
-data are entirely fictional and exist only for demonstration.
+The first three steps work today, in memory. The last three need an AI service
+and a collection of past judgments, which are later phases.
+
+The sample data is set in an **Indian legal context** (Supreme Court of India,
+High Courts, District & Sessions Courts; "Advocate" terminology). All people,
+organisations and matters in it are fictional.
+
+`docs/DEVELOPMENT_BRIEF.md` is the source of truth for the product direction
+and the phased roadmap.
 
 ---
 
-## Product direction
+## What works, what is mocked, what is not built
 
-The long-term goal is an assistant that can read a complete case and its
-documents and:
+### Works now
 
-- extract the key facts and the legal issues they raise,
-- retrieve relevant precedents from a legal knowledge base,
-- compare historical cases with the current one — similarities, differences,
-  and contradictions in the record,
-- summarise the relevant judgments, and
-- eventually offer an evidence-supported outcome assessment.
+- **Case list** (`/app/cases`, also where `/app` and sign-in land): search by
+  title, case number, client or lead advocate; status filters; next hearing
+  date (marked when it has passed) and document count per case.
+- **New case form:** title (at least 4 characters), client, summary (at least
+  10 characters) and lead advocate are required; a next hearing date cannot be
+  in the past. Errors are shown next to each field and focus moves to the first
+  one. On success the new case opens on its Documents tab.
+- **Case workspace** (`/app/cases/:caseId`) with four tabs: Overview,
+  Documents, AI Analysis, Research. The selected tab is in the URL
+  (`?tab=documents`, `?tab=analysis`, `?tab=research`; no parameter means
+  Overview). Each tab change is a browser history entry, so Back and Forward
+  move between tabs; re-selecting the current tab adds nothing; an unknown
+  `tab` value shows Overview and is removed from the URL. Arrow keys, Home and
+  End move between tabs; Enter or Space selects.
+- **Documents tab:** add files with the picker or by drag-and-drop. Both follow
+  the same rules: PDF, Word (`.doc`, `.docx`), text and images (PNG, JPG, GIF,
+  WebP) only; empty files and files whose name is already on the case are
+  refused. Each refusal is listed with its reason. Uploaded files can be opened
+  in a new tab and removed.
+- **AI Analysis tab:** an "Analysis Inputs" panel built from the real case
+  record (summary, documents, timeline, parties and forum), a list of what the
+  analysis will contain, and a clear "not connected" state.
+- **Research tab:** a precedent search box, disabled, with a clear "not
+  connected" state.
+- **Practice Overview** (`/app/dashboard`): case counts, recent cases and
+  upcoming hearings across all cases. Secondary in the navigation.
+- **Sign-in screen and route guard:** opening any `/app` page without a session
+  goes to sign-in, then back to the page you asked for.
+- **404 page** linking back to the case list.
 
-**LexFlow is decision support, not a substitute for a lawyer or a judge.** Every
-AI output is meant to cite its source so the advocate can verify it, and the UI
-says so wherever AI output appears.
+### Mocked
 
-### What is honest about this build
+- **Sign-in is simulated, not secure.** Any email and password are accepted and
+  nothing is verified. The "session" is the demo user saved in the browser's
+  `localStorage`. There are no real accounts, passwords or roles.
+- **Sample data.** Six cases, six clients and five advocates come from
+  `src/data/mockData.ts`. Their dates are fixed, so some hearing dates are
+  already in the past; the UI marks those.
 
-**No AI is implemented yet.** The workspace, the data contract, and the
-integration seam are in place; the model, the retrieval pipeline and the legal
-knowledge base are later milestones. The AI Analysis and Research tabs show a
-clear "not connected" state — they never display generated or sample output.
+### Lost on refresh
+
+- Everything except the sign-in session: new cases, changes to documents, and
+  uploaded files. Cases live in React state only.
+- **Uploaded documents are temporary.** A file is held as a browser object URL
+  in the current tab. It is never sent anywhere or stored. The URL is released
+  when the document is removed, and the browser frees the rest when the page
+  closes. A link to a case created before a refresh shows "Case not found".
+
+### Not connected
+
+- **AI Analysis and Research.** The `AiService` interface in
+  `src/services/ai/aiService.ts` is the integration point, but its only
+  implementation reports "not connected" and rejects every call. The app never
+  calls it while disconnected and never shows generated, sample or simulated
+  analysis or precedents.
+- The results views (facts with their source documents, legal issues,
+  precedents with similarities and differences, contradictions) are built and
+  covered by tests that use a fake service, but no real service exists yet.
+- **Outcome assessment** is part of the data contract but is deliberately not
+  displayed. It is a later stage, after retrieval quality has been evaluated.
+
+LexFlow's AI is meant as **decision support** for the lawyer. It does not
+replace a lawyer's judgment or a court's decision, and the UI says so wherever
+AI output appears or will appear.
 
 ---
 
-## Tech stack
+## Getting started
 
-| Concern            | Choice                        | Why |
-| ------------------ | ----------------------------- | --- |
-| Language           | **TypeScript**                | Type-safe domain model and AI contract; catches errors before runtime. |
-| UI library         | **React 18**                  | Component model the whole team knows; huge ecosystem. |
-| Build tool / dev   | **Vite 5**                    | Instant dev server, near-zero config, fast production builds. |
-| Routing            | **React Router 6**            | Client-side routing, nested layouts, tab state in the URL. |
-| Styling            | **Tailwind CSS 3**            | Consistent spacing/typography by design tokens; no CSS sprawl. |
-| Icons              | **lucide-react**              | Clean, consistent, professional icon set. |
-| State (prototype)  | **React Context + hooks**     | Enough for in-memory data; swappable for a real API later. |
+Prerequisites: **Node.js 20 or newer** (developed and tested on Node 24) and
+npm.
 
-No database, no backend, no Docker. `npm install` then `npm run dev` is the
-entire setup.
+```bash
+npm install
+npm run dev
+```
+
+Vite serves the app at **http://localhost:5173/**. Sign in with the pre-filled
+demo details (or any email and password; don't use a real password).
+
+### Scripts
+
+| Command                | What it does                                              |
+| ---------------------- | --------------------------------------------------------- |
+| `npm run dev`          | Start the development server                              |
+| `npm run lint`         | ESLint; fails on any warning                              |
+| `npm run format`       | Format the code with Prettier                             |
+| `npm run format:check` | Check formatting without changing files                   |
+| `npm run typecheck`    | TypeScript, no output                                     |
+| `npm test`             | Run the test suite once (Vitest + React Testing Library)  |
+| `npm run test:watch`   | Run tests in watch mode                                   |
+| `npm run build`        | Type-check and build for production into `dist/`         |
+| `npm run preview`      | Serve the production build                                |
+| `npm run check`        | Lint, format check, typecheck, tests and build, in order  |
+
+Markdown files are excluded from Prettier; they are edited by hand.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on pushes to `master`/`main` and on pull
+requests. It installs from the lockfile with `npm ci`, then runs lint, format
+check, typecheck, tests and the production build. The repository has no GitHub
+remote yet, so the workflow has not run on GitHub.
+
+---
+
+## Testing
+
+Tests live next to the code (`*.test.ts(x)`). They run in jsdom with React
+Testing Library and use the real route table, providers and pages. The only
+thing faked is the AI service, the one external boundary, and only in
+`src/hooks/useAiAssistant.test.tsx`.
+
+What is covered:
+
+- case creation returns the same case it adds; ids and case numbers stay unique;
+- invalid case submissions are refused with field-level messages; a valid one
+  opens the new case's Documents tab and lists it first;
+- the route guard, sign-in redirects and the 404 page;
+- the document rules, applied identically to the picker and drag-and-drop, and
+  object URLs revoked on removal;
+- the "not connected" states of AI Analysis and Research;
+- AI errors, an analysis for the wrong case, superseded searches and late
+  responses never become results;
+- tab state in the URL, Back/Forward, invalid tab values and keyboard movement.
+
+Tests run the routes in `<MemoryRouter>` rather than the data router used by
+the app. Under jsdom, the data router's `fetch` requests fail with an
+`AbortSignal` mismatch; the routes have no loaders or actions, so the two
+routers behave the same for these tests.
 
 ---
 
@@ -66,157 +166,78 @@ entire setup.
 ```
             Pages & workspace tabs  (src/pages, src/components/workspace)
                  │                              │
-        useCases() / useAuth()          useAiAssistant(case)
+   useCases() / useAuth()               useAiAssistant(case)
                  │                              │
      Case store (src/context)          AI service seam (src/services/ai)
                  │                              │
-       mock seed data today            "not connected" today
-      → REST API + database later      → backend RAG pipeline later
+       sample data in memory              "not connected"
+      → API + database later           → backend AI pipeline later
 ```
 
-Pages never talk to data sources directly — only to hooks. That keeps two
-clean seams:
+Pages talk to hooks, not to data sources. `CasesContext` provides cases and the
+reference data the new-case form needs (clients, advocates), so replacing mock
+data with an API means changing the store. Its functions are synchronous today;
+an API version will be asynchronous, and pages will gain loading and error
+states.
 
-1. **Case data** — `src/context/CasesContext.tsx` holds cases and documents in
-   memory. Replacing its internals with API calls changes no page.
-2. **AI** — `src/services/ai/aiService.ts` defines the `AiService` interface:
+The `AiService` interface:
 
-   ```ts
-   interface AiService {
-     readonly connected: boolean;
-     analyzeCase(legalCase: Case): Promise<CaseAnalysis>;
-     searchPrecedents(legalCase: Case, query: string): Promise<Precedent[]>;
-   }
-   ```
+```ts
+interface AiService {
+  readonly connected: boolean;
+  analyzeCase(legalCase: Case): Promise<CaseAnalysis>;
+  searchPrecedents(legalCase: Case, query: string): Promise<Precedent[]>;
+}
+```
 
-   The only implementation today reports that nothing is connected. To
-   integrate the pipeline, write an implementation that calls a backend
-   (document ingestion → embedding → retrieval over the judgment corpus →
-   model synthesis with citations) and export it from that file. The result
-   types in `src/types/ai.ts` — facts, issues, precedents with
-   similarities/differences, contradictions, optional outcome assessment — are
-   already rendered by the Analysis and Research tabs.
+`useAiAssistant` wraps it. It keeps analysis and research state separate, makes
+no calls while disconnected, ignores repeat clicks while an analysis runs,
+discards responses that arrive after a newer request or after the workspace
+closes, and rejects an analysis whose `caseId` doesn't match the case. Model
+calls belong on a server, never in the browser.
 
-Model calls belong on a server, not in the browser: API keys stay private,
-documents are processed server-side, and the knowledge base is shared across
-the firm.
-
----
-
-## Project structure
+### Project structure
 
 ```
 src/
-├── main.tsx                     # App bootstrap: providers + router
-├── router.tsx                   # Routes; /app opens on the case list
-├── index.css                    # Tailwind layers + shared form classes
-│
+├── main.tsx, router.tsx, index.css
 ├── types/
-│   ├── index.ts                 # Domain model: Case, Client, Hearing, Document, User…
+│   ├── index.ts                 # Case, Client, Hearing, CaseDocument, User…
 │   └── ai.ts                    # AI contract: CaseAnalysis, Precedent, LegalIssue…
-│
-├── services/ai/
-│   └── aiService.ts             # AiService interface + "not connected" implementation
-│
-├── hooks/
-│   └── useAiAssistant.ts        # Per-case AI state (status, results, errors)
-│
+├── services/ai/aiService.ts     # AiService interface + "not connected" implementation
+├── hooks/useAiAssistant.ts      # Per-case AI state
 ├── context/
-│   ├── AuthContext.tsx          # Mock auth, localStorage session
-│   └── CasesContext.tsx         # Cases + documents: add case, upload/remove documents
-│
-├── data/mockData.ts             # Seed cases, clients, advocates, demo user
-├── lib/format.ts                # Dates, file sizes, initials, case numbers
-│
+│   ├── AuthContext.tsx          # Simulated sign-in, localStorage session
+│   └── CasesContext.tsx         # Cases, documents, clients, advocates
+├── data/mockData.ts             # Fictional sample data
+├── lib/
+│   ├── format.ts                # Dates (local time), file sizes, case numbers
+│   ├── documentFiles.ts         # Which files can be attached, and why not
+│   ├── validateNewCase.ts       # New case form rules
+│   ├── ids.ts                   # Session-unique ids
+│   └── paths.ts                 # Home path, safe return path after sign-in
 ├── components/
-│   ├── layout/                  # App shell: AppLayout (route guard), Sidebar, Topbar
-│   ├── ui/                      # Button, Card, Badge, Tabs, PageHeader, StatCard
-│   └── workspace/               # Case workspace tabs
-│       ├── OverviewTab.tsx      #   summary, timeline, parties, hearings
-│       ├── DocumentsTab.tsx     #   upload (drag & drop), open, remove
-│       ├── AnalysisTab.tsx      #   AI analysis: inputs, planned output, results view
-│       ├── ResearchTab.tsx      #   precedent search + results view
-│       ├── PrecedentCard.tsx    #   one judgment with similarities / differences
-│       └── AiNotices.tsx        #   status pill, not-connected state, decision-support note
-│
-└── pages/
-    ├── LoginPage.tsx
-    ├── CasesPage.tsx            # Home: searchable case list
-    ├── NewCasePage.tsx          # Create a case → lands on its Documents tab
-    ├── CaseWorkspacePage.tsx    # The case workspace (tabs: ?tab=documents|analysis|research)
-    ├── DashboardPage.tsx        # Secondary practice overview
-    └── NotFoundPage.tsx
+│   ├── layout/                  # AppLayout (route guard), Sidebar, Topbar
+│   ├── ui/                      # Button, ButtonLink, Card, Badge, Tabs, PageHeader, StatCard
+│   └── workspace/               # Overview, Documents, Analysis, Research tabs; PrecedentCard; AiNotices
+├── pages/                       # Login, Cases, NewCase, CaseWorkspace, Dashboard (Practice Overview), NotFound
+└── test/                        # Test setup and the renderApp helper
 ```
 
 ---
 
-## What's implemented in v0.2
+## Limitations
 
-- **Case list as the home page** — search (title, number, client, advocate),
-  status filters, next hearing and document count per case.
-- **New case** — validated form; on submit the case is created and the
-  workspace opens on its Documents tab, the next step in the workflow.
-- **Case workspace** — one page per case with four tabs; the active tab is in
-  the URL, so it can be linked and survives the back button.
-  - **Overview** — summary, matter timeline, parties and forum, hearings.
-  - **Documents** — drag-and-drop or file-picker upload (PDF, Word, text,
-    images), open in a new tab, remove. Files are held as browser object URLs
-    for the session.
-  - **AI Analysis** — what the analysis will read from this case (a live
-    readiness check), what it will produce, and an honest not-connected state.
-    The results view for facts, issues, precedents and contradictions is built
-    and typed, ready for a real service.
-  - **Research** — precedent search UI and results view, disabled with a clear
-    explanation until a knowledge base is connected.
-- **Overview page** — the earlier dashboard (counts, recent cases, upcoming
-  hearings), now secondary in the navigation.
-- **Mock sign-in** with a `localStorage` session and a route guard; responsive
-  shell; 404 page.
+- No backend, database or file storage; see "Lost on refresh".
+- Sign-in is simulated; there are no roles or permissions.
+- Cases can be created and viewed, not edited or deleted.
+- The top-bar search and notifications bell are placeholders and disabled.
+- The sidebar's Precedent Library, Hearings, Clients, Notifications and
+  Administration items are marked "Soon".
+- No AI analysis, precedent search or judgment collection.
 
-> Everything is in-memory: a full page refresh resets cases to the seed data
-> and drops uploaded files. Only the sign-in session persists.
+## Next phase
 
----
-
-## How to run
-
-Prerequisites: **Node.js 18+** and npm.
-
-```bash
-npm install
-npm run dev
-```
-
-Vite opens **http://localhost:5173/**. Sign in with the pre-filled demo
-credentials (or any email + password).
-
-```bash
-npm run build      # type-check + production build to dist/
-npm run preview    # serve the production build locally
-npm run typecheck  # TypeScript only, no emit
-```
-
----
-
-## Roadmap
-
-1. **Backend + persistence.** API (e.g. FastAPI or Express) with a database
-   for cases and object storage for documents. Replace the internals of
-   `CasesContext`; keep the hooks.
-2. **Real authentication & roles.** Enforce the `UserRole` model; gate routes
-   and actions.
-3. **Document ingestion.** Text extraction and OCR for uploaded papers,
-   chunking, and embeddings stored per case.
-4. **Legal knowledge base.** A corpus of judgments with citation metadata,
-   indexed for retrieval.
-5. **AI pipeline (RAG).** Implement `AiService` against the backend:
-   fact and issue extraction, precedent retrieval and comparison,
-   contradiction detection, judgment summaries — every claim linked to its
-   source.
-6. **Review workflow.** Let the advocate accept, reject or annotate each AI
-   finding, with the review recorded on the matter timeline.
-7. **Outcome assessment.** Only once retrieval quality is measured; always
-   with supporting precedents and the decision-support disclaimer.
-8. **Quality baseline.** ESLint + Prettier, Vitest + React Testing Library,
-   CI running typecheck, tests and build; an evaluation set for retrieval and
-   extraction accuracy.
+According to `docs/DEVELOPMENT_BRIEF.md`, the next step is **Phase 1: backend and
+persistence**: an API with a database for cases and file storage for
+documents, with `CasesContext` switched to API calls. Phase 1 has not started.
