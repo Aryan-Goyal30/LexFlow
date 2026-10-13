@@ -1,0 +1,7 @@
+dist
+coverage
+node_modules
+package-lock.json
+*.tsbuildinfo
+# Markdown docs are edited by hand; DEVELOPMENT_BRIEF.md is the project's source of truth.
+*.md
