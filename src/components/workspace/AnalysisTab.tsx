@@ -9,21 +9,52 @@ import { PrecedentCard } from './PrecedentCard';
 
 /** What a full analysis will produce, in the order a lawyer reviews it. */
 const OUTPUT_SECTIONS = [
-  { title: 'Key facts', detail: 'Extracted from the case record and each document, each linked to its source.' },
-  { title: 'Legal issues', detail: 'The questions of law the matter turns on, tied to the facts behind them.' },
-  { title: 'Relevant precedents', detail: 'Judgments retrieved from the legal knowledge base, ranked by relevance.' },
-  { title: 'Similarities & differences', detail: 'How each precedent compares with the facts of this case.' },
-  { title: 'Contradictions', detail: 'Places where documents or statements in the record conflict.' },
-  { title: 'Outcome assessment', detail: 'An evidence-supported view, offered only where precedents support it. Later milestone.' },
+  {
+    title: 'Key facts',
+    detail: 'Extracted from the case record and each document, each linked to its source.',
+  },
+  {
+    title: 'Legal issues',
+    detail: 'The questions of law the matter turns on, tied to the facts behind them.',
+  },
+  {
+    title: 'Relevant precedents',
+    detail: 'Judgments retrieved from the legal knowledge base, ranked by relevance.',
+  },
+  {
+    title: 'Similarities & differences',
+    detail: 'How each precedent compares with the facts of this case.',
+  },
+  {
+    title: 'Contradictions',
+    detail: 'Places where documents or statements in the record conflict.',
+  },
+  {
+    title: 'Outcome assessment',
+    detail:
+      'An evidence-supported view, offered only where precedents support it. Later milestone.',
+  },
 ];
 
 export function AnalysisTab({ legalCase: c, ai }: { legalCase: Case; ai: AiAssistant }) {
   const uploaded = c.documents.filter((d) => d.url).length;
   const inputs = [
-    { label: 'Case summary', ready: c.description.trim().length > 0, note: `${c.description.length} characters` },
-    { label: 'Documents', ready: c.documents.length > 0, note: `${c.documents.length} on file, ${uploaded} uploaded this session` },
+    {
+      label: 'Case summary',
+      ready: c.description.trim().length > 0,
+      note: `${c.description.length} characters`,
+    },
+    {
+      label: 'Documents',
+      ready: c.documents.length > 0,
+      note: `${c.documents.length} on file, ${uploaded} uploaded this session`,
+    },
     { label: 'Matter timeline', ready: c.timeline.length > 0, note: `${c.timeline.length} events` },
-    { label: 'Parties & forum', ready: Boolean(c.courtName && c.opposingParty), note: c.courtName ?? 'Court not set' },
+    {
+      label: 'Parties & forum',
+      ready: Boolean(c.courtName && c.opposingParty),
+      note: c.courtName ?? 'Court not set',
+    },
   ];
 
   return (
@@ -39,8 +70,8 @@ export function AnalysisTab({ legalCase: c, ai }: { legalCase: Case; ai: AiAssis
 
             {ai.status === 'not_connected' && (
               <NotConnectedNotice feature="AI analysis">
-                The workspace and data contract are ready; the model and legal knowledge base are
-                a later milestone. Until then, nothing here is generated and no analysis is shown.
+                The workspace and data contract are ready; the model and legal knowledge base are a
+                later milestone. Until then, nothing here is generated and no analysis is shown.
               </NotConnectedNotice>
             )}
             {ai.status === 'error' && ai.error && (

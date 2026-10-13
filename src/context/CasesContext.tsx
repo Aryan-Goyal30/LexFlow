@@ -34,10 +34,7 @@ const CasesContext = createContext<CasesContextValue | undefined>(undefined);
 export function CasesProvider({ children }: { children: ReactNode }) {
   const [cases, setCases] = useState<Case[]>(mockCases);
 
-  const getCaseById = useCallback(
-    (id: string) => cases.find((c) => c.id === id),
-    [cases],
-  );
+  const getCaseById = useCallback((id: string) => cases.find((c) => c.id === id), [cases]);
 
   const addCase = useCallback((input: NewCaseInput): Case => {
     const client = mockClients.find((c) => c.id === input.clientId);

@@ -38,7 +38,10 @@ export function ResearchTab({ legalCase: c, ai }: { legalCase: Case; ai: AiAssis
                 disabled={!ai.connected}
               />
             </div>
-            <Button type="submit" disabled={!ai.connected || !query.trim() || ai.status === 'running'}>
+            <Button
+              type="submit"
+              disabled={!ai.connected || !query.trim() || ai.status === 'running'}
+            >
               Search precedents
             </Button>
           </form>

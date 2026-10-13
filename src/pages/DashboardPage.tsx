@@ -1,5 +1,12 @@
 import { Link } from 'react-router-dom';
-import { FolderKanban, Activity, CalendarClock, CheckCircle2, Plus, ArrowRight } from 'lucide-react';
+import {
+  FolderKanban,
+  Activity,
+  CalendarClock,
+  CheckCircle2,
+  Plus,
+  ArrowRight,
+} from 'lucide-react';
 import { useCases } from '../context/CasesContext';
 import { useAuth } from '../context/AuthContext';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -23,9 +30,7 @@ export function DashboardPage() {
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 5);
 
-  const recentCases = [...cases]
-    .sort((a, b) => b.openedOn.localeCompare(a.openedOn))
-    .slice(0, 5);
+  const recentCases = [...cases].sort((a, b) => b.openedOn.localeCompare(a.openedOn)).slice(0, 5);
 
   const firstName = user?.name.split(' ')[0] ?? 'there';
 
@@ -45,9 +50,19 @@ export function DashboardPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Cases" value={cases.length} icon={FolderKanban} hint="All matters on file" />
+        <StatCard
+          label="Total Cases"
+          value={cases.length}
+          icon={FolderKanban}
+          hint="All matters on file"
+        />
         <StatCard label="Open" value={openCount} icon={Activity} hint="Awaiting first action" />
-        <StatCard label="In Progress" value={inProgressCount} icon={CalendarClock} hint="Actively worked" />
+        <StatCard
+          label="In Progress"
+          value={inProgressCount}
+          icon={CalendarClock}
+          hint="Actively worked"
+        />
         <StatCard label="Closed" value={closedCount} icon={CheckCircle2} hint="Resolved matters" />
       </div>
 

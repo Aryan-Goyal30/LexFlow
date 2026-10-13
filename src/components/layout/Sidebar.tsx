@@ -57,7 +57,9 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
           </span>
           <div className="leading-tight">
             <p className="font-serif text-lg font-bold text-white">LexFlow</p>
-            <p className="text-[11px] uppercase tracking-wider text-brand-300">Case &amp; Research</p>
+            <p className="text-[11px] uppercase tracking-wider text-brand-300">
+              Case &amp; Research
+            </p>
           </div>
         </div>
 

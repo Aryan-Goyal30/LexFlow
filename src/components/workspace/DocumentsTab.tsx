@@ -41,7 +41,12 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
           Drop pleadings, evidence, orders or correspondence here
         </p>
         <p className="mt-1 text-xs text-brand-500">PDF, Word, text or images</p>
-        <Button variant="secondary" size="sm" className="mt-4" onClick={() => inputRef.current?.click()}>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="mt-4"
+          onClick={() => inputRef.current?.click()}
+        >
           Choose files
         </Button>
         <input

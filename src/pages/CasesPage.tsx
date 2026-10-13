@@ -9,7 +9,13 @@ import { StatusBadge, PriorityBadge } from '../components/ui/Badge';
 import { formatDate } from '../lib/format';
 import type { CaseStatus } from '../types';
 
-const STATUS_FILTERS: Array<CaseStatus | 'All'> = ['All', 'Open', 'In Progress', 'On Hold', 'Closed'];
+const STATUS_FILTERS: Array<CaseStatus | 'All'> = [
+  'All',
+  'Open',
+  'In Progress',
+  'On Hold',
+  'Closed',
+];
 
 export function CasesPage() {
   const { cases } = useCases();

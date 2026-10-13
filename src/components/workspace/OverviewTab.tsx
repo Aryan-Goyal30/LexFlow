@@ -72,7 +72,15 @@ export function OverviewTab({ legalCase: c }: { legalCase: Case }) {
   );
 }
 
-function DetailRow({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
   return (
     <div className="flex items-start gap-3">
       <span className="mt-0.5 rounded-md bg-brand-50 p-1.5 text-brand-500">

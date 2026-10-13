@@ -6,12 +6,7 @@ import { Card, CardBody, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { PageHeader } from '../components/ui/PageHeader';
 import { mockClients, advocates } from '../data/mockData';
-import type {
-  CasePriority,
-  CaseStatus,
-  NewCaseInput,
-  PracticeArea,
-} from '../types';
+import type { CasePriority, CaseStatus, NewCaseInput, PracticeArea } from '../types';
 
 const PRACTICE_AREAS: PracticeArea[] = [
   'Corporate / Commercial',

@@ -15,13 +15,7 @@ export function Card({ children, className = '', ...props }: CardProps) {
   );
 }
 
-export function CardHeader({
-  title,
-  action,
-}: {
-  title: string;
-  action?: ReactNode;
-}) {
+export function CardHeader({ title, action }: { title: string; action?: ReactNode }) {
   return (
     <div className="flex items-center justify-between border-b border-brand-100 px-5 py-3.5">
       <h3 className="text-sm font-semibold uppercase tracking-wide text-brand-600 font-sans">
@@ -32,6 +26,12 @@ export function CardHeader({
   );
 }
 
-export function CardBody({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function CardBody({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return <div className={`px-5 py-4 ${className}`}>{children}</div>;
 }

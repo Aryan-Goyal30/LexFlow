@@ -6,15 +6,21 @@ export function DecisionSupportNote() {
   return (
     <p className="flex items-start gap-2 text-xs leading-relaxed text-brand-500">
       <ShieldAlert className="mt-px h-3.5 w-3.5 shrink-0" />
-      AI output in LexFlow is decision support for the advocate. It is not legal advice and
-      does not replace a lawyer's judgment or a court's decision — verify every point against
-      its cited source.
+      AI output in LexFlow is decision support for the advocate. It is not legal advice and does not
+      replace a lawyer's judgment or a court's decision — verify every point against its cited
+      source.
     </p>
   );
 }
 
 /** Honest empty state for an AI feature that has no backend yet. */
-export function NotConnectedNotice({ feature, children }: { feature: string; children: React.ReactNode }) {
+export function NotConnectedNotice({
+  feature,
+  children,
+}: {
+  feature: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex gap-3 rounded-lg border border-dashed border-brand-200 bg-brand-50/60 p-4">
       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-white text-brand-500 ring-1 ring-brand-100">
@@ -29,7 +35,10 @@ export function NotConnectedNotice({ feature, children }: { feature: string; chi
 }
 
 const statusStyles: Record<AiStatus, { label: string; className: string }> = {
-  not_connected: { label: 'Not connected', className: 'bg-brand-100 text-brand-600 ring-brand-600/20' },
+  not_connected: {
+    label: 'Not connected',
+    className: 'bg-brand-100 text-brand-600 ring-brand-600/20',
+  },
   idle: { label: 'Ready to run', className: 'bg-sky-50 text-sky-700 ring-sky-600/20' },
   running: { label: 'Running…', className: 'bg-amber-50 text-amber-700 ring-amber-600/20' },
   ready: { label: 'Complete', className: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' },

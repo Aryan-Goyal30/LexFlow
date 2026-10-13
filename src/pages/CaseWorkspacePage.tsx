@@ -50,7 +50,12 @@ function Workspace({ legalCase: c }: { legalCase: Case }) {
   const tabs: TabItem<WorkspaceTab>[] = [
     { key: 'overview', label: 'Overview', icon: LayoutList },
     { key: 'documents', label: 'Documents', icon: FileText, meta: c.documents.length },
-    { key: 'analysis', label: 'AI Analysis', icon: Sparkles, meta: ai.connected ? undefined : 'Not connected' },
+    {
+      key: 'analysis',
+      label: 'AI Analysis',
+      icon: Sparkles,
+      meta: ai.connected ? undefined : 'Not connected',
+    },
     { key: 'research', label: 'Research', icon: BookOpenText },
   ];
 

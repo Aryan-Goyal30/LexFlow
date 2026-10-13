@@ -54,8 +54,8 @@ export function LoginPage() {
             Every matter, deadline, and document — organised in one place.
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-brand-300">
-            LexFlow gives your chamber a single, structured view of active
-            matters, hearings, clients, and filings.
+            LexFlow gives your chamber a single, structured view of active matters, hearings,
+            clients, and filings.
           </p>
 
           <ul className="mt-8 space-y-3 text-sm">
@@ -93,8 +93,8 @@ export function LoginPage() {
 
           <h1 className="text-2xl font-bold text-brand-900">Sign in</h1>
           <p className="mt-1 text-sm text-brand-500">
-            Access your case workspace. Use the pre-filled demo credentials or any
-            email and password.
+            Access your case workspace. Use the pre-filled demo credentials or any email and
+            password.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
