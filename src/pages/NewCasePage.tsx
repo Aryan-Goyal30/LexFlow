@@ -1,12 +1,13 @@
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Check } from 'lucide-react';
 import { useCases } from '../context/CasesContext';
 import { Card, CardBody, CardHeader } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { Button, ButtonLink } from '../components/ui/Button';
 import { PageHeader } from '../components/ui/PageHeader';
-import { mockClients, advocates } from '../data/mockData';
 import type { CasePriority, CaseStatus, NewCaseInput, PracticeArea } from '../types';
+import { validateNewCase, type NewCaseErrors, type NewCaseForm } from '../lib/validateNewCase';
+import { todayIsoDate } from '../lib/format';
 
 const PRACTICE_AREAS: PracticeArea[] = [
   'Corporate / Commercial',
@@ -21,60 +22,64 @@ const PRACTICE_AREAS: PracticeArea[] = [
 const STATUSES: CaseStatus[] = ['Open', 'In Progress', 'On Hold', 'Closed'];
 const PRIORITIES: CasePriority[] = ['Low', 'Medium', 'High', 'Critical'];
 
-type FormState = {
-  title: string;
-  clientId: string;
-  practiceArea: PracticeArea;
-  status: CaseStatus;
-  priority: CasePriority;
-  leadAttorney: string;
-  courtName: string;
-  opposingParty: string;
-  nextHearing: string;
-  description: string;
-};
-
-const initialState: FormState = {
-  title: '',
-  clientId: mockClients[0].id,
-  practiceArea: 'Civil',
-  status: 'Open',
-  priority: 'Medium',
-  leadAttorney: advocates[0],
-  courtName: '',
-  opposingParty: '',
-  nextHearing: '',
-  description: '',
-};
+/** Order in which fields appear, used to focus the first invalid one. */
+const FIELD_ORDER: (keyof NewCaseForm)[] = [
+  'title',
+  'clientId',
+  'practiceArea',
+  'description',
+  'leadAttorney',
+  'opposingParty',
+  'courtName',
+  'nextHearing',
+  'status',
+  'priority',
+];
 
 export function NewCasePage() {
-  const { addCase } = useCases();
+  const { addCase, clients, advocates } = useCases();
   const navigate = useNavigate();
+  const uid = useId();
 
-  const [form, setForm] = useState<FormState>(initialState);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+  const [form, setForm] = useState<NewCaseForm>(() => ({
+    title: '',
+    clientId: '',
+    practiceArea: 'Civil',
+    status: 'Open',
+    priority: 'Medium',
+    leadAttorney: advocates[0] ?? '',
+    courtName: '',
+    opposingParty: '',
+    nextHearing: '',
+    description: '',
+  }));
+  const [errors, setErrors] = useState<NewCaseErrors>({});
 
-  const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+  const idFor = (key: keyof NewCaseForm) => `${uid}-${key}`;
+  const errorIdFor = (key: keyof NewCaseForm) => `${uid}-${key}-error`;
+
+  /** Accessibility wiring shared by every control. */
+  const controlProps = (key: keyof NewCaseForm) => ({
+    id: idFor(key),
+    'aria-invalid': errors[key] ? true : undefined,
+    'aria-describedby': errors[key] ? errorIdFor(key) : undefined,
+  });
+
+  const update = <K extends keyof NewCaseForm>(key: K, value: NewCaseForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
-  const validate = (): boolean => {
-    const next: Partial<Record<keyof FormState, string>> = {};
-    if (form.title.trim().length < 4) {
-      next.title = 'Enter a descriptive case title (at least 4 characters).';
-    }
-    if (!form.clientId) next.clientId = 'Select a client.';
-    if (form.description.trim().length < 10) {
-      next.description = 'Provide a short summary (at least 10 characters).';
-    }
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  };
-
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    const found = validateNewCase(form, clients, advocates);
+    setErrors(found);
+
+    const firstInvalid = FIELD_ORDER.find((key) => found[key]);
+    if (firstInvalid) {
+      document.getElementById(idFor(firstInvalid))?.focus();
+      return;
+    }
 
     const input: NewCaseInput = {
       title: form.title,
@@ -94,6 +99,8 @@ export function NewCasePage() {
     navigate(`/app/cases/${created.id}?tab=documents`);
   };
 
+  const errorCount = Object.values(errors).filter(Boolean).length;
+
   return (
     <>
       <Link
@@ -109,29 +116,58 @@ export function NewCasePage() {
         description="Open a new matter and add it to your case list."
       />
 
-      <form onSubmit={handleSubmit} noValidate>
+      {errorCount > 0 && (
+        <p
+          role="alert"
+          className="mb-4 flex items-center gap-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-600/20"
+        >
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {errorCount === 1
+            ? 'One field needs attention before the case can be created.'
+            : `${errorCount} fields need attention before the case can be created.`}
+        </p>
+      )}
+
+      <form onSubmit={handleSubmit} noValidate aria-label="New case">
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
             <Card>
               <CardHeader title="Case Information" />
               <CardBody className="space-y-4">
-                <Field label="Case Title" error={errors.title} required>
+                <Field
+                  label="Case Title"
+                  htmlFor={idFor('title')}
+                  error={errors.title}
+                  errorId={errorIdFor('title')}
+                  required
+                >
                   <input
+                    {...controlProps('title')}
                     className="input-field"
                     placeholder="e.g. Aarav Textiles Pvt. Ltd. v. Meghdoot Logistics Pvt. Ltd."
                     value={form.title}
                     onChange={(e) => update('title', e.target.value)}
+                    required
                   />
                 </Field>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Client" error={errors.clientId} required>
+                  <Field
+                    label="Client"
+                    htmlFor={idFor('clientId')}
+                    error={errors.clientId}
+                    errorId={errorIdFor('clientId')}
+                    required
+                  >
                     <select
+                      {...controlProps('clientId')}
                       className="input-field"
                       value={form.clientId}
                       onChange={(e) => update('clientId', e.target.value)}
+                      required
                     >
-                      {mockClients.map((client) => (
+                      <option value="">Select a client…</option>
+                      {clients.map((client) => (
                         <option key={client.id} value={client.id}>
                           {client.name}
                         </option>
@@ -139,8 +175,9 @@ export function NewCasePage() {
                     </select>
                   </Field>
 
-                  <Field label="Practice Area">
+                  <Field label="Practice Area" htmlFor={idFor('practiceArea')}>
                     <select
+                      {...controlProps('practiceArea')}
                       className="input-field"
                       value={form.practiceArea}
                       onChange={(e) => update('practiceArea', e.target.value as PracticeArea)}
@@ -152,12 +189,20 @@ export function NewCasePage() {
                   </Field>
                 </div>
 
-                <Field label="Summary" error={errors.description} required>
+                <Field
+                  label="Summary"
+                  htmlFor={idFor('description')}
+                  error={errors.description}
+                  errorId={errorIdFor('description')}
+                  required
+                >
                   <textarea
+                    {...controlProps('description')}
                     className="input-field min-h-[110px] resize-y"
                     placeholder="Briefly describe the matter, relief sought, and current posture."
                     value={form.description}
                     onChange={(e) => update('description', e.target.value)}
+                    required
                   />
                 </Field>
               </CardBody>
@@ -166,8 +211,14 @@ export function NewCasePage() {
             <Card>
               <CardHeader title="Parties & Court" />
               <CardBody className="grid gap-4 sm:grid-cols-2">
-                <Field label="Lead Advocate">
+                <Field
+                  label="Lead Advocate"
+                  htmlFor={idFor('leadAttorney')}
+                  error={errors.leadAttorney}
+                  errorId={errorIdFor('leadAttorney')}
+                >
                   <select
+                    {...controlProps('leadAttorney')}
                     className="input-field"
                     value={form.leadAttorney}
                     onChange={(e) => update('leadAttorney', e.target.value)}
@@ -178,8 +229,9 @@ export function NewCasePage() {
                   </select>
                 </Field>
 
-                <Field label="Opposing Party">
+                <Field label="Opposing Party" htmlFor={idFor('opposingParty')}>
                   <input
+                    {...controlProps('opposingParty')}
                     className="input-field"
                     placeholder="e.g. Meghdoot Logistics Pvt. Ltd. / State (NCT of Delhi)"
                     value={form.opposingParty}
@@ -187,8 +239,9 @@ export function NewCasePage() {
                   />
                 </Field>
 
-                <Field label="Court / Forum">
+                <Field label="Court / Forum" htmlFor={idFor('courtName')}>
                   <input
+                    {...controlProps('courtName')}
                     className="input-field"
                     placeholder="e.g. High Court of Delhi at New Delhi"
                     value={form.courtName}
@@ -196,9 +249,16 @@ export function NewCasePage() {
                   />
                 </Field>
 
-                <Field label="Next Hearing Date">
+                <Field
+                  label="Next Hearing Date"
+                  htmlFor={idFor('nextHearing')}
+                  error={errors.nextHearing}
+                  errorId={errorIdFor('nextHearing')}
+                >
                   <input
+                    {...controlProps('nextHearing')}
                     type="date"
+                    min={todayIsoDate()}
                     className="input-field"
                     value={form.nextHearing}
                     onChange={(e) => update('nextHearing', e.target.value)}
@@ -212,8 +272,9 @@ export function NewCasePage() {
             <Card>
               <CardHeader title="Classification" />
               <CardBody className="space-y-4">
-                <Field label="Status">
+                <Field label="Status" htmlFor={idFor('status')}>
                   <select
+                    {...controlProps('status')}
                     className="input-field"
                     value={form.status}
                     onChange={(e) => update('status', e.target.value as CaseStatus)}
@@ -224,8 +285,9 @@ export function NewCasePage() {
                   </select>
                 </Field>
 
-                <Field label="Priority">
+                <Field label="Priority" htmlFor={idFor('priority')}>
                   <select
+                    {...controlProps('priority')}
                     className="input-field"
                     value={form.priority}
                     onChange={(e) => update('priority', e.target.value as CasePriority)}
@@ -243,11 +305,9 @@ export function NewCasePage() {
                 <Check className="h-4 w-4" />
                 Create Case
               </Button>
-              <Link to="/app/cases" className="w-full">
-                <Button type="button" variant="secondary" className="w-full">
-                  Cancel
-                </Button>
-              </Link>
+              <ButtonLink to="/app/cases" variant="secondary" className="w-full">
+                Cancel
+              </ButtonLink>
             </div>
           </div>
         </div>
@@ -258,23 +318,35 @@ export function NewCasePage() {
 
 function Field({
   label,
+  htmlFor,
   error,
+  errorId,
   required,
   children,
 }: {
   label: string;
+  htmlFor: string;
   error?: string;
+  errorId?: string;
   required?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div>
-      <label className="label-text">
+      <label className="label-text" htmlFor={htmlFor}>
         {label}
-        {required && <span className="ml-0.5 text-red-500">*</span>}
+        {required && (
+          <span className="ml-0.5 text-red-500" aria-hidden="true">
+            *
+          </span>
+        )}
       </label>
       {children}
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && (
+        <p id={errorId} className="mt-1 text-xs text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

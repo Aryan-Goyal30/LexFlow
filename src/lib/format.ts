@@ -26,9 +26,29 @@ export function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/** Generates a sequential-looking case number for newly created cases. */
-export function generateCaseNumber(existingCount: number): string {
-  const year = new Date().getFullYear();
-  const seq = String(200 + existingCount).padStart(4, '0');
-  return `LF-${year}-${seq}`;
+/** Today as YYYY-MM-DD in the user's local time zone (not UTC). */
+export function todayIsoDate(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** True when a YYYY-MM-DD date is before today, in local time. */
+export function isPastDate(iso: string, now: Date = new Date()): boolean {
+  return iso.slice(0, 10) < todayIsoDate(now);
+}
+
+/**
+ * Next case number for the current year: one above the highest existing
+ * LF-<year>-NNNN number, so a new number never repeats an existing one.
+ */
+export function nextCaseNumber(existing: readonly string[], now: Date = new Date()): string {
+  const prefix = `LF-${now.getFullYear()}-`;
+  const highest = existing.reduce((max, caseNumber) => {
+    if (!caseNumber.startsWith(prefix)) return max;
+    const seq = Number(caseNumber.slice(prefix.length));
+    return Number.isInteger(seq) && seq > max ? seq : max;
+  }, 0);
+  return `${prefix}${String(highest + 1).padStart(4, '0')}`;
 }

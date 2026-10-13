@@ -1,4 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
+import { Link, type LinkProps } from 'react-router-dom';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md';
@@ -38,3 +39,18 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     />
   );
 });
+
+interface ButtonLinkProps extends LinkProps {
+  variant?: Variant;
+  size?: Size;
+}
+
+/** A router link styled as a button. Use instead of nesting a Button in a Link. */
+export function ButtonLink({
+  variant = 'primary',
+  size = 'md',
+  className = '',
+  ...props
+}: ButtonLinkProps) {
+  return <Link className={`${base} ${variants[variant]} ${sizes[size]} ${className}`} {...props} />;
+}
