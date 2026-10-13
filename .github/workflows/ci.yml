@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, format, typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies from the lockfile
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier
+        run: npm run format:check
+
+      - name: TypeScript
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
