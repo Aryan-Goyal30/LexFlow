@@ -13,7 +13,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 
 from lexflow import __version__
-from lexflow.api import health
+from lexflow.api import health, reference
 from lexflow.config import get_settings
 from lexflow.errors import CatchAllMiddleware, install_error_handlers
 from lexflow.openapi import install_openapi
@@ -67,4 +67,5 @@ def create_app() -> FastAPI:
         return response
 
     app.include_router(health.router, prefix=API_PREFIX)
+    app.include_router(reference.router, prefix=API_PREFIX)
     return app
