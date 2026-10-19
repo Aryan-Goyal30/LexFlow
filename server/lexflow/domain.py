@@ -24,6 +24,10 @@ PracticeArea = Literal[
 
 AuditOutcome = Literal["success", "denied", "failed"]
 HearingStatus = Literal["Scheduled", "Cancelled"]
+# Text extraction of a document (Phase 3), and whether its chunks are indexed
+# for search (embeddings).
+ExtractionStatus = Literal["queued", "processing", "ready", "failed", "unsupported"]
+IndexStatus = Literal["disabled", "pending", "indexed", "failed"]
 
 USER_ROLES: tuple[str, ...] = get_args(UserRole)
 AUDIT_OUTCOMES: tuple[str, ...] = get_args(AuditOutcome)
@@ -34,6 +38,9 @@ CASE_STATUSES: tuple[str, ...] = get_args(CaseStatus)
 CASE_PRIORITIES: tuple[str, ...] = get_args(CasePriority)
 PRACTICE_AREAS: tuple[str, ...] = get_args(PracticeArea)
 HEARING_SCHEDULED, HEARING_CANCELLED = "Scheduled", "Cancelled"
+EXTRACTION_STATUSES: tuple[str, ...] = get_args(ExtractionStatus)
+INDEX_STATUSES: tuple[str, ...] = get_args(IndexStatus)
+EXTRACTION_REASON_MAX = 500
 
 TITLE_MIN, TITLE_MAX = 4, 300
 DESCRIPTION_MIN, DESCRIPTION_MAX = 10, 10_000

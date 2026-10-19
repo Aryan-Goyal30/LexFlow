@@ -77,6 +77,37 @@ class Settings(BaseSettings):
         default="standard", alias="LEXFLOW_PASSWORD_HASH_PROFILE"
     )
 
+    # --- document processing (Phase 3) ----------------------------------------------
+    # Extraction runs in a child process that is stopped after this long.
+    extraction_timeout_seconds: int = Field(
+        default=120, gt=0, le=3600, alias="LEXFLOW_EXTRACTION_TIMEOUT_SECONDS"
+    )
+    # Larger documents are refused (failed, with the reason) rather than processed.
+    extraction_max_pages: int = Field(default=1000, gt=0, alias="LEXFLOW_EXTRACTION_MAX_PAGES")
+    extraction_max_text_bytes: int = Field(
+        default=5_000_000, gt=0, alias="LEXFLOW_EXTRACTION_MAX_TEXT_BYTES"
+    )
+    # A .docx is a ZIP archive: refuse archives that would unpack to more than this.
+    extraction_max_unpacked_bytes: int = Field(
+        default=200_000_000, gt=0, alias="LEXFLOW_EXTRACTION_MAX_UNPACKED_BYTES"
+    )
+    chunk_size: int = Field(default=1200, ge=200, le=10_000, alias="LEXFLOW_CHUNK_SIZE")
+    chunk_overlap: int = Field(default=200, ge=0, alias="LEXFLOW_CHUNK_OVERLAP")
+    # The worker: how often it looks for work, how long a claimed job is reserved
+    # for it (a crashed worker's job is taken over after this), and how many
+    # times a job is tried before it is marked failed.
+    worker_poll_seconds: float = Field(
+        default=2.0, gt=0, le=60, alias="LEXFLOW_WORKER_POLL_SECONDS"
+    )
+    worker_lease_seconds: int = Field(default=300, gt=0, alias="LEXFLOW_WORKER_LEASE_SECONDS")
+    worker_max_attempts: int = Field(default=3, ge=1, le=10, alias="LEXFLOW_WORKER_MAX_ATTEMPTS")
+    # Embeddings: "disabled" (default) stores chunks without vectors; "local" uses
+    # a model on this computer, which must first be downloaded explicitly with
+    # `python -m lexflow.cli.models download`. Nothing is sent to other services.
+    embeddings: Literal["disabled", "local"] = Field(default="disabled", alias="LEXFLOW_EMBEDDINGS")
+    embedding_model: str = Field(default="BAAI/bge-small-en-v1.5", alias="LEXFLOW_EMBEDDING_MODEL")
+    model_dir: Path = Field(default=Path("var/models"), alias="LEXFLOW_MODEL_DIR")
+
     @field_validator("timezone")
     @classmethod
     def _known_timezone(cls, value: str) -> str:
@@ -86,7 +117,7 @@ class Settings(BaseSettings):
             raise ValueError(f"unknown time zone: {value}") from exc
         return value
 
-    @field_validator("upload_dir")
+    @field_validator("upload_dir", "model_dir")
     @classmethod
     def _absolute_upload_dir(cls, value: Path) -> Path:
         # Relative paths are relative to server/, not to the current directory.
@@ -102,6 +133,13 @@ class Settings(BaseSettings):
         # S105: "test-fast" names a hashing profile, it is not a password.
         if self.password_hash_profile == "test-fast" and self.env != "test":  # noqa: S105
             raise ValueError("LEXFLOW_PASSWORD_HASH_PROFILE=test-fast is only allowed in tests")
+        if self.worker_lease_seconds <= self.extraction_timeout_seconds:
+            raise ValueError(
+                "LEXFLOW_WORKER_LEASE_SECONDS must be longer than "
+                "LEXFLOW_EXTRACTION_TIMEOUT_SECONDS"
+            )
+        if self.chunk_overlap >= self.chunk_size // 2:
+            raise ValueError("LEXFLOW_CHUNK_OVERLAP must be less than half of LEXFLOW_CHUNK_SIZE")
         return self
 
     @property

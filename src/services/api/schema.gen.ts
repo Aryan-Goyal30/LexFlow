@@ -1373,6 +1373,8 @@ export interface components {
              * @description When it was shared with the client (their portal shows it); null if not.
              */
             sharedWithClientAt: string | null;
+            /** @description Text extraction; null for records without a stored file. */
+            processing: components["schemas"]["DocumentProcessingOut"] | null;
             /** Issample */
             isSample: boolean;
             /**
@@ -1425,8 +1427,52 @@ export interface components {
              * @description When it was shared with the client (their portal shows it); null if not.
              */
             sharedWithClientAt: string | null;
+            /** @description Text extraction; null for records without a stored file. */
+            processing: components["schemas"]["DocumentProcessingOut"] | null;
             /** Issample */
             isSample: boolean;
+        };
+        /**
+         * DocumentProcessingOut
+         * @description Text extraction of a stored document (Phase 3).
+         */
+        DocumentProcessingOut: {
+            /**
+             * Status
+             * @description queued, processing, ready, failed (with a reason) or unsupported.
+             * @enum {string}
+             */
+            status: "queued" | "processing" | "ready" | "failed" | "unsupported";
+            /**
+             * Reasoncode
+             * @description Why it failed or is unsupported.
+             */
+            reasonCode: string | null;
+            /** Reason */
+            reason: string | null;
+            /**
+             * Pagecount
+             * @description PDFs only; null for documents without pages.
+             */
+            pageCount: number | null;
+            /**
+             * Sectioncount
+             * @description Pages, or parts of a document without pages.
+             */
+            sectionCount: number | null;
+            /** Chunkcount */
+            chunkCount: number | null;
+            /**
+             * Indexstatus
+             * @description Search indexing (embeddings): disabled unless configured.
+             * @enum {string}
+             */
+            indexStatus: "disabled" | "pending" | "indexed" | "failed";
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
         };
         /**
          * FieldError

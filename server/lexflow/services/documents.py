@@ -18,7 +18,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -27,6 +27,7 @@ from starlette.datastructures import UploadFile
 
 from lexflow.errors import ProblemError
 from lexflow.models import Document
+from lexflow.services import extraction_queue
 from lexflow.services.cases import get_case
 from lexflow.services.formatting import format_file_size
 from lexflow.services.uploads import (
@@ -79,6 +80,7 @@ def upload_document(
     max_bytes: int,
     today: date,
     uploaded_by: uuid.UUID | None = None,
+    now: datetime | None = None,
 ) -> uuid.UUID:
     """Validate and store one uploaded file on a case. Commits. Returns the document id.
 
@@ -150,6 +152,12 @@ def upload_document(
             # A concurrent upload took the same name between the check and here.
             session.rollback()
             raise _duplicate(name) from None
+        # Its text is extracted in the background (or it is marked unsupported),
+        # in the same transaction: a stored file always has a job.
+        extraction_queue.queue(
+            session, document, requested_by=uploaded_by, now=now or datetime.now(UTC)
+        )
+        session.flush()
 
         try:
             storage.put(key, staged_path)

@@ -26,7 +26,7 @@ from lexflow.authz import Action
 from lexflow.clock import get_now, get_today
 from lexflow.db import get_session
 from lexflow.errors import FieldError, ProblemError, problem_responses
-from lexflow.models import Document, User
+from lexflow.models import Document, DocumentExtraction, User
 from lexflow.schemas import DeletedDocumentOut, DocumentOut
 from lexflow.services import cases as case_service
 from lexflow.services import documents as service
@@ -104,6 +104,7 @@ async def upload_document(
     audit: AuditLog = Depends(get_audit_log),
     limit: int = Depends(get_upload_limit),
     today: date = Depends(get_today),
+    now: datetime = Depends(get_now),
 ) -> DocumentOut:
     """Attach one file to a case.
 
@@ -143,6 +144,7 @@ async def upload_document(
             limit,
             today,
             user.id,
+            now,
         )
     document = service.get_document(session, document_id)
     audit.record(
@@ -154,7 +156,9 @@ async def upload_document(
         details={"sizeBytes": document.size_bytes, "type": document.document_type},
     )
     response.headers["Location"] = f"/api/documents/{document_id}"
-    return case_service.document_out(document, {user.id: user})
+    return case_service.document_out(
+        document, {user.id: user}, session.get(DocumentExtraction, document.id)
+    )
 
 
 def _content_disposition(document: Document, inline: bool) -> str:
@@ -331,7 +335,7 @@ def _set_shared(
             case_id=case.id,
         )
     users = case_service.users_by_id(session, [document.uploaded_by_id])
-    return case_service.document_out(document, users)
+    return case_service.document_out(document, users, session.get(DocumentExtraction, document.id))
 
 
 @router.get(
@@ -357,7 +361,8 @@ def list_deleted_documents(
     users = case_service.users_by_id(
         session, [d.uploaded_by_id for d in documents] + [d.deleted_by_id for d in documents]
     )
-    return [case_service.deleted_document_out(d, users) for d in documents]
+    jobs = case_service.extractions_for(session, (d.id for d in documents))
+    return [case_service.deleted_document_out(d, users, jobs.get(d.id)) for d in documents]
 
 
 @router.post(
@@ -394,4 +399,4 @@ def restore_document(
             case_id=case.id,
         )
     users = case_service.users_by_id(session, [document.uploaded_by_id])
-    return case_service.document_out(document, users)
+    return case_service.document_out(document, users, session.get(DocumentExtraction, document.id))

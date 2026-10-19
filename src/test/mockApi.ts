@@ -24,6 +24,7 @@ import type {
   CaseDocument,
   CaseSummary,
   DeletedDocument,
+  DocumentProcessing,
   HearingChanges,
   HearingInput,
   Client,
@@ -237,6 +238,7 @@ function initialState(): State {
           downloadUrl: null,
           uploadedBy: null,
           sharedWithClientAt: null,
+          processing: null,
           isSample: true,
         })),
       ),
@@ -403,6 +405,46 @@ function portalSummary(c: StoredCase) {
     openedOn: c.openedOn,
     nextHearing: c.nextHearing,
   };
+}
+
+const EXTRACTABLE = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+]);
+
+/** What the server reports right after an upload (its reasons, word for word). */
+function initialProcessing(contentType: string): DocumentProcessing {
+  const base = {
+    reasonCode: null,
+    reason: null,
+    pageCount: null,
+    sectionCount: null,
+    chunkCount: null,
+    indexStatus: 'disabled' as const,
+    updatedAt: new Date().toISOString(),
+  };
+  if (EXTRACTABLE.has(contentType)) return { ...base, status: 'queued' };
+  return {
+    ...base,
+    status: 'unsupported',
+    reasonCode: 'unsupported-type',
+    reason: contentType.startsWith('image/')
+      ? 'Text is not extracted from images (OCR is not available).'
+      : 'Text is not extracted from old Word (.doc) files. Save it as .docx and upload it again to make its text available.',
+  };
+}
+
+/** Move a document's processing on, as the worker would (tests only). */
+export function mockSetProcessing(documentId: string, change: Partial<DocumentProcessing>): void {
+  for (const c of state.cases) {
+    const doc = c.documents.find((d) => d.id === documentId);
+    if (doc?.processing) {
+      doc.processing = { ...doc.processing, ...change, updatedAt: new Date().toISOString() };
+      return;
+    }
+  }
+  throw new Error(`no processed document ${documentId}`);
 }
 
 const caseArchived = () =>
@@ -1246,6 +1288,7 @@ export const handlers = [
       downloadUrl: `/api/documents/${id}/download`,
       uploadedBy: currentActor(),
       sharedWithClientAt: null,
+      processing: initialProcessing(kind.contentType),
       isSample: false,
     };
     state.files.set(id, { bytes, contentType: kind.contentType });

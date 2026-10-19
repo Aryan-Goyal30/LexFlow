@@ -20,7 +20,16 @@ from lexflow.audit import AuditLog
 from lexflow.authz import Action, Relation
 from lexflow.domain import ADMINISTRATOR, ADVOCATE, HEARING_SCHEDULED
 from lexflow.errors import FieldError, ProblemError
-from lexflow.models import Case, CaseMember, Client, Document, Hearing, TimelineEvent, User
+from lexflow.models import (
+    Case,
+    CaseMember,
+    Client,
+    Document,
+    DocumentExtraction,
+    Hearing,
+    TimelineEvent,
+    User,
+)
 from lexflow.schemas import (
     ActorOut,
     CaseCreate,
@@ -30,6 +39,7 @@ from lexflow.schemas import (
     CaseUpdate,
     DeletedDocumentOut,
     DocumentOut,
+    DocumentProcessingOut,
     HearingOut,
     HearingSchedule,
     ScheduledHearingOut,
@@ -176,7 +186,43 @@ def actor_out(users: Mapping[uuid.UUID, User], user_id: uuid.UUID | None) -> Act
     return ActorOut(id=user.id, name=user.name) if user is not None else None
 
 
-def _document_fields(document: Document, users: Mapping[uuid.UUID, User]) -> dict[str, Any]:
+def extractions_for(
+    session: Session, document_ids: Iterable[uuid.UUID]
+) -> dict[uuid.UUID, DocumentExtraction]:
+    """The processing jobs of these documents, by document id."""
+    wanted = set(document_ids)
+    if not wanted:
+        return {}
+    return {
+        job.document_id: job
+        for job in session.scalars(
+            select(DocumentExtraction).where(DocumentExtraction.document_id.in_(wanted))
+        )
+    }
+
+
+def processing_out(job: DocumentExtraction | None) -> DocumentProcessingOut | None:
+    if job is None:
+        return None
+    return DocumentProcessingOut.model_validate(
+        {
+            "status": job.status,
+            "reason_code": job.reason_code,
+            "reason": job.reason,
+            "page_count": job.page_count,
+            "section_count": job.section_count,
+            "chunk_count": job.chunk_count,
+            "index_status": job.index_status,
+            "updated_at": job.updated_at,
+        }
+    )
+
+
+def _document_fields(
+    document: Document,
+    users: Mapping[uuid.UUID, User],
+    job: DocumentExtraction | None = None,
+) -> dict[str, Any]:
     size = (
         format_file_size(document.size_bytes)
         if document.size_bytes is not None
@@ -194,18 +240,27 @@ def _document_fields(document: Document, users: Mapping[uuid.UUID, User]) -> dic
         "download_url": (f"/api/documents/{document.id}/download" if document.has_file else None),
         "uploaded_by": actor_out(users, document.uploaded_by_id),
         "shared_with_client_at": document.shared_with_client_at,
+        "processing": processing_out(job),
         "is_sample": document.is_sample,
     }
 
 
-def document_out(document: Document, users: Mapping[uuid.UUID, User]) -> DocumentOut:
-    return DocumentOut.model_validate(_document_fields(document, users))
+def document_out(
+    document: Document,
+    users: Mapping[uuid.UUID, User],
+    job: DocumentExtraction | None = None,
+) -> DocumentOut:
+    return DocumentOut.model_validate(_document_fields(document, users, job))
 
 
-def deleted_document_out(document: Document, users: Mapping[uuid.UUID, User]) -> DeletedDocumentOut:
+def deleted_document_out(
+    document: Document,
+    users: Mapping[uuid.UUID, User],
+    job: DocumentExtraction | None = None,
+) -> DeletedDocumentOut:
     return DeletedDocumentOut.model_validate(
         {
-            **_document_fields(document, users),
+            **_document_fields(document, users, job),
             "deleted_at": document.deleted_at,
             "deleted_by": actor_out(users, document.deleted_by_id),
         }
@@ -245,6 +300,7 @@ def get_case_detail(session: Session, case_id: uuid.UUID, today: date, rel: Rela
         session, [e.actor_id for e in case.timeline] + [d.uploaded_by_id for d in live]
     )
 
+    jobs = extractions_for(session, (d.id for d in live))
     # Newest first: by upload date, then when the record was created, then name.
     documents = sorted(
         live,
@@ -265,7 +321,7 @@ def get_case_detail(session: Session, case_id: uuid.UUID, today: date, rel: Rela
         {
             **_summary_fields(*row),
             "description": case.description,
-            "documents": [document_out(d, actors) for d in documents],
+            "documents": [document_out(d, actors, jobs.get(d.id)) for d in documents],
             "hearings": [HearingOut.model_validate(_hearing_fields(h)) for h in hearings],
             "timeline": [
                 TimelineEventOut(

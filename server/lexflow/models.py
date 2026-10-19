@@ -17,12 +17,14 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     MetaData,
     String,
     Text,
     Time,
+    UniqueConstraint,
     Uuid,
     func,
     text,
@@ -36,7 +38,10 @@ from lexflow.domain import (
     CASE_STATUSES,
     DESCRIPTION_MIN,
     DOCUMENT_NAME_MAX,
+    EXTRACTION_REASON_MAX,
+    EXTRACTION_STATUSES,
     HEARING_SCHEDULED,
+    INDEX_STATUSES,
     PRACTICE_AREAS,
     TITLE_MAX,
     TITLE_MIN,
@@ -436,6 +441,125 @@ class Document(Base):
     @property
     def has_file(self) -> bool:
         return self.storage_key is not None
+
+
+class DocumentExtraction(Base):
+    """The text-extraction job of one stored document, and its outcome.
+
+    Created when a file is uploaded (or re-queued). The worker
+    (``python -m lexflow.worker``) claims ``queued`` jobs; a claim is a lease,
+    so a job whose worker died is taken over once the lease has expired.
+    ``failed`` and ``unsupported`` always carry a reason. ``index_status`` says
+    whether the chunks have embeddings (``disabled`` unless configured).
+    """
+
+    __tablename__ = "document_extractions"
+    __table_args__ = (
+        CheckConstraint(_in_list("status", EXTRACTION_STATUSES), name="status_valid"),
+        CheckConstraint(_in_list("index_status", INDEX_STATUSES), name="index_status_valid"),
+        CheckConstraint(
+            "(status IN ('failed', 'unsupported')) = (reason_code IS NOT NULL)",
+            name="reason_matches_status",
+        ),
+        CheckConstraint(
+            f"reason IS NULL OR char_length(reason) <= {EXTRACTION_REASON_MAX}",
+            name="reason_length",
+        ),
+        CheckConstraint(
+            "(status = 'processing') = (lease_expires_at IS NOT NULL)",
+            name="lease_matches_status",
+        ),
+        CheckConstraint("attempts >= 0", name="attempts_non_negative"),
+        Index("ix_document_extractions_status_queued_at", "status", "queued_at"),
+    )
+
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True
+    )
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    # A stable code (for example "no-text-layer") and a message for people.
+    reason_code: Mapped[str | None] = mapped_column(Text)
+    reason: Mapped[str | None] = mapped_column(Text)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    queued_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    worker_id: Mapped[str | None] = mapped_column(Text)
+    requested_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    # What produced the text, e.g. "pypdf 6.1.3", and its size.
+    extractor: Mapped[str | None] = mapped_column(Text)
+    page_count: Mapped[int | None] = mapped_column(Integer)  # PDFs only
+    section_count: Mapped[int | None] = mapped_column(Integer)
+    char_count: Mapped[int | None] = mapped_column(Integer)
+    chunk_count: Mapped[int | None] = mapped_column(Integer)
+    index_status: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'disabled'")
+    )
+    index_reason: Mapped[str | None] = mapped_column(Text)
+    embedding_model: Mapped[str | None] = mapped_column(Text)
+    indexed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class DocumentSection(Base):
+    """Extracted text of one PDF page, or one numbered part of a document
+    without pages (Word, text). ``page_number`` is null when there are no pages:
+    page numbers are never invented."""
+
+    __tablename__ = "document_sections"
+    __table_args__ = (
+        CheckConstraint("number >= 1", name="number_positive"),
+        CheckConstraint("page_number IS NULL OR page_number >= 1", name="page_number_positive"),
+    )
+
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True
+    )
+    number: Mapped[int] = mapped_column(Integer, primary_key=True)
+    page_number: Mapped[int | None] = mapped_column(Integer)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class DocumentChunk(Base):
+    """A passage of a section's text. ``char_start``/``char_end`` locate it in
+    the section's text exactly (``text`` is that slice); chunks never cross a
+    section, so each has one page (or none)."""
+
+    __tablename__ = "document_chunks"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["document_id", "section_number"],
+            ["document_sections.document_id", "document_sections.number"],
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint("document_id", "number"),
+        CheckConstraint("number >= 1", name="number_positive"),
+        CheckConstraint("char_start >= 0 AND char_end > char_start", name="offsets_valid"),
+        CheckConstraint("char_length(text) = char_end - char_start", name="text_matches_offsets"),
+        CheckConstraint("content_sha256 ~ '^[0-9a-f]{64}$'", name="content_sha256_format"),
+        CheckConstraint("page_number IS NULL OR page_number >= 1", name="page_number_positive"),
+        Index("ix_document_chunks_document_id_section_number", "document_id", "section_number"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
+    )
+    number: Mapped[int] = mapped_column(Integer, nullable=False)
+    section_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    page_number: Mapped[int | None] = mapped_column(Integer)
+    char_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    char_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    content_sha256: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = _created_at()
 
 
 class CaseNumberCounter(Base):

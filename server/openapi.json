@@ -3818,6 +3818,17 @@
             "title": "Sharedwithclientat",
             "description": "When it was shared with the client (their portal shows it); null if not."
           },
+          "processing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DocumentProcessingOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Text extraction; null for records without a stored file."
+          },
           "isSample": {
             "type": "boolean",
             "title": "Issample"
@@ -3852,6 +3863,7 @@
           "downloadUrl",
           "uploadedBy",
           "sharedWithClientAt",
+          "processing",
           "isSample",
           "deletedAt",
           "deletedBy"
@@ -3947,6 +3959,17 @@
             "title": "Sharedwithclientat",
             "description": "When it was shared with the client (their portal shows it); null if not."
           },
+          "processing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DocumentProcessingOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Text extraction; null for records without a stored file."
+          },
           "isSample": {
             "type": "boolean",
             "title": "Issample"
@@ -3965,9 +3988,113 @@
           "downloadUrl",
           "uploadedBy",
           "sharedWithClientAt",
+          "processing",
           "isSample"
         ],
         "title": "DocumentOut"
+      },
+      "DocumentProcessingOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "processing",
+              "ready",
+              "failed",
+              "unsupported"
+            ],
+            "title": "Status",
+            "description": "queued, processing, ready, failed (with a reason) or unsupported."
+          },
+          "reasonCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoncode",
+            "description": "Why it failed or is unsupported."
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "pageCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagecount",
+            "description": "PDFs only; null for documents without pages."
+          },
+          "sectionCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sectioncount",
+            "description": "Pages, or parts of a document without pages."
+          },
+          "chunkCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunkcount"
+          },
+          "indexStatus": {
+            "type": "string",
+            "enum": [
+              "disabled",
+              "pending",
+              "indexed",
+              "failed"
+            ],
+            "title": "Indexstatus",
+            "description": "Search indexing (embeddings): disabled unless configured."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "reasonCode",
+          "reason",
+          "pageCount",
+          "sectionCount",
+          "chunkCount",
+          "indexStatus",
+          "updatedAt"
+        ],
+        "title": "DocumentProcessingOut",
+        "description": "Text extraction of a stored document (Phase 3)."
       },
       "FieldError": {
         "properties": {

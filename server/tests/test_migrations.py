@@ -27,6 +27,9 @@ APP_TABLES = {
     "sessions",
     "audit_events",
     "case_members",
+    "document_extractions",
+    "document_sections",
+    "document_chunks",
 }
 
 

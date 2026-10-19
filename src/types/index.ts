@@ -57,6 +57,8 @@ export type CaseChanges = Schemas['CaseUpdate'];
 export type TeamMember = Schemas['TeamMemberOut'];
 /** A deleted document, kept until restored or purged by an operator. */
 export type DeletedDocument = Schemas['DeletedDocumentOut'];
+/** Text extraction of a stored document; null for records without a file. */
+export type DocumentProcessing = Schemas['DocumentProcessingOut'];
 export type StaffMember = Schemas['StaffOut'];
 export type ArchivedFilter = 'exclude' | 'include' | 'only';
 /** Body of `POST /api/cases`. */

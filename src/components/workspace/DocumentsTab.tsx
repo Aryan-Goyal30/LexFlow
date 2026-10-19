@@ -8,6 +8,7 @@ import { Card, CardBody, CardHeader } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { formatDate } from '../../lib/format';
 import { DeletedDocumentsCard } from './DeletedDocumentsCard';
+import { ProcessingStatus } from './ProcessingStatus';
 import {
   ACCEPT_ATTRIBUTE,
   ACCEPTED_TYPES_LABEL,
@@ -281,6 +282,7 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
                           Shared with client
                         </p>
                       )}
+                      <ProcessingStatus processing={doc.processing} />
                     </div>
                     {doc.hasFile && (
                       <a

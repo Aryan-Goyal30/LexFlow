@@ -41,8 +41,21 @@ export function useCaseList(archived: ArchivedFilter = 'exclude') {
   });
 }
 
+/** How often a case is refreshed while the server is extracting a document's text. */
+export const PROCESSING_POLL_MS = 3000;
+
 export function useCase(caseId: string) {
-  return useQuery({ queryKey: queryKeys.case(caseId), queryFn: () => lexflowApi.getCase(caseId) });
+  return useQuery({
+    queryKey: queryKeys.case(caseId),
+    queryFn: () => lexflowApi.getCase(caseId),
+    // Follow text extraction until no document is waiting or in progress.
+    refetchInterval: (query) =>
+      query.state.data?.documents.some(
+        (d) => d.processing?.status === 'queued' || d.processing?.status === 'processing',
+      )
+        ? PROCESSING_POLL_MS
+        : false,
+  });
 }
 
 export function useClients() {

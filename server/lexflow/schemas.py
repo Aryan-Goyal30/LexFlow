@@ -26,7 +26,9 @@ from lexflow.domain import (
     AuditOutcome,
     CasePriority,
     CaseStatus,
+    ExtractionStatus,
     HearingStatus,
+    IndexStatus,
     PracticeArea,
     UserRole,
 )
@@ -401,6 +403,23 @@ class TimelineEventOut(ApiModel):
     is_sample: bool
 
 
+class DocumentProcessingOut(ApiModel):
+    """Text extraction of a stored document (Phase 3)."""
+
+    status: ExtractionStatus = Field(
+        description="queued, processing, ready, failed (with a reason) or unsupported."
+    )
+    reason_code: str | None = Field(description="Why it failed or is unsupported.")
+    reason: str | None
+    page_count: int | None = Field(description="PDFs only; null for documents without pages.")
+    section_count: int | None = Field(description="Pages, or parts of a document without pages.")
+    chunk_count: int | None
+    index_status: IndexStatus = Field(
+        description="Search indexing (embeddings): disabled unless configured."
+    )
+    updated_at: datetime
+
+
 class DocumentOut(ApiModel):
     id: uuid.UUID
     name: str
@@ -416,6 +435,9 @@ class DocumentOut(ApiModel):
     )
     shared_with_client_at: datetime | None = Field(
         description="When it was shared with the client (their portal shows it); null if not."
+    )
+    processing: DocumentProcessingOut | None = Field(
+        description="Text extraction; null for records without a stored file."
     )
     is_sample: bool
 
