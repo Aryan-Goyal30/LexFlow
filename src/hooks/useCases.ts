@@ -254,3 +254,21 @@ export function usePortalCase(caseId: string) {
     queryFn: () => lexflowApi.portalCase(caseId),
   });
 }
+
+/** One page (or part) of a document's extracted text. */
+export function useDocumentText(documentId: string, section: number) {
+  return useQuery({
+    queryKey: ['documents', documentId, 'text', section],
+    queryFn: () => lexflowApi.documentText(documentId, section),
+    retry: false,
+  });
+}
+
+/** Ask the server to extract a document's text again (after a failure). */
+export function useReprocessDocument(caseId: string) {
+  const refresh = useRefreshCase(caseId);
+  return useMutation({
+    mutationFn: (documentId: string) => lexflowApi.reprocessDocument(documentId),
+    onSettled: refresh,
+  });
+}

@@ -171,6 +171,8 @@ interface State {
   sessionUserId: string | null;
   /** Audit events the tests add (the fake API does not record its own). */
   audit: AuditEvent[];
+  /** Extracted text by document id, set by tests (`mockSetText`). */
+  texts: Map<string, { pageNumbers: boolean; sections: string[] }>;
 }
 
 const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -296,6 +298,7 @@ function initialState(): State {
     users,
     sessionUserId: null,
     audit: [],
+    texts: new Map(),
   };
 }
 
@@ -436,6 +439,24 @@ function initialProcessing(contentType: string): DocumentProcessing {
 }
 
 /** Move a document's processing on, as the worker would (tests only). */
+/**
+ * Give a document extracted text, as the worker would: one string per PDF
+ * page (``pages``) or per part of a document without pages (tests only).
+ */
+export function mockSetText(
+  documentId: string,
+  sections: string[],
+  { pages = true }: { pages?: boolean } = {},
+): void {
+  state.texts.set(documentId, { pageNumbers: pages, sections });
+  mockSetProcessing(documentId, {
+    status: 'ready',
+    pageCount: pages ? sections.length : null,
+    sectionCount: sections.length,
+    chunkCount: sections.length,
+  });
+}
+
 export function mockSetProcessing(documentId: string, change: Partial<DocumentProcessing>): void {
   for (const c of state.cases) {
     const doc = c.documents.find((d) => d.id === documentId);
@@ -1319,6 +1340,74 @@ export const handlers = [
       });
     }
     return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get('*/api/documents/:id/text', ({ params, request }) => {
+    const id = String(params.id);
+    const owner = state.cases.find((c) => c.documents.some((d) => d.id === id));
+    const rel = owner ? relationTo(owner, currentMockUser()) : 'none';
+    if (!owner || !allows(rel, 'view')) {
+      return problem(404, 'document-not-found', 'No document with this id exists.');
+    }
+    const doc = owner.documents.find((d) => d.id === id);
+    const text = state.texts.get(id);
+    if (!doc?.processing || doc.processing.status !== 'ready' || !text) {
+      const reason = !doc?.processing
+        ? 'This record has no stored file, so it has no text.'
+        : doc.processing.status === 'failed'
+          ? `Text extraction failed: ${doc.processing.reason}`
+          : (doc.processing.reason ??
+            'The text has not been extracted yet. It is waiting to be processed.');
+      return problem(409, 'text-not-available', reason);
+    }
+    const number = Number(new URL(request.url).searchParams.get('section') ?? 1);
+    if (number < 1 || number > text.sections.length) {
+      return problem(404, 'section-not-found', `This document has ${text.sections.length} parts.`);
+    }
+    return HttpResponse.json({
+      documentId: id,
+      documentName: doc.name,
+      extractor: 'pypdf 6.21.1',
+      pageCount: text.pageNumbers ? text.sections.length : null,
+      sectionCount: text.sections.length,
+      charCount: text.sections.join('').length,
+      extractedAt: '2026-10-20T09:00:00Z',
+      section: {
+        number,
+        pageNumber: text.pageNumbers ? number : null,
+        text: text.sections[number - 1],
+        chunkCount: 1,
+      },
+    });
+  }),
+
+  http.post('*/api/documents/:id/reprocess', ({ params }) => {
+    const id = String(params.id);
+    const owner = state.cases.find((c) => c.documents.some((d) => d.id === id));
+    const rel = owner ? relationTo(owner, currentMockUser()) : 'none';
+    if (!owner || !allows(rel, 'view')) {
+      return problem(404, 'document-not-found', 'No document with this id exists.');
+    }
+    if (!allows(rel, 'upload')) return forbidden();
+    if (owner.archivedAt !== null) return caseArchived();
+    const doc = owner.documents.find((d) => d.id === id);
+    if (!doc?.processing) {
+      return problem(422, 'no-file', 'This record has no stored file, so it has no text.');
+    }
+    if (doc.processing.status === 'queued' || doc.processing.status === 'processing') {
+      return problem(409, 'already-processing', 'The text is already waiting to be extracted.');
+    }
+    if (doc.processing.status === 'unsupported') {
+      return problem(409, 'unsupported', doc.processing.reason ?? 'Not extracted.');
+    }
+    doc.processing = {
+      ...doc.processing,
+      status: 'queued',
+      reasonCode: null,
+      reason: null,
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json(doc);
   }),
 
   http.post('*/api/documents/:id/:change', ({ params }) => {

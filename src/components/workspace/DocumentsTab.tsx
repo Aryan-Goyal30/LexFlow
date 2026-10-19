@@ -1,7 +1,14 @@
 import { useRef, useState, type DragEvent } from 'react';
 import { ExternalLink, FileText, Loader2, Share2, Trash2, UploadCloud } from 'lucide-react';
 import type { Case, CaseDocument } from '../../types';
-import { useDeleteDocument, useShareDocument, useUploadDocument } from '../../hooks/useCases';
+import {
+  useDeleteDocument,
+  useReprocessDocument,
+  useShareDocument,
+  useUploadDocument,
+} from '../../hooks/useCases';
+import { Link } from 'react-router-dom';
+import { documentTextPath } from '../../lib/paths';
 import { ApiError, errorMessage } from '../../services/api/client';
 import { documentDownloadUrl } from '../../services/api/lexflow';
 import { Card, CardBody, CardHeader } from '../ui/Card';
@@ -46,6 +53,7 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
   const upload = useUploadDocument(c.id);
   const remove = useDeleteDocument(c.id);
   const share = useShareDocument(c.id);
+  const reprocess = useReprocessDocument(c.id);
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -149,6 +157,19 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
   };
 
   const { canUploadDocuments, canDeleteDocuments, canShareDocuments } = c.permissions;
+
+  const retryExtraction = (doc: CaseDocument) => {
+    setNotice(null);
+    setRemoveError(doc.id, null);
+    reprocess.mutate(doc.id, {
+      onSuccess: () => setNotice(`${doc.name} will be processed again.`),
+      onError: (error) =>
+        setRemoveError(
+          doc.id,
+          `${doc.name}: the text was not queued again. ${errorMessage(error)}`,
+        ),
+    });
+  };
 
   const toggleShared = (doc: CaseDocument) => {
     setNotice(null);
@@ -283,6 +304,26 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
                         </p>
                       )}
                       <ProcessingStatus processing={doc.processing} />
+                      {doc.processing?.status === 'ready' && (
+                        <Link
+                          to={documentTextPath(c.id, doc.id)}
+                          className="mt-0.5 inline-block text-xs font-medium text-brand-700 underline-offset-2 hover:underline"
+                          aria-label={`View the text of ${doc.name}`}
+                        >
+                          View text
+                        </Link>
+                      )}
+                      {doc.processing?.status === 'failed' && canUploadDocuments && (
+                        <button
+                          type="button"
+                          onClick={() => retryExtraction(doc)}
+                          disabled={reprocess.isPending}
+                          className="mt-0.5 text-xs font-medium text-brand-700 underline-offset-2 hover:underline disabled:opacity-60"
+                          aria-label={`Try extracting the text of ${doc.name} again`}
+                        >
+                          Try again
+                        </button>
+                      )}
                     </div>
                     {doc.hasFile && (
                       <a

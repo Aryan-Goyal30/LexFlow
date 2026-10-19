@@ -59,6 +59,8 @@ export type TeamMember = Schemas['TeamMemberOut'];
 export type DeletedDocument = Schemas['DeletedDocumentOut'];
 /** Text extraction of a stored document; null for records without a file. */
 export type DocumentProcessing = Schemas['DocumentProcessingOut'];
+/** One page (or part) of a document's extracted text. */
+export type DocumentText = Schemas['DocumentTextOut'];
 export type StaffMember = Schemas['StaffOut'];
 export type ArchivedFilter = 'exclude' | 'include' | 'only';
 /** Body of `POST /api/cases`. */

@@ -79,7 +79,7 @@ checked before use.
 | P3-M1 | Schema (0008), queue (claim, lease, outcome), status in API/UI | done |
 | P3-M2 | Extractors (PDF, DOCX, TXT) with limits, in a child process; fixtures | done |
 | P3-M3 | Page-aware chunking and the worker loop | done |
-| P3-M4 | Text viewer, retry, live status, audit | pending |
+| P3-M4 | Text viewer, retry, live status, audit | done |
 | P3-M5 | pgvector (gated), embeddings provider, model command | pending |
 | P3-M6 | Hardening, backfill command, docs, regression, migration gate | pending |
 
@@ -193,7 +193,44 @@ occurrence shows its assertion.
 | `pytest` (server, full) | **554 passed** (output saved) |
 | ruff, ruff format, mypy (Windows and `--platform linux`) | clean (97 source files) |
 
+## P3-M4 — Text viewer, retry, audit (done)
+
+- API: `GET /api/documents/{id}/text?section=n` (staff who may view the case;
+  one page or part at a time; 409 `text-not-available` with the reason until
+  ready; 404 `section-not-found`; deleted documents 404; each read audited as
+  `document.text_viewed` with the section number only, never text).
+  `POST /api/documents/{id}/reprocess` (staff who may add documents; not on
+  archived cases; 409 `already-processing` / `unsupported`, 422 `no-file`;
+  audited as `document.reprocessed` with the previous status). Client accounts
+  are refused by the existing staff-route sweeps.
+- UI: `/app/cases/:caseId/documents/:documentId/text` — page or part N of M,
+  previous/next, "Go to page", a plain message for empty (scanned) pages, the
+  extractor name and a reminder to check against the original. Documents tab:
+  "View text" only when ready; "Try again" only for failed documents and only
+  for those who may upload. The case refreshes every 3 s while anything is
+  waiting or processing.
+- E2E: global setup now also starts the real worker (`scripts/e2e.py work
+  --run-id …`) against the e2e database; teardown stops it (checked: no
+  leftover processes, port 8001 free). `e2e/document-text.spec.ts` uploads the
+  committed fictional fixtures: a 3-page PDF read page by page (UI and API),
+  a scan that fails visibly and fails again honestly after a retry, client 403
+  and outsider 404, deleted 404.
+- Mutation checks (restored byte-for-byte): text served before ready, retry
+  with view permission only, audit record removed, retry while queued, retry
+  button without upload permission, "View text" for non-ready documents. The
+  last one first survived; an assertion was added and it is now caught. All six
+  caught.
+
+| Command | Result |
+|---|---|
+| `pytest` (server, full) | **574 passed** (output saved) |
+| ruff, ruff format, mypy (Windows and `--platform linux`), OpenAPI drift | clean (107 source files) |
+| `npm run check` | exit 0, 16 test files (157 tests), API types in sync, build OK |
+| `npx playwright test` (real API + real worker) | **32 passed** |
+
 ---
 
-Checkpoint: P3-M3 committed (see `git log`). Next action: P3-M4 text viewer, retry,
-audit, worker in the E2E harness.
+Checkpoint: P3-M4 committed (see `git log`). Next action: P3-M5 — PostgreSQL
+image compatibility check for `pgvector/pgvector:pg17` (no change to `lexflow`
+without the full database safety procedure), migration 0009, embeddings
+provider (disabled by default), `lexflow.cli.models` command.

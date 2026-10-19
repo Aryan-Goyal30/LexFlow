@@ -9,6 +9,7 @@ import type {
   Case,
   CaseChanges,
   DeletedDocument,
+  DocumentText,
   HearingChanges,
   HearingInput,
   HearingRange,
@@ -72,6 +73,12 @@ export const lexflowApi = {
     apiFetch<Case>(`/cases/${id(caseId)}/team/${id(userId)}`, { method: 'DELETE' }),
 
   listStaff: () => apiFetch<StaffMember[]>('/staff'),
+
+  documentText: (documentId: string, section: number) =>
+    apiFetch<DocumentText>(`/documents/${id(documentId)}/text?section=${section}`),
+
+  reprocessDocument: (documentId: string) =>
+    apiFetch<CaseDocument>(`/documents/${id(documentId)}/reprocess`, { method: 'POST' }),
 
   listUsers: () => apiFetch<AdminUser[]>('/admin/users'),
 

@@ -13,7 +13,7 @@ from datetime import date, datetime
 from typing import BinaryIO
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
@@ -27,8 +27,9 @@ from lexflow.clock import get_now, get_today
 from lexflow.db import get_session
 from lexflow.errors import FieldError, ProblemError, problem_responses
 from lexflow.models import Document, DocumentExtraction, User
-from lexflow.schemas import DeletedDocumentOut, DocumentOut
+from lexflow.schemas import DeletedDocumentOut, DocumentOut, DocumentTextOut
 from lexflow.services import cases as case_service
+from lexflow.services import document_text, extraction_queue
 from lexflow.services import documents as service
 from lexflow.services.uploads import KINDS
 from lexflow.storage import Storage, get_storage
@@ -174,6 +175,82 @@ def _stream(handle: BinaryIO) -> Iterator[bytes]:
     with handle:
         while chunk := handle.read(READ_CHUNK):
             yield chunk
+
+
+@router.get(
+    "/documents/{document_id}/text",
+    response_model=DocumentTextOut,
+    responses=problem_responses(404, 409),
+)
+def read_document_text(
+    document_id: str,
+    section: int = Query(default=1, ge=1, description="The page (PDF) or part to read."),
+    user: User = Depends(require_user),
+    session: Session = Depends(get_session),
+    audit: AuditLog = Depends(get_audit_log),
+) -> DocumentTextOut:
+    """One page (or part) of a document's extracted text (staff on the case).
+
+    409 ``text-not-available`` (with the reason) until the text is ready;
+    404 for deleted documents, documents on cases you may not see, and pages
+    that do not exist. Each read is recorded in the audit log.
+    """
+    document, case, _ = authz.load_document(
+        session, user, service.parse_document_id(document_id), Action.VIEW, audit
+    )
+    result = document_text.read_section(session, document, section)
+    audit.record(
+        "document.text_viewed",
+        actor=user,
+        target_type="document",
+        target_id=document.id,
+        case_id=case.id,
+        details={"section": section},
+    )
+    return result
+
+
+@router.post(
+    "/documents/{document_id}/reprocess",
+    response_model=DocumentOut,
+    responses=problem_responses(403, 404, 409, 422),
+)
+def reprocess_document(
+    document_id: str,
+    user: User = Depends(require_user),
+    session: Session = Depends(get_session),
+    audit: AuditLog = Depends(get_audit_log),
+    now: datetime = Depends(get_now),
+) -> DocumentOut:
+    """Extract a document's text again: after a failure, or to refresh it.
+
+    For staff who may add documents to the case; not on archived cases.
+    409 while it is already waiting or being processed, or for file types that
+    are not extracted.
+    """
+    document, case, _ = authz.load_document(
+        session,
+        user,
+        service.parse_document_id(document_id),
+        Action.UPLOAD_DOCUMENT,
+        audit,
+        lock=True,
+    )
+    previous = session.get(DocumentExtraction, document.id, with_for_update=True)
+    document_text.can_reprocess(previous)
+    previous_status = previous.status if previous else None
+    job = extraction_queue.queue(session, document, requested_by=user.id, now=now)
+    session.commit()
+    audit.record(
+        "document.reprocessed",
+        actor=user,
+        target_type="document",
+        target_id=document.id,
+        case_id=case.id,
+        details={"previousStatus": previous_status or ""},
+    )
+    users = case_service.users_by_id(session, [document.uploaded_by_id])
+    return case_service.document_out(document, users, job)
 
 
 @router.get(

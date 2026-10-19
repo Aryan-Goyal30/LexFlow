@@ -6,6 +6,10 @@ export const HOME_PATH = '/app/cases';
 /** A case's workspace, and the page that edits its details. */
 export const casePath = (caseId: string) => `/app/cases/${encodeURIComponent(caseId)}`;
 export const editCasePath = (caseId: string) => `${casePath(caseId)}/edit`;
+/** The extracted text of a document, at one page (PDF) or part. */
+export const documentTextPath = (caseId: string, documentId: string, section = 1) =>
+  `${casePath(caseId)}/documents/${encodeURIComponent(documentId)}/text` +
+  (section > 1 ? `?section=${section}` : '');
 
 /** Clients: the list, adding one, one client, and opening a case for them. */
 export const CLIENTS_PATH = '/app/clients';

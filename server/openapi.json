@@ -1147,6 +1147,145 @@
         }
       }
     },
+    "/api/documents/{document_id}/text": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Read Document Text",
+        "description": "One page (or part) of a document's extracted text (staff on the case).\n\n409 ``text-not-available`` (with the reason) until the text is ready;\n404 for deleted documents, documents on cases you may not see, and pages\nthat do not exist. Each read is recorded in the audit log.",
+        "operationId": "read_document_text_api_documents__document_id__text_get",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page (PDF) or part to read.",
+              "default": 1,
+              "title": "Section"
+            },
+            "description": "The page (PDF) or part to read."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentTextOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{document_id}/reprocess": {
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Reprocess Document",
+        "description": "Extract a document's text again: after a failure, or to refresh it.\n\nFor staff who may add documents to the case; not on archived cases.\n409 while it is already waiting or being processed, or for file types that\nare not extracted.",
+        "operationId": "reprocess_document_api_documents__document_id__reprocess_post",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/documents/{document_id}/download": {
       "get": {
         "tags": [
@@ -4095,6 +4234,117 @@
         ],
         "title": "DocumentProcessingOut",
         "description": "Text extraction of a stored document (Phase 3)."
+      },
+      "DocumentTextOut": {
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Documentid"
+          },
+          "documentName": {
+            "type": "string",
+            "title": "Documentname"
+          },
+          "extractor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extractor",
+            "description": "What extracted the text, e.g. 'pypdf 6.21.1'."
+          },
+          "pageCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagecount",
+            "description": "PDFs only; null for documents without pages."
+          },
+          "sectionCount": {
+            "type": "integer",
+            "title": "Sectioncount"
+          },
+          "charCount": {
+            "type": "integer",
+            "title": "Charcount"
+          },
+          "extractedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extractedat"
+          },
+          "section": {
+            "$ref": "#/components/schemas/DocumentTextSectionOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "documentId",
+          "documentName",
+          "extractor",
+          "pageCount",
+          "sectionCount",
+          "charCount",
+          "extractedAt",
+          "section"
+        ],
+        "title": "DocumentTextOut",
+        "description": "One page (or part) of a document's extracted text."
+      },
+      "DocumentTextSectionOut": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number",
+            "description": "1 to sectionCount."
+          },
+          "pageNumber": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagenumber",
+            "description": "The PDF page; null for documents without pages."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Exactly as extracted; may be empty for a page without text."
+          },
+          "chunkCount": {
+            "type": "integer",
+            "title": "Chunkcount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "pageNumber",
+          "text",
+          "chunkCount"
+        ],
+        "title": "DocumentTextSectionOut"
       },
       "FieldError": {
         "properties": {

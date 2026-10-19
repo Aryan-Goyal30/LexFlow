@@ -8,6 +8,7 @@ import { CasesPage } from './pages/CasesPage';
 import { CaseWorkspacePage } from './pages/CaseWorkspacePage';
 import { NewCasePage } from './pages/NewCasePage';
 import { EditCasePage } from './pages/EditCasePage';
+import { DocumentTextPage } from './pages/DocumentTextPage';
 import { ClientsPage } from './pages/ClientsPage';
 import { HearingsPage } from './pages/HearingsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
@@ -33,6 +34,7 @@ export const routes: RouteObject[] = [
       { path: 'cases/new', element: <NewCasePage /> },
       { path: 'cases/:caseId', element: <CaseWorkspacePage /> },
       { path: 'cases/:caseId/edit', element: <EditCasePage /> },
+      { path: 'cases/:caseId/documents/:documentId/text', element: <DocumentTextPage /> },
       { path: 'hearings', element: <HearingsPage /> },
       { path: 'admin', element: <Navigate to="/app/admin/users" replace /> },
       { path: 'admin/users', element: <AdminUsersPage /> },

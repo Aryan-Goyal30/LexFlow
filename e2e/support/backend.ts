@@ -37,6 +37,9 @@ const STATE_DIR = path.join(ROOT, 'e2e', '.state');
 /** Which API process this run started: `{ pid, runId }`. */
 export const RECORD_FILE = path.join(STATE_DIR, 'api.json');
 const LOG_FILE = path.join(STATE_DIR, 'api.log');
+/** Which document worker this run started: `{ pid, runId }` (same identity rules). */
+export const WORKER_RECORD_FILE = path.join(STATE_DIR, 'worker.json');
+const WORKER_LOG_FILE = path.join(STATE_DIR, 'worker.log');
 const HEALTH_URL = `http://127.0.0.1:${API_PORT}/api/health`;
 
 export interface ApiRecord {
@@ -196,6 +199,8 @@ export function prepareDatabase(password: string): void {
 export async function clearStaleRecord(): Promise<void> {
   const outcome = await stopRecordedApi();
   if (outcome === 'stopped') console.log('Stopped an e2e API left running by an earlier run.');
+  const worker = await stopRecordedApi(WORKER_RECORD_FILE);
+  if (worker === 'stopped') console.log('Stopped an e2e worker left running by an earlier run.');
 }
 
 export async function startBackend(): Promise<void> {
@@ -248,6 +253,47 @@ export async function stopBackend(): Promise<void> {
   if (outcome === 'stopped') {
     await until(async () => !(await healthy()), `port ${API_PORT} to be free`, 15_000);
   }
+}
+
+/**
+ * Start the document worker (`e2e.py work`) against the e2e database. It has
+ * no port; it counts as started once the operating system shows our process,
+ * with its run id, still running after a moment.
+ */
+export async function startWorker(): Promise<void> {
+  mkdirSync(STATE_DIR, { recursive: true });
+  const runId = randomBytes(16).toString('hex');
+  const log = openSync(WORKER_LOG_FILE, 'w');
+  const child = spawn(python(), ['scripts/e2e.py', 'work', '--run-id', runId], {
+    cwd: SERVER,
+    stdio: ['ignore', log, log],
+    detached: true,
+    windowsHide: true,
+  });
+  closeSync(log);
+  let failure: string | null = null;
+  child.on('error', (error) => {
+    failure = `could not run ${python()}: ${error.message}. ${pythonHint}`;
+  });
+  child.on('exit', (code, signal) => {
+    failure ??= `it exited (${signal ? `signal ${signal}` : `exit ${code}`})`;
+  });
+  child.unref();
+  const record: ApiRecord | null = child.pid === undefined ? null : { pid: child.pid, runId };
+  if (record) writeFileSync(WORKER_RECORD_FILE, JSON.stringify(record));
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+  if (failure !== null || record === null || !isRecordedApi(record)) {
+    if (child.exitCode === null && child.signalCode === null) child.kill();
+    rmSync(WORKER_RECORD_FILE, { force: true });
+    throw new Error(
+      `The e2e worker failed to start: ${failure ?? 'it is not running'}. See ${WORKER_LOG_FILE}.`,
+    );
+  }
+}
+
+/** Stop the worker this run started (identity-checked, like the API). */
+export async function stopWorker(): Promise<void> {
+  await stopRecordedApi(WORKER_RECORD_FILE);
 }
 
 export async function restartBackend(): Promise<void> {

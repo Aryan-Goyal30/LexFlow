@@ -420,6 +420,26 @@ class DocumentProcessingOut(ApiModel):
     updated_at: datetime
 
 
+class DocumentTextSectionOut(ApiModel):
+    number: int = Field(description="1 to sectionCount.")
+    page_number: int | None = Field(description="The PDF page; null for documents without pages.")
+    text: str = Field(description="Exactly as extracted; may be empty for a page without text.")
+    chunk_count: int
+
+
+class DocumentTextOut(ApiModel):
+    """One page (or part) of a document's extracted text."""
+
+    document_id: uuid.UUID
+    document_name: str
+    extractor: str | None = Field(description="What extracted the text, e.g. 'pypdf 6.21.1'.")
+    page_count: int | None = Field(description="PDFs only; null for documents without pages.")
+    section_count: int
+    char_count: int
+    extracted_at: datetime | None
+    section: DocumentTextSectionOut
+
+
 class DocumentOut(ApiModel):
     id: uuid.UUID
     name: str

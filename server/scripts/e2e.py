@@ -4,6 +4,8 @@
                                     and create the e2e sign-in accounts
     python scripts/e2e.py serve     run the API against that database on 127.0.0.1:8001
                                     (the harness adds --run-id HEX32 to mark its process)
+    python scripts/e2e.py work --run-id HEX32
+                                    run the document worker against the same database
 
 The e2e database is the server named by ``DATABASE_URL`` with the database name
 replaced by ``lexflow_e2e`` (override with ``LEXFLOW_E2E_DATABASE``; the name must
@@ -155,17 +157,36 @@ def serve() -> int:
     return run_api()
 
 
+def work() -> int:
+    """The document worker against the e2e database and upload folder."""
+    url = e2e_database_url()
+    os.environ["DATABASE_URL"] = url.render_as_string(hide_password=False)
+    os.environ["LEXFLOW_UPLOAD_DIR"] = str(UPLOAD_DIR)
+    os.environ["LEXFLOW_ENV"] = "development"
+    os.environ.setdefault("LEXFLOW_WORKER_POLL_SECONDS", "0.5")
+    get_settings.cache_clear()
+
+    from lexflow.worker import main as run_worker
+
+    return run_worker([])
+
+
 def main() -> int:
     args = sys.argv[1:]
     if args == ["prepare"]:
         return prepare()
+    if len(args) == 3 and args[:2] == ["work", "--run-id"] and RUN_ID.fullmatch(args[2]):
+        return work()
     # The optional run id only marks the process: the test harness checks that a
     # process's command line carries its run id before it ever stops it.
     if args == ["serve"] or (
         len(args) == 3 and args[:2] == ["serve", "--run-id"] and RUN_ID.fullmatch(args[2])
     ):
         return serve()
-    print("usage: python scripts/e2e.py prepare | serve [--run-id HEX32]", file=sys.stderr)
+    print(
+        "usage: python scripts/e2e.py prepare | serve [--run-id HEX32] | work --run-id HEX32",
+        file=sys.stderr,
+    )
     return 2
 
 

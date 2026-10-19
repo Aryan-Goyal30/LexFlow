@@ -409,6 +409,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/documents/{document_id}/text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Document Text
+         * @description One page (or part) of a document's extracted text (staff on the case).
+         *
+         *     409 ``text-not-available`` (with the reason) until the text is ready;
+         *     404 for deleted documents, documents on cases you may not see, and pages
+         *     that do not exist. Each read is recorded in the audit log.
+         */
+        get: operations["read_document_text_api_documents__document_id__text_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{document_id}/reprocess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reprocess Document
+         * @description Extract a document's text again: after a failure, or to refresh it.
+         *
+         *     For staff who may add documents to the case; not on archived cases.
+         *     409 while it is already waiting or being processed, or for file types that
+         *     are not extracted.
+         */
+        post: operations["reprocess_document_api_documents__document_id__reprocess_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents/{document_id}/download": {
         parameters: {
             query?: never;
@@ -1473,6 +1521,56 @@ export interface components {
              * Format: date-time
              */
             updatedAt: string;
+        };
+        /**
+         * DocumentTextOut
+         * @description One page (or part) of a document's extracted text.
+         */
+        DocumentTextOut: {
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
+            /** Documentname */
+            documentName: string;
+            /**
+             * Extractor
+             * @description What extracted the text, e.g. 'pypdf 6.21.1'.
+             */
+            extractor: string | null;
+            /**
+             * Pagecount
+             * @description PDFs only; null for documents without pages.
+             */
+            pageCount: number | null;
+            /** Sectioncount */
+            sectionCount: number;
+            /** Charcount */
+            charCount: number;
+            /** Extractedat */
+            extractedAt: string | null;
+            section: components["schemas"]["DocumentTextSectionOut"];
+        };
+        /** DocumentTextSectionOut */
+        DocumentTextSectionOut: {
+            /**
+             * Number
+             * @description 1 to sectionCount.
+             */
+            number: number;
+            /**
+             * Pagenumber
+             * @description The PDF page; null for documents without pages.
+             */
+            pageNumber: number | null;
+            /**
+             * Text
+             * @description Exactly as extracted; may be empty for a page without text.
+             */
+            text: string;
+            /** Chunkcount */
+            chunkCount: number;
         };
         /**
          * FieldError
@@ -2805,6 +2903,107 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    read_document_text_api_documents__document_id__text_get: {
+        parameters: {
+            query?: {
+                /** @description The page (PDF) or part to read. */
+                section?: number;
+            };
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTextOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    reprocess_document_api_documents__document_id__reprocess_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
