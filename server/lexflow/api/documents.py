@@ -237,7 +237,7 @@ def reprocess_document(
         lock=True,
     )
     previous = session.get(DocumentExtraction, document.id, with_for_update=True)
-    document_text.can_reprocess(previous)
+    document_text.can_reprocess(document, previous)
     previous_status = previous.status if previous else None
     job = extraction_queue.queue(session, document, requested_by=user.id, now=now)
     session.commit()

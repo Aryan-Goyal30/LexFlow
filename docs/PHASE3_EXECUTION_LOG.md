@@ -81,7 +81,7 @@ checked before use.
 | P3-M3 | Page-aware chunking and the worker loop | done |
 | P3-M4 | Text viewer, retry, live status, audit | done |
 | P3-M5 | pgvector (gated), embeddings provider, model command | done, reduced: vector storage blocked (image) |
-| P3-M6 | Hardening, backfill command, docs, regression, migration gate | pending |
+| P3-M6 | Hardening, backfill command, docs, regression, migration gate | done |
 
 ## P3-M1 — Schema, queue, processing status (done)
 
@@ -312,9 +312,61 @@ migration); the explicit backfill command comes in P3-M6.
 | `pytest tests/test_embeddings.py tests/test_worker.py` | **21 passed** |
 | ruff, ruff format, mypy (Windows and `--platform linux`) | clean (110 source files) |
 
+## P3-M6 — Hardening, backfill, documentation (done)
+
+- **Bug fixed:** files stored before 0008 have no job. The text endpoint told
+  users "This record has no stored file" (false) and a retry was refused with
+  422 `no-file`. Now: the message says the file was uploaded before
+  extraction existed; a retry queues it; "no file" only for records without a
+  stored file. The Documents tab offers **Extract text** for such files (to
+  those who may upload).
+- `python -m lexflow.cli.documents queue-extraction [--case] [--confirm N]`:
+  previews stored files without a job (deleted ones too, so they have text if
+  restored), queues them only with the matching count, locks each document and
+  re-checks, never touches an existing job, audits
+  `document.extraction_queued` per document (as the command line). Other file
+  types become `unsupported`.
+  - On `lexflow` (preview only, nothing changed): **2 PDFs** on case
+    LF-2026-0490 would be queued. **Not run**: queueing reads the owner's
+    stored files, so it is left to the owner.
+- Docs: root README (features, three terminals, API rows, limitations, next
+  phase), `server/README.md` ("Document text", worker, backfill, models
+  status, migration 0008), `server/.env.example` (all 12 new settings with
+  defaults), ADR 0015 (worker) and 0016 (embeddings, image gate),
+  `docs/PHASE4_PLAN.md` (Gate 2).
+- Mutation checks (restored byte-for-byte): backfill touching existing jobs,
+  backfill of records without files, no preview, retry for records without a
+  file, the honest never-queued message, "Extract text" without a file — all
+  six caught. (The runner now matches the working copy's line endings; git
+  stores LF either way.)
+
+| Command | Result |
+|---|---|
+| `pytest` (server, full) | **589 passed** (output saved) |
+| ruff, ruff format, mypy (Windows and `--platform linux`), OpenAPI drift | clean (110 source files) |
+| `npm run check` | exit 0, 16 test files (**158 tests**), API types in sync, build OK |
+| `npx playwright test` (real API + real worker) | **32 passed**; no leftover processes, port 8001 free |
+
+## Gate 1 — Phase 3 against the brief
+
+| Brief ("Done when" and scope) | Result |
+|---|---|
+| Background extraction on upload (PDF, DOCX, TXT; OCR optional) | Done (no OCR) |
+| Status `queued`/`processing`/`ready`/`failed` with reason, in the Documents tab | Done (+ `unsupported`) |
+| Chunks with document id and page number | Done; a 3-page PDF gives page-numbered chunks (pytest and e2e) |
+| Compute embeddings; store in pgvector | **Not done — blocked** on the database image (P3-M5) |
+| Lawyer can view the extracted text | Done |
+| Failures visible, not silent | Done |
+| Extraction tests with sample files | Done (committed fictional fixtures) |
+
+Phase 3 passes except embeddings, which need an owner decision. Gate 2:
+Phase 4 needs an approved judgment source with verified terms of use, vector
+storage and a lawyer's relevance judgments; none exists, so Phase 4 is a plan
+only (`docs/PHASE4_PLAN.md`).
+
 ---
 
-Checkpoint: P3-M5 committed (see `git log`); `lexflow` at 0008. Next action:
-P3-M6 — backfill command (`python -m lexflow.cli.documents queue-extraction`),
-docs (README, server README, `.env.example`, ADRs), full regression, restart
-the API on the new code and start the worker.
+Checkpoint: P3-M6 committed (see `git log`). Phase 3 complete except
+embeddings (blocked). Next actions belong to the owner: approve a database
+image for pgvector, run `queue-extraction` on `lexflow` if wanted, and the
+Phase 4 decisions in `docs/PHASE4_PLAN.md`.

@@ -1,8 +1,9 @@
-"""Review and permanently purge deleted documents from the command line.
+"""Review and permanently purge deleted documents; queue older files for text extraction.
 
     python -m lexflow.cli.documents list-deleted [--case LF-2026-0001]
     python -m lexflow.cli.documents purge --older-than-days 90 [--case LF-2026-0001]
     python -m lexflow.cli.documents purge --document ID [--document ID ...]
+    python -m lexflow.cli.documents queue-extraction [--case LF-2026-0001] [--confirm N]
 
 Deleting a document in the app only hides it: its record and file are kept so
 an Administrator or the lead advocate can restore it. This command is the only
@@ -15,6 +16,12 @@ is the number of documents the preview listed; if the set has changed since
 documents that are deleted are ever purged, and none on archived cases (restore
 the case first). Each purge is recorded in the audit log as made from the
 command line by the current operating-system user.
+
+``queue-extraction`` finds stored files that have never been queued for text
+extraction (uploaded before it existed) and, the same way (preview first, then
+``--confirm N``), queues them for the worker (``python -m lexflow.worker``).
+It changes no document and never touches a job that already exists. Each
+document queued is recorded in the audit log.
 """
 
 from __future__ import annotations
@@ -34,8 +41,9 @@ from sqlalchemy.orm import Session
 from lexflow.audit import Actor, AuditLog
 from lexflow.config import Settings, get_settings
 from lexflow.db import engine_for, get_independent_sessions
-from lexflow.models import Case, Document
+from lexflow.models import Case, Document, DocumentExtraction
 from lexflow.services import documents as service
+from lexflow.services import extraction_queue
 from lexflow.services.formatting import format_file_size
 from lexflow.storage import LocalDiskStorage, Storage
 
@@ -162,6 +170,78 @@ def cmd_purge(
     return 0
 
 
+def _never_queued(case_number: str | None) -> Select[tuple[Document, Case]]:
+    """Stored files without an extraction job (deleted ones too, for when restored)."""
+    query = (
+        select(Document, Case)
+        .join(Case, Case.id == Document.case_id)
+        .outerjoin(DocumentExtraction, DocumentExtraction.document_id == Document.id)
+        .where(Document.storage_key.is_not(None), DocumentExtraction.document_id.is_(None))
+        .order_by(Case.case_number, Document.id)
+    )
+    if case_number:
+        query = query.where(Case.case_number == case_number.strip())
+    return query
+
+
+def cmd_queue_extraction(
+    args: argparse.Namespace, session: Session, out: TextIO, *, audit: AuditLog, now: datetime
+) -> int:
+    rows = session.execute(_never_queued(args.case)).tuples().all()
+    if not rows:
+        print("Every stored file has been queued for text extraction already.", file=out)
+        return 0
+    lines = [f"{'CASE':14} {'TYPE':28} {'ID':36}  NAME"]
+    lines += [
+        f"{case.case_number:14} {document.content_type or '':28} {document.id!s:36}  "
+        f"{document.name}"
+        for document, case in rows
+    ]
+    print("\n".join(lines), file=out)
+    if args.confirm is None:
+        print(
+            f"Preview only: nothing was changed. To queue these {len(rows)} document(s) for "
+            f"text extraction, run the same command with --confirm {len(rows)}.",
+            file=out,
+        )
+        return 0
+    if args.confirm != len(rows):
+        raise CommandError(
+            f"--confirm {args.confirm} does not match the {len(rows)} document(s) listed; "
+            "nothing was queued. Check the preview again."
+        )
+
+    queued: list[tuple[uuid.UUID, uuid.UUID, str, str]] = []
+    for document, case in rows:
+        # Lock the document as the app's retry does, then check again: someone
+        # may have asked for its extraction since the preview.
+        session.refresh(document, with_for_update=True)
+        if session.get(DocumentExtraction, document.id) is not None:
+            continue
+        job = extraction_queue.queue(session, document, requested_by=None, now=now)
+        queued.append((document.id, case.id, case.case_number, job.status))
+    session.commit()
+
+    actor = Actor.command_line(getpass.getuser())
+    for document_id, case_id, case_number, status in queued:
+        audit.record(
+            "document.extraction_queued",
+            actor=actor,
+            target_type="document",
+            target_id=document_id,
+            case_id=case_id,
+            details={"caseNumber": case_number, "status": status},
+        )
+    waiting = sum(1 for *_, status in queued if status == "queued")
+    print(
+        f"Queued {waiting} document(s) for text extraction; "
+        f"{len(queued) - waiting} are file types that are not extracted. "
+        "The worker (python -m lexflow.worker) processes them.",
+        file=out,
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m lexflow.cli.documents",
@@ -193,6 +273,18 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="go ahead; N must equal the number of documents the preview listed",
     )
+
+    backfill = commands.add_parser(
+        "queue-extraction",
+        help="queue stored files that were never queued for text extraction (preview first)",
+    )
+    backfill.add_argument("--case", help="only this case number")
+    backfill.add_argument(
+        "--confirm",
+        type=int,
+        metavar="N",
+        help="go ahead; N must equal the number of documents the preview listed",
+    )
     return parser
 
 
@@ -212,6 +304,14 @@ def main(
         with Session(engine, expire_on_commit=False) as session:
             if args.command == "list-deleted":
                 return cmd_list_deleted(args, session, out)
+            if args.command == "queue-extraction":
+                return cmd_queue_extraction(
+                    args,
+                    session,
+                    out,
+                    audit=AuditLog(get_independent_sessions(engine)),
+                    now=now or datetime.now(UTC),
+                )
             return cmd_purge(
                 args,
                 session,

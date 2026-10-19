@@ -21,6 +21,8 @@ building them.
 | [0012](0012-case-scoped-authorization-and-audit.md) | Case-scoped authorization, field-level rules and the audit log | Accepted |
 | [0013](0013-nothing-is-deleted-in-the-app.md) | Archive, cancel, soft delete; purge only by a guarded command | Accepted |
 | [0014](0014-client-portal-isolation.md) | Client portal: a separate API surface and explicit sharing | Accepted |
+| [0015](0015-document-processing-worker.md) | Text extraction in a separate, database-backed worker; page-aware chunks | Accepted |
+| [0016](0016-embeddings-local-and-gated.md) | Embeddings: off by default, local only, gated on a compatible pgvector image | Accepted; storage blocked |
 
 Format: Context, Decision, Consequences. Superseding a decision means adding a
 new record and marking the old one "Superseded by NNNN", not editing history.

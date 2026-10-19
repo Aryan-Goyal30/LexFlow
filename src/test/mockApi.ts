@@ -468,6 +468,18 @@ export function mockSetProcessing(documentId: string, change: Partial<DocumentPr
   throw new Error(`no processed document ${documentId}`);
 }
 
+/** As for a file stored before text extraction existed: no job at all. */
+export function mockClearProcessing(documentId: string): void {
+  for (const c of state.cases) {
+    const doc = c.documents.find((d) => d.id === documentId);
+    if (doc) {
+      doc.processing = null;
+      return;
+    }
+  }
+  throw new Error(`no document ${documentId}`);
+}
+
 const caseArchived = () =>
   problem(409, 'case-archived', 'This case is archived. Restore it before making changes.');
 
@@ -1391,17 +1403,19 @@ export const handlers = [
     if (!allows(rel, 'upload')) return forbidden();
     if (owner.archivedAt !== null) return caseArchived();
     const doc = owner.documents.find((d) => d.id === id);
-    if (!doc?.processing) {
+    if (!doc?.hasFile) {
       return problem(422, 'no-file', 'This record has no stored file, so it has no text.');
     }
-    if (doc.processing.status === 'queued' || doc.processing.status === 'processing') {
+    const status = doc.processing?.status;
+    if (status === 'queued' || status === 'processing') {
       return problem(409, 'already-processing', 'The text is already waiting to be extracted.');
     }
-    if (doc.processing.status === 'unsupported') {
-      return problem(409, 'unsupported', doc.processing.reason ?? 'Not extracted.');
+    if (status === 'unsupported') {
+      return problem(409, 'unsupported', doc.processing?.reason ?? 'Not extracted.');
     }
+    // A stored file never queued (uploaded before extraction existed) gets a new job.
     doc.processing = {
-      ...doc.processing,
+      ...(doc.processing ?? initialProcessing('application/pdf')),
       status: 'queued',
       reasonCode: null,
       reason: null,

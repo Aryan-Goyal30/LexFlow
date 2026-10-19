@@ -159,14 +159,15 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
   const { canUploadDocuments, canDeleteDocuments, canShareDocuments } = c.permissions;
 
   const retryExtraction = (doc: CaseDocument) => {
+    const first = doc.processing === null;
     setNotice(null);
     setRemoveError(doc.id, null);
     reprocess.mutate(doc.id, {
-      onSuccess: () => setNotice(`${doc.name} will be processed again.`),
+      onSuccess: () => setNotice(`${doc.name} will be processed${first ? '' : ' again'}.`),
       onError: (error) =>
         setRemoveError(
           doc.id,
-          `${doc.name}: the text was not queued again. ${errorMessage(error)}`,
+          `${doc.name}: the text was not queued${first ? '' : ' again'}. ${errorMessage(error)}`,
         ),
     });
   };
@@ -322,6 +323,18 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
                           aria-label={`Try extracting the text of ${doc.name} again`}
                         >
                           Try again
+                        </button>
+                      )}
+                      {/* Stored before text extraction existed: never queued. */}
+                      {doc.hasFile && doc.processing === null && canUploadDocuments && (
+                        <button
+                          type="button"
+                          onClick={() => retryExtraction(doc)}
+                          disabled={reprocess.isPending}
+                          className="mt-0.5 text-xs font-medium text-brand-700 underline-offset-2 hover:underline disabled:opacity-60"
+                          aria-label={`Extract the text of ${doc.name}`}
+                        >
+                          Extract text
                         </button>
                       )}
                     </div>

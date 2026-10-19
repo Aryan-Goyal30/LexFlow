@@ -21,9 +21,17 @@ NOT_READY = {
 }
 
 
-def not_available(job: DocumentExtraction | None) -> ProblemError:
+NO_FILE = "This record has no stored file, so it has no text."
+# Files uploaded before text extraction existed have no job until one is asked for.
+NEVER_QUEUED = (
+    "The text of this document has not been extracted: it was uploaded before text "
+    "extraction was available. Ask for it to be extracted."
+)
+
+
+def not_available(document: Document, job: DocumentExtraction | None) -> ProblemError:
     if job is None:
-        message = "This record has no stored file, so it has no text."
+        message = NO_FILE if document.storage_key is None else NEVER_QUEUED
     elif job.status in NOT_READY:
         message = NOT_READY[job.status]
     elif job.status == "failed":
@@ -36,7 +44,7 @@ def not_available(job: DocumentExtraction | None) -> ProblemError:
 def read_section(session: Session, document: Document, number: int) -> DocumentTextOut:
     job = session.get(DocumentExtraction, document.id)
     if job is None or job.status != "ready":
-        raise not_available(job)
+        raise not_available(document, job)
     section = session.get(DocumentSection, (document.id, number))
     if section is None:
         raise ProblemError(
@@ -70,10 +78,15 @@ def read_section(session: Session, document: Document, number: int) -> DocumentT
     )
 
 
-def can_reprocess(job: DocumentExtraction | None) -> None:
-    """Refuse a retry that cannot help (or is already happening)."""
+def can_reprocess(document: Document, job: DocumentExtraction | None) -> None:
+    """Refuse a retry that cannot help (or is already happening).
+
+    A stored file that was never queued (uploaded before text extraction
+    existed) may be queued now."""
+    if document.storage_key is None:
+        raise ProblemError(422, "no-file", NO_FILE)
     if job is None:
-        raise ProblemError(422, "no-file", "This record has no stored file, so it has no text.")
+        return
     if job.status in ("queued", "processing"):
         raise ProblemError(
             409, "already-processing", "The text is already waiting to be extracted."

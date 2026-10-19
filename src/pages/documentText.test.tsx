@@ -1,7 +1,13 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../test/renderApp';
-import { ARYAN_EMAIL, mockApiState, mockSetProcessing, mockSetText } from '../test/mockApi';
+import {
+  ARYAN_EMAIL,
+  mockApiState,
+  mockClearProcessing,
+  mockSetProcessing,
+  mockSetText,
+} from '../test/mockApi';
 
 // Viewing extracted text and retrying a failed extraction. The server enforces
 // access and serves the text (server/tests/test_document_text.py).
@@ -92,6 +98,22 @@ describe('retrying a failed extraction', () => {
     await user.click(retry);
     expect(await screen.findByText('Scan.pdf will be processed again.')).toBeVisible();
     await waitFor(() => expect(row('Scan.pdf')).toHaveTextContent('Waiting for text extraction'));
+  });
+
+  it('offers to extract files stored before extraction existed', async () => {
+    const { user, id } = await uploadPdf('Older.pdf');
+    mockClearProcessing(id);
+    renderApp(`/app/cases/${SATTVIK}?tab=documents`, { as: ARYAN_EMAIL });
+    const [extract] = await screen.findAllByRole('button', {
+      name: 'Extract the text of Older.pdf',
+    });
+    // Sample records (no file) are not offered it.
+    const offered = screen.getAllByRole('button', { name: /^Extract the text of / });
+    expect(offered.map((b) => b.getAttribute('aria-label'))).toEqual(
+      offered.map(() => 'Extract the text of Older.pdf'),
+    );
+    await user.click(extract);
+    expect((await screen.findAllByText('Older.pdf will be processed.'))[0]).toBeVisible();
   });
 
   it('is not offered on an archived case', async () => {

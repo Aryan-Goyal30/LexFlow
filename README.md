@@ -75,6 +75,13 @@ and `docs/adr/` records the main decisions.
   **soft**: the Administrator or lead can restore it from "Deleted Documents";
   only an operator command removes files for good. Advocates **share** documents
   with the client explicitly.
+- **Document text** (Phase 3): each upload is queued and a separate worker
+  extracts its text (PDF text layer page by page, Word body and tables, plain
+  text). The Documents tab shows the status (waiting, extracting, extracted with
+  the page count, or failed with the reason) and refreshes itself; staff on the
+  case open **View text** page by page, and those who may upload can **try
+  again**. Scans fail honestly ("no text layer": there is no OCR). Clients never
+  see extracted text. Embeddings are **not** computed yet (see Limitations).
 
 ### Firm-wide pages
 
@@ -127,10 +134,12 @@ Prerequisites: **Node.js 20+** (developed on Node 24), **Python 3.12** and
    .venv\Scripts\python -m lexflow.seed     # optional fictional sample data (development only)
    ```
 
-   A database from Phase 1 needs migrations 0002 to 0007: **back it up first**
-   (see `server/README.md`).
+   A database from an earlier phase needs the newer migrations (0002 to 0008):
+   **back it up first** (see `server/README.md`). Files uploaded before 0008
+   are queued for text extraction only when you ask
+   (`python -m lexflow.cli.documents queue-extraction`, preview first).
 
-2. **Every day**, in two terminals:
+2. **Every day**, in three terminals:
 
    ```powershell
    # terminal 1: database and API (http://127.0.0.1:8000, docs at /docs)
@@ -140,7 +149,13 @@ Prerequisites: **Node.js 20+** (developed on Node 24), **Python 3.12** and
    ```
 
    ```powershell
-   # terminal 2: the web app (http://localhost:5173)
+   # terminal 2: the document worker (extracts the text of uploads)
+   cd server
+   .venv\Scripts\python -m lexflow.worker
+   ```
+
+   ```powershell
+   # terminal 3: the web app (http://localhost:5173)
    npm install
    npm run dev
    ```
@@ -298,6 +313,7 @@ same commands have been run locally.
 | `GET /api/hearings?from=&to=&includeCancelled=`, `GET /api/hearings/upcoming` | Hearing schedule; upcoming hearings |
 | `GET`/`POST /api/cases/{id}/documents`, `GET /api/cases/{id}/documents/deleted` | Documents; upload; deleted ones |
 | `GET /api/documents/{id}/download`, `DELETE /api/documents/{id}`, `POST .../restore`, `.../share`, `.../unshare` | Download, (soft) delete, restore, share with the client |
+| `GET /api/documents/{id}/text?section=`, `POST /api/documents/{id}/reprocess` | Extracted text, one page or part at a time (audited); extract again |
 | `GET`/`POST /api/clients`, `GET`/`PATCH /api/clients/{id}`, `GET /api/clients/options` | Clients |
 | `GET /api/advocates`, `GET /api/staff` | Reference lists |
 | `/api/portal/cases`, `/api/portal/cases/{id}`, `/api/portal/documents/{id}/download` | Client portal (Client accounts only) |
@@ -321,8 +337,8 @@ src/
 ├── pages/                       # staff pages, admin/, portal/
 └── test/                        # setup, renderApp, mockApi (MSW fake API)
 server/
-├── lexflow/                     # FastAPI app: api/, services/, auth/, cli/, seed/, authz, audit, models, schemas
-├── migrations/                  # Alembic (0001 to 0007)
+├── lexflow/                     # FastAPI app: api/, services/, auth/, cli/, seed/, extraction/, worker, authz, audit, models, schemas
+├── migrations/                  # Alembic (0001 to 0008)
 ├── tests/                       # pytest
 └── scripts/                     # export_openapi.py, e2e.py
 e2e/                             # Playwright tests and the API start/stop helpers
@@ -342,9 +358,19 @@ scripts/                         # api-types.mjs, export-sample-data.mjs
   backup or retention policy.
 - No AI analysis, OCR, precedent search, judgment collection or outcome
   prediction.
+- **No embeddings yet.** Storing vectors needs a PostgreSQL image with
+  pgvector; the planned image was not compatible with the existing database
+  (different C library), so it was not applied (`docs/adr/0016`). Extracted
+  text and chunks are stored and can be embedded later.
+- Text extraction reads only text layers: scanned PDFs, images and `.doc`
+  files have no text. Word headers, footers and comments are not read, and
+  Word text has no page numbers (it is shown in parts).
 
 ## Next phase
 
-According to `docs/DEVELOPMENT_BRIEF.md`, Phase 3 is **document text
-extraction** (processing status per document, text chunks with page numbers),
-followed by the judgment collection and the AI analysis and research features.
+Phase 3 (document text extraction) is done except embeddings, which wait for
+a compatible pgvector database image (`docs/PHASE3_EXECUTION_LOG.md`).
+According to `docs/DEVELOPMENT_BRIEF.md`, Phase 4 is the **judgment collection
+and retrieval**. It has not started: it needs a judgment source whose terms of
+use have been verified, vector storage, and a lawyer's relevance judgments.
+`docs/PHASE4_PLAN.md` lists the decisions needed and the proposed milestones.

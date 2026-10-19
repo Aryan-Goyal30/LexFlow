@@ -21,9 +21,10 @@ from sqlalchemy.orm import Session
 
 from lexflow.cli.documents import main
 from lexflow.config import get_settings
-from lexflow.models import AuditEvent, Case, Document
+from lexflow.models import AuditEvent, Case, Document, DocumentExtraction
 from lexflow.seed import sample_uuid
 from lexflow.seed.loader import load_sample_data
+from lexflow.services import extraction_queue
 from lexflow.storage import LocalDiskStorage
 from tests.conftest import SERVER_ROOT
 
@@ -212,3 +213,82 @@ def test_runs_as_a_module(committed_engine: Engine) -> None:
 
 def test_uses_the_configured_upload_directory() -> None:
     assert Path(get_settings().upload_dir).is_absolute()
+
+
+# --- queue-extraction: stored files uploaded before text extraction existed --------------
+
+
+def jobs(engine: Engine) -> dict[uuid.UUID, str]:
+    with Session(engine) as session:
+        return {j.document_id: j.status for j in session.scalars(select(DocumentExtraction))}
+
+
+def test_queue_extraction_previews_first(docs: Docs, committed_engine: Engine) -> None:
+    older = docs.add("Older.pdf", deleted_days_ago=None)
+
+    code, out = run("queue-extraction")
+
+    assert code == 0
+    assert "Older.pdf" in out and str(older) in out and "application/pdf" in out
+    assert "Preview only: nothing was changed." in out and "--confirm 1" in out
+    assert jobs(committed_engine) == {}
+
+
+def test_queue_extraction_queues_only_files_never_queued(
+    docs: Docs, committed_engine: Engine
+) -> None:
+    older = docs.add("Older.pdf", deleted_days_ago=None)
+    hidden = docs.add("Deleted.pdf", deleted_days_ago=3)  # queued too, for when restored
+    with Session(committed_engine) as session, session.begin():
+        done = docs.add("Done.pdf", deleted_days_ago=None)
+        document = session.get(Document, done)
+        assert document is not None
+        job = extraction_queue.queue(session, document, requested_by=None, now=NOW)
+        job.status, job.reason_code, job.reason = "failed", "no-text-layer", "Scan."
+
+    code, out = run("queue-extraction", "--confirm", "2")
+
+    assert code == 0, out
+    assert "Queued 2 document(s) for text extraction" in out
+    assert jobs(committed_engine) == {older: "queued", hidden: "queued", done: "failed"}
+    with Session(committed_engine) as session:
+        events = session.scalars(
+            select(AuditEvent).where(AuditEvent.action == "document.extraction_queued")
+        ).all()
+    assert {e.target_id for e in events} == {older, hidden}
+    assert all((e.actor_name or "").startswith("command line (") for e in events)
+    assert run("queue-extraction")[1].startswith("Every stored file has been queued")
+
+
+def test_queue_extraction_marks_other_file_types_unsupported(
+    docs: Docs, committed_engine: Engine
+) -> None:
+    photo = docs.add("Photo.png", deleted_days_ago=None)
+    with Session(committed_engine) as session, session.begin():
+        document = session.get(Document, photo)
+        assert document is not None
+        document.content_type = "image/png"
+
+    code, out = run("queue-extraction", "--confirm", "1")
+
+    assert code == 0, out
+    assert "Queued 0 document(s)" in out and "1 are file types that are not extracted" in out
+    assert jobs(committed_engine) == {photo: "unsupported"}
+
+
+def test_queue_extraction_needs_the_previewed_count(
+    docs: Docs, committed_engine: Engine, capsys: pytest.CaptureFixture[str]
+) -> None:
+    docs.add("Older.pdf", deleted_days_ago=None)
+    assert run("queue-extraction", "--confirm", "5")[0] == 1
+    assert "nothing was queued" in capsys.readouterr().err
+    assert jobs(committed_engine) == {}
+
+
+def test_sample_records_without_files_are_never_queued(
+    docs: Docs, committed_engine: Engine
+) -> None:
+    code, out = run("queue-extraction", "--confirm", "0")
+    assert code == 0
+    assert out.startswith("Every stored file has been queued")
+    assert jobs(committed_engine) == {}

@@ -214,3 +214,19 @@ def failed_scan_named(as_: As, db: Session, root: Path, name: str) -> str:
     document = upload(as_("lead"), name, pdf_without_text())
     process(db, root)
     return document
+
+
+def test_files_uploaded_before_extraction_existed_can_be_queued(as_: As, db: Session) -> None:
+    document = upload(as_("lead"), "Older.pdf", pdf_with_pages(["FICTIONAL."]))
+    job = db.get(DocumentExtraction, uuid.UUID(document))
+    db.delete(job)  # as for a file stored before migration 0008
+    db.flush()
+
+    waiting = text(as_("lead"), document)
+    assert (waiting.status_code, waiting.json()["code"]) == (409, "text-not-available")
+    assert "uploaded before text extraction was available" in waiting.json()["detail"]
+    assert "no stored file" not in waiting.json()["detail"]
+
+    response = as_("lead").post(f"/api/documents/{document}/reprocess")
+    assert response.status_code == 200, response.text
+    assert response.json()["processing"]["status"] == "queued"
