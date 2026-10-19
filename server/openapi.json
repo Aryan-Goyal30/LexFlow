@@ -1,0 +1,1530 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "LexFlow API",
+    "summary": "Case records, reference data and document storage for LexFlow.",
+    "description": "Phase 1 API. **There is no authentication yet**: run it on 127.0.0.1 only and never expose it to a network. Sample records are fictional and are marked with `isSample`.",
+    "version": "0.3.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "description": "Report whether the API is up and can reach PostgreSQL.",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is not reachable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clients": {
+      "get": {
+        "tags": [
+          "reference data"
+        ],
+        "summary": "List Clients",
+        "description": "All clients, by name.",
+        "operationId": "list_clients_api_clients_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ClientOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Clients Api Clients Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/advocates": {
+      "get": {
+        "tags": [
+          "reference data"
+        ],
+        "summary": "List Advocates",
+        "description": "Users who can lead a case (role Advocate), by name.",
+        "operationId": "list_advocates_api_advocates_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdvocateOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Advocates Api Advocates Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases": {
+      "get": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "List Cases",
+        "description": "Every case, newest first, with what the case list needs.",
+        "operationId": "list_cases_api_cases_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CaseSummary"
+                  },
+                  "type": "array",
+                  "title": "Response List Cases Api Cases Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Create Case",
+        "description": "Open a new case. The server assigns the case number and opening date.",
+        "operationId": "create_case_api_cases_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}": {
+      "get": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Get Case",
+        "description": "One case with its documents, hearings and timeline.",
+        "operationId": "get_case_api_cases__case_id__get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Update Case",
+        "description": "Change some of a case's details. Any change adds a timeline entry.\n\nPhase 1 has no sign-in, so the entry records no actor.",
+        "operationId": "update_case_api_cases__case_id__patch",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hearings/upcoming": {
+      "get": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Upcoming Hearings",
+        "description": "Hearings on or after today across all cases, soonest first.",
+        "operationId": "upcoming_hearings_api_hearings_upcoming_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UpcomingHearingOut"
+                  },
+                  "title": "Response Upcoming Hearings Api Hearings Upcoming Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/documents": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "List Documents",
+        "description": "The documents on a case, newest first.",
+        "operationId": "list_documents_api_cases__case_id__documents_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentOut"
+                  },
+                  "title": "Response List Documents Api Cases  Case Id  Documents Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Upload Document",
+        "description": "Attach one file to a case.\n\nThe file's real content must match its extension. Errors carry a ``code``:\n``unsupported-type``, ``content-mismatch``, ``empty``, ``duplicate``,\n``too-large`` or ``invalid-name``.",
+        "operationId": "upload_document_api_cases__case_id__documents_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_document_api_cases__case_id__documents_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request Entity Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{document_id}/download": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Download Document",
+        "description": "Download a stored file. Sample records have no file and return 404 ``no-file``.",
+        "operationId": "download_document_api_documents__document_id__download_get",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored file.",
+            "content": {
+              "application/octet-stream": {}
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{document_id}": {
+      "delete": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Delete Document",
+        "description": "Remove a document and its stored file.",
+        "operationId": "delete_document_api_documents__document_id__delete",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActorOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ActorOut"
+      },
+      "AdvocateOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "isSample"
+        ],
+        "title": "AdvocateOut"
+      },
+      "Body_upload_document_api_cases__case_id__documents_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "One file: PDF, Word, text, PNG, JPG, GIF or WebP."
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_document_api_cases__case_id__documents_post"
+      },
+      "CaseCreate": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Clientid"
+          },
+          "practiceArea": {
+            "type": "string",
+            "enum": [
+              "Corporate / Commercial",
+              "Civil",
+              "Criminal",
+              "Family",
+              "Intellectual Property",
+              "Constitutional / Administrative",
+              "Real Estate",
+              "Employment & Labour"
+            ],
+            "title": "Practicearea"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Open",
+              "In Progress",
+              "On Hold",
+              "Closed"
+            ],
+            "title": "Status"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "Low",
+              "Medium",
+              "High",
+              "Critical"
+            ],
+            "title": "Priority"
+          },
+          "leadAdvocateId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Leadadvocateid"
+          },
+          "courtName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Courtname"
+          },
+          "opposingParty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opposingparty"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "nextHearing": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nexthearing",
+            "description": "Creates the first hearing. Cannot be in the past."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "clientId",
+          "practiceArea",
+          "status",
+          "priority",
+          "leadAdvocateId",
+          "description"
+        ],
+        "title": "CaseCreate"
+      },
+      "CaseDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "caseNumber": {
+            "type": "string",
+            "title": "Casenumber"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Open",
+              "In Progress",
+              "On Hold",
+              "Closed"
+            ],
+            "title": "Status"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "Low",
+              "Medium",
+              "High",
+              "Critical"
+            ],
+            "title": "Priority"
+          },
+          "practiceArea": {
+            "type": "string",
+            "enum": [
+              "Corporate / Commercial",
+              "Civil",
+              "Criminal",
+              "Family",
+              "Intellectual Property",
+              "Constitutional / Administrative",
+              "Real Estate",
+              "Employment & Labour"
+            ],
+            "title": "Practicearea"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Clientid"
+          },
+          "clientName": {
+            "type": "string",
+            "title": "Clientname"
+          },
+          "leadAdvocateId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Leadadvocateid"
+          },
+          "leadAttorney": {
+            "type": "string",
+            "title": "Leadattorney",
+            "description": "Name of the lead advocate."
+          },
+          "courtName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Courtname"
+          },
+          "opposingParty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opposingparty"
+          },
+          "openedOn": {
+            "type": "string",
+            "format": "date",
+            "title": "Openedon"
+          },
+          "nextHearing": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nexthearing",
+            "description": "Earliest hearing on or after today; if none, the most recent past one (so the client can show it has passed). Derived from the hearings."
+          },
+          "documentCount": {
+            "type": "integer",
+            "title": "Documentcount"
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentOut"
+            },
+            "type": "array",
+            "title": "Documents"
+          },
+          "hearings": {
+            "items": {
+              "$ref": "#/components/schemas/HearingOut"
+            },
+            "type": "array",
+            "title": "Hearings"
+          },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEventOut"
+            },
+            "type": "array",
+            "title": "Timeline"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "caseNumber",
+          "title",
+          "status",
+          "priority",
+          "practiceArea",
+          "clientId",
+          "clientName",
+          "leadAdvocateId",
+          "leadAttorney",
+          "courtName",
+          "opposingParty",
+          "openedOn",
+          "nextHearing",
+          "documentCount",
+          "isSample",
+          "description",
+          "documents",
+          "hearings",
+          "timeline"
+        ],
+        "title": "CaseDetail"
+      },
+      "CaseSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "caseNumber": {
+            "type": "string",
+            "title": "Casenumber"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Open",
+              "In Progress",
+              "On Hold",
+              "Closed"
+            ],
+            "title": "Status"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "Low",
+              "Medium",
+              "High",
+              "Critical"
+            ],
+            "title": "Priority"
+          },
+          "practiceArea": {
+            "type": "string",
+            "enum": [
+              "Corporate / Commercial",
+              "Civil",
+              "Criminal",
+              "Family",
+              "Intellectual Property",
+              "Constitutional / Administrative",
+              "Real Estate",
+              "Employment & Labour"
+            ],
+            "title": "Practicearea"
+          },
+          "clientId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Clientid"
+          },
+          "clientName": {
+            "type": "string",
+            "title": "Clientname"
+          },
+          "leadAdvocateId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Leadadvocateid"
+          },
+          "leadAttorney": {
+            "type": "string",
+            "title": "Leadattorney",
+            "description": "Name of the lead advocate."
+          },
+          "courtName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Courtname"
+          },
+          "opposingParty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opposingparty"
+          },
+          "openedOn": {
+            "type": "string",
+            "format": "date",
+            "title": "Openedon"
+          },
+          "nextHearing": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nexthearing",
+            "description": "Earliest hearing on or after today; if none, the most recent past one (so the client can show it has passed). Derived from the hearings."
+          },
+          "documentCount": {
+            "type": "integer",
+            "title": "Documentcount"
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "caseNumber",
+          "title",
+          "status",
+          "priority",
+          "practiceArea",
+          "clientId",
+          "clientName",
+          "leadAdvocateId",
+          "leadAttorney",
+          "courtName",
+          "opposingParty",
+          "openedOn",
+          "nextHearing",
+          "documentCount",
+          "isSample"
+        ],
+        "title": "CaseSummary"
+      },
+      "CaseUpdate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Open",
+                  "In Progress",
+                  "On Hold",
+                  "Closed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Low",
+                  "Medium",
+                  "High",
+                  "Critical"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "practiceArea": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Corporate / Commercial",
+                  "Civil",
+                  "Criminal",
+                  "Family",
+                  "Intellectual Property",
+                  "Constitutional / Administrative",
+                  "Real Estate",
+                  "Employment & Labour"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Practicearea"
+          },
+          "clientId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientid"
+          },
+          "leadAdvocateId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leadadvocateid"
+          },
+          "courtName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Courtname"
+          },
+          "opposingParty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opposingparty"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CaseUpdate",
+        "description": "Partial update. Only the fields present in the request change.\n\n``courtName`` and ``opposingParty`` may be null to clear them; the other\nfields cannot be null."
+      },
+      "ClientOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "company",
+          "isSample"
+        ],
+        "title": "ClientOut"
+      },
+      "DocumentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "uploadedOn": {
+            "type": "string",
+            "format": "date",
+            "title": "Uploadedon"
+          },
+          "size": {
+            "type": "string",
+            "title": "Size",
+            "description": "Human-readable size, e.g. '512 KB'."
+          },
+          "sizeBytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sizebytes",
+            "description": "Exact size of the stored file; null without one."
+          },
+          "hasFile": {
+            "type": "boolean",
+            "title": "Hasfile",
+            "description": "False for sample records, which have no stored file."
+          },
+          "contentType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contenttype"
+          },
+          "downloadUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Downloadurl"
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "uploadedOn",
+          "size",
+          "sizeBytes",
+          "hasFile",
+          "contentType",
+          "downloadUrl",
+          "isSample"
+        ],
+        "title": "DocumentOut"
+      },
+      "FieldError": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "message"
+        ],
+        "title": "FieldError",
+        "description": "One invalid field. ``field`` uses the request's camelCase name."
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unavailable"
+            ],
+            "title": "Status"
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unavailable"
+            ],
+            "title": "Database"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "database"
+        ],
+        "title": "Health"
+      },
+      "HearingOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time",
+            "description": "24-hour HH:MM, or null until the court lists it."
+          },
+          "court": {
+            "type": "string",
+            "title": "Court"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "date",
+          "time",
+          "court",
+          "purpose",
+          "isSample"
+        ],
+        "title": "HearingOut"
+      },
+      "Problem": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "URI identifying the problem type."
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code",
+            "description": "Stable machine-readable reason, e.g. 'duplicate'."
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status"
+        ],
+        "title": "Problem",
+        "description": "RFC 9457 problem details, plus LexFlow's ``code`` and ``errors`` members."
+      },
+      "TimelineEventOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActorOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who made the change. Null when no signed-in user did (always in Phase 1)."
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "date",
+          "label",
+          "description",
+          "actor",
+          "isSample"
+        ],
+        "title": "TimelineEventOut"
+      },
+      "UpcomingHearingOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time",
+            "description": "24-hour HH:MM, or null until the court lists it."
+          },
+          "court": {
+            "type": "string",
+            "title": "Court"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          },
+          "caseId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Caseid"
+          },
+          "caseTitle": {
+            "type": "string",
+            "title": "Casetitle"
+          },
+          "caseNumber": {
+            "type": "string",
+            "title": "Casenumber"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "date",
+          "time",
+          "court",
+          "purpose",
+          "isSample",
+          "caseId",
+          "caseTitle",
+          "caseNumber"
+        ],
+        "title": "UpcomingHearingOut"
+      }
+    }
+  }
+}

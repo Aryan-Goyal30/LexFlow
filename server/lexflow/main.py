@@ -13,11 +13,12 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 
 from lexflow import __version__
-from lexflow.api import cases, health, reference
+from lexflow.api import cases, documents, health, reference
 from lexflow.config import get_settings
 from lexflow.errors import CatchAllMiddleware, install_error_handlers
 from lexflow.openapi import install_openapi
 from lexflow.security import LocalOnlyMiddleware
+from lexflow.upload_limit import install_upload_limit
 
 access_logger = logging.getLogger("lexflow.access")
 
@@ -40,9 +41,10 @@ def create_app() -> FastAPI:
     install_openapi(app)
 
     # Middleware: the last one added runs first. Request order is
-    #   access log -> local-only check -> catch-all -> routes
+    #   access log -> local-only check -> upload size limit -> catch-all -> routes
     # so rejected and failed requests are still logged and get nosniff.
     app.add_middleware(CatchAllMiddleware)
+    install_upload_limit(app, settings.max_upload_bytes)
     hosts = list(settings.allowed_hosts)
     if settings.env == "test":
         hosts.append("testserver")  # the host name Starlette's TestClient sends
@@ -69,4 +71,5 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix=API_PREFIX)
     app.include_router(reference.router, prefix=API_PREFIX)
     app.include_router(cases.router, prefix=API_PREFIX)
+    app.include_router(documents.router, prefix=API_PREFIX)
     return app
