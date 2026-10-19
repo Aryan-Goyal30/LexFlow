@@ -1,0 +1,35 @@
+"""Database engine and session handling (synchronous SQLAlchemy 2)."""
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+from functools import lru_cache
+
+from fastapi import Depends
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from lexflow.config import Settings, get_settings
+
+
+@lru_cache
+def engine_for(database_url: str) -> Engine:
+    return create_engine(
+        database_url,
+        pool_pre_ping=True,
+        # Keep case data out of error messages (and so out of any log).
+        hide_parameters=True,
+        # Fail fast instead of hanging when PostgreSQL is not reachable.
+        connect_args={"connect_timeout": 3},
+    )
+
+
+def get_engine(settings: Settings = Depends(get_settings)) -> Engine:
+    return engine_for(settings.database_url)
+
+
+def get_session(engine: Engine = Depends(get_engine)) -> Iterator[Session]:
+    """One session per request. Route code commits explicitly."""
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    with factory() as session:
+        yield session

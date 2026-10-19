@@ -5,3 +5,13 @@ package-lock.json
 *.tsbuildinfo
 # Markdown docs are edited by hand; DEVELOPMENT_BRIEF.md is the project's source of truth.
 *.md
+# Generated files: written by scripts, checked for drift in CI, never hand-formatted.
+server/lexflow/seed/sample_data.json
+server/openapi.json
+src/services/api/schema.gen.ts
+# Local environments, uploads and test output: not source files.
+server/.venv
+server/var
+e2e/.state
+playwright-report
+test-results

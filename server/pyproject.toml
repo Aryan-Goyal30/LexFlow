@@ -1,0 +1,56 @@
+[project]
+name = "lexflow-api"
+version = "0.3.0"
+description = "LexFlow API: case data, reference data and document storage."
+requires-python = ">=3.12,<3.13"
+# Dependencies are pinned in requirements.txt / requirements-dev.txt (pip-tools).
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+filterwarnings = ["error::DeprecationWarning:lexflow.*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["migrations/versions/*.py.mako"]
+
+[tool.ruff.lint]
+select = [
+  "E", "W",   # pycodestyle
+  "F",        # pyflakes
+  "I",        # isort
+  "B",        # bugbear
+  "UP",       # pyupgrade
+  "SIM",      # simplify
+  "S",        # bandit (security)
+  "N",        # naming
+  "RUF",      # ruff-specific
+  "PTH",      # prefer pathlib
+]
+ignore = [
+  "B008",     # FastAPI's Depends() in argument defaults is the intended pattern
+]
+# Case and document names are written with typographic dashes ("Plaint – draft").
+allowed-confusables = ["–"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]  # asserts and literal test values
+"migrations/**" = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+warn_unreachable = true
+files = ["lexflow", "tests", "migrations/env.py", "scripts"]
+
+[[tool.mypy.overrides]]
+module = ["migrations.versions.*"]
+disallow_untyped_defs = false
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true

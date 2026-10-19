@@ -1,0 +1,27 @@
+# Local PostgreSQL for LexFlow development and tests.
+#   cd server
+#   docker compose up -d --wait
+# Credentials come from server/.env (copy .env.example; never commit .env).
+name: lexflow
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in server/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in server/.env}
+      POSTGRES_DB: ${POSTGRES_DB:-lexflow}
+    ports:
+      # Loopback only: the database must not be reachable from the network.
+      - '127.0.0.1:${LEXFLOW_DB_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pgdata:

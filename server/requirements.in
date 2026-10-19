@@ -1,0 +1,12 @@
+# Runtime dependencies for the LexFlow API. Pinned versions live in
+# requirements.txt, generated with:
+#   pip-compile --strip-extras --output-file=requirements.txt requirements.in
+fastapi
+uvicorn
+sqlalchemy>=2.0,<2.1
+psycopg[binary]>=3.2,<4
+alembic
+pydantic-settings
+python-multipart
+# Windows has no system time-zone database; zoneinfo needs this package.
+tzdata
