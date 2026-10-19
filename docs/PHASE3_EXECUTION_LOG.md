@@ -78,7 +78,7 @@ checked before use.
 |---|---|---|
 | P3-M1 | Schema (0008), queue (claim, lease, outcome), status in API/UI | done |
 | P3-M2 | Extractors (PDF, DOCX, TXT) with limits, in a child process; fixtures | done |
-| P3-M3 | Page-aware chunking and the worker loop | pending |
+| P3-M3 | Page-aware chunking and the worker loop | done |
 | P3-M4 | Text viewer, retry, live status, audit | pending |
 | P3-M5 | pgvector (gated), embeddings provider, model command | pending |
 | P3-M6 | Hardening, backfill command, docs, regression, migration gate | pending |
@@ -162,7 +162,38 @@ than 5 events. Same signature as the unexplained Phase 2 (M7) failure. Not
 changed without evidence; full-run outputs are now saved so the next
 occurrence shows its assertion.
 
+## P3-M3 — Chunking and the worker (done)
+
+- `server/lexflow/extraction/chunking.py`: chunks never cross a section (so
+  each has one page, or none); `text == section_text[char_start:char_end]`;
+  at most 1,200 characters; ends at a blank line, line break, sentence end or
+  space (a single over-long word is cut); the next chunk starts about 200
+  characters earlier at a word start; empty sections give no chunks; SHA-256
+  per chunk; deterministic.
+- `server/lexflow/worker.py` (`python -m lexflow.worker [--once]`): claims a
+  job, reads the stored file and checks its SHA-256 (`file-changed`,
+  `file-missing`, `storage-unavailable` (retried)), extracts in the child
+  process, chunks, stores the outcome only while it still holds the job. On
+  interruption (Ctrl+C or any error) it hands its job back to the queue. Logs
+  ids and outcomes only, never text. Never downloads models.
+- Tests: `tests/test_chunking.py` (14: coverage, exact offsets, page
+  boundaries, overlap, natural breaks, long words, determinism, other sizes),
+  `tests/test_worker.py` (12: 3-page PDF → page-numbered sections and chunks via
+  the API; the real child-process path; Word parts without pages; scan → visible
+  failure; changed and missing files; unsupported files never claimed; crash
+  retried then failed; a worker that lost its job stores nothing; interrupted
+  job handed back and finished by the next run; stale job of a dead worker
+  recovered; reprocessing gives identical chunks; missing database message).
+- Mutation checks (each restored byte-for-byte): ownership check removed,
+  abandoned-job failure removed, SHA-256 check removed, hand-back removed, no
+  overlap, no natural breaks. All six made tests fail.
+
+| Command | Result |
+|---|---|
+| `pytest` (server, full) | **554 passed** (output saved) |
+| ruff, ruff format, mypy (Windows and `--platform linux`) | clean (97 source files) |
+
 ---
 
-Checkpoint: P3-M2 committed (see `git log`). Next action: P3-M3 chunking and the
-worker loop.
+Checkpoint: P3-M3 committed (see `git log`). Next action: P3-M4 text viewer, retry,
+audit, worker in the E2E harness.
