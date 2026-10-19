@@ -1,0 +1,3 @@
+# Byte-exact fixtures: never convert line endings (a PDF's offsets would break).
+*.pdf binary
+*.txt -text

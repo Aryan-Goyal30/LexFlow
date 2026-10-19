@@ -11,6 +11,7 @@ so that a pathological file can be stopped after the time limit.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 PDF = "application/pdf"
@@ -76,10 +77,60 @@ class ExtractionError(Exception):
         return f"{self.code}: {self.message}"
 
 
+# Documents without pages are shown in parts of about this many characters,
+# split at paragraph breaks where possible.
+PART_CHARS = 20_000
+_CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
+_TRAILING_SPACE = re.compile(r"[ \t]+\n")
+_BLANK_LINES = re.compile(r"\n{3,}")
+
+
+def normalise(text: str) -> str:
+    """Line endings to a newline, control characters (other than tab and
+    newline) removed, trailing spaces and runs of blank lines trimmed. Words are
+    never changed."""
+    text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\f", "\n")
+    text = _CONTROL.sub("", text)
+    text = _TRAILING_SPACE.sub("\n", text)
+    return _BLANK_LINES.sub("\n\n", text).strip()
+
+
+def split_parts(text: str, size: int = PART_CHARS) -> list[Section]:
+    """Numbered parts of a document without pages (``page_number`` None)."""
+    parts: list[Section] = []
+    start = 0
+    while start < len(text):
+        end = min(start + size, len(text))
+        if end < len(text):
+            cut = text.rfind("\n\n", start + size // 2, end)
+            if cut == -1:
+                cut = text.rfind("\n", start + size // 2, end)
+            if cut != -1:
+                end = cut
+        part = text[start:end].strip("\n")
+        if part:
+            parts.append(Section(page_number=None, text=part))
+        start = end
+    return parts
+
+
+def check_text_size(total_bytes: int, limits: Limits) -> None:
+    if total_bytes > limits.max_text_bytes:
+        megabytes = limits.max_text_bytes / 1_000_000
+        raise ExtractionError(
+            "text-too-large",
+            f"The document has more than {megabytes:g} MB of text, the processing limit.",
+        )
+
+
 def extract(content_type: str, data: bytes, limits: Limits) -> Extracted:
     """The text of a stored file, or ``ExtractionError``."""
-    if content_type not in EXTRACTABLE_TYPES:
-        raise ExtractionError("unsupported-type", unsupported_reason(content_type))
-    raise ExtractionError(
-        "extractor-unavailable", "Text extraction is not available in this version."
-    )
+    from lexflow.extraction import docx, pdf, txt
+
+    if content_type == PDF:
+        return pdf.extract_pdf(data, limits)
+    if content_type == DOCX:
+        return docx.extract_docx(data, limits)
+    if content_type == TXT:
+        return txt.extract_txt(data, limits)
+    raise ExtractionError("unsupported-type", unsupported_reason(content_type))

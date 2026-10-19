@@ -77,7 +77,7 @@ checked before use.
 | # | Milestone | Status |
 |---|---|---|
 | P3-M1 | Schema (0008), queue (claim, lease, outcome), status in API/UI | done |
-| P3-M2 | Extractors (PDF, DOCX, TXT) with limits, in a child process; fixtures | pending |
+| P3-M2 | Extractors (PDF, DOCX, TXT) with limits, in a child process; fixtures | done |
 | P3-M3 | Page-aware chunking and the worker loop | pending |
 | P3-M4 | Text viewer, retry, live status, audit | pending |
 | P3-M5 | pgvector (gated), embeddings provider, model command | pending |
@@ -118,8 +118,51 @@ P3-M3, where the chunker it needs exists; M1 delivers the queue it uses.
 |---|---|
 | `pytest` (server) | **504 passed** (468 + 22 masked prompt + 14 queue) |
 | ruff, ruff format, mypy, OpenAPI drift | clean |
-| `npm run check` | exit 0, 15 test files, build OK |
+| `npm run check` | exit 0, 15 test files (151 tests), build OK |
+
+## P3-M2 — Extractors (done)
+
+- Dependencies via `pip-compile` (only these were added): `pypdf 6.21.1`
+  (BSD-3-Clause), `python-docx 1.2.0` (MIT), `lxml 6.1.3` (BSD-3-Clause).
+- `server/lexflow/extraction/`: `pdf.py` (page by page with real page numbers;
+  empty pages kept so numbering stays true; owner-password-only PDFs read;
+  password-protected → `encrypted`; damaged → `unreadable`; > page limit →
+  `too-many-pages`; no text on any page → `no-text-layer` "OCR is not
+  available"), `docx.py` (body paragraphs and tables in order; ZIP declared size
+  checked before parsing → `too-large-unpacked`; damaged → `unreadable`; empty →
+  `no-text`; page numbers null), `txt.py` (UTF-8, BOM removed), shared
+  `normalise` (line endings, control characters, trailing spaces, blank-line
+  runs; words untouched), `split_parts` (parts of about 20,000 characters at
+  paragraph breaks for documents without pages), text-size limit
+  (`text-too-large`).
+- `runner.py`: extraction in a "spawn" child process; killed at the time limit
+  (`timed-out`, not retried); a child that dies (`extractor-crashed`) is
+  retryable; an extractor bug is reported as `extractor-error` without details.
+- Fictional fixtures: `server/tests/document_fixtures.py` builds deterministic
+  PDFs (exact text layer per page), scan-like and damaged PDFs, an encrypted
+  PDF, Word files and a ZIP bomb; committed copies in
+  `server/tests/fixtures/documents/` (README says they are fictional;
+  `.gitattributes` keeps them byte-exact) are checked against the builder.
+
+| Command | Result |
+|---|---|
+| `pytest tests/test_extractors.py` | **24 passed** (includes real child-process timeout, crash and bug tests) |
+| `pytest` (server, full) | first run **1 failed, 527 passed**; then **528 passed** in 3 consecutive full runs |
+| ruff, ruff format, mypy | clean (93 source files) |
+
+**Open finding — intermittent failure (not caused by Phase 3 code):**
+`tests/test_auth_committed.py::test_failures_and_lockout_survive_the_failed_requests`
+failed once in a full run (Phase 2 code; it ran before any Phase 3 test file).
+It passed 6 times alone, 3 times with the preceding files, and in 3 further
+full runs. The failing assertion was not captured. Likely cause (unproven):
+`AuditLog.record` deliberately swallows database errors (logging "Could not
+write audit event") and the engine's `connect_timeout` is 3 s, so a slow
+connection to Docker would drop one audit row and the test would see fewer
+than 5 events. Same signature as the unexplained Phase 2 (M7) failure. Not
+changed without evidence; full-run outputs are now saved so the next
+occurrence shows its assertion.
 
 ---
 
-Checkpoint: P3-M1 committed (see `git log`). Next action: P3-M2 extractors.
+Checkpoint: P3-M2 committed (see `git log`). Next action: P3-M3 chunking and the
+worker loop.

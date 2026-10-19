@@ -12,3 +12,6 @@ python-multipart
 tzdata
 # Password hashing (Argon2id) for sign-in.
 argon2-cffi
+# Text extraction (Phase 3): PDF pages (BSD) and Word .docx files (MIT).
+pypdf
+python-docx
