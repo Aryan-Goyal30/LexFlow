@@ -13,9 +13,12 @@ from typing import Any
 
 import pytest
 import uvicorn
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session
 
 import lexflow.__main__ as entry
 from lexflow.config import SERVER_ROOT, get_settings
+from lexflow.models import User
 
 
 @pytest.fixture
@@ -71,3 +74,44 @@ def test_tests_never_use_the_development_upload_folder(fresh_settings: None) -> 
 
     assert upload_dir == Path(os.environ["LEXFLOW_UPLOAD_DIR"]).resolve()
     assert not upload_dir.is_relative_to((SERVER_ROOT / "var").resolve())
+
+
+def test_production_requires_secure_cookies(
+    monkeypatch: pytest.MonkeyPatch,
+    fresh_settings: None,
+    server_starts: list[dict[str, Any]],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("LEXFLOW_ENV", "production")
+    monkeypatch.delenv("LEXFLOW_PASSWORD_HASH_PROFILE", raising=False)
+    monkeypatch.setenv("LEXFLOW_COOKIE_SECURE", "false")
+
+    assert entry.main() == 2
+    assert server_starts == []
+    assert "LEXFLOW_COOKIE_SECURE=true" in capsys.readouterr().err
+
+
+def test_production_refuses_sample_accounts_that_can_sign_in(
+    committed_engine: Engine,
+    monkeypatch: pytest.MonkeyPatch,
+    fresh_settings: None,
+    server_starts: list[dict[str, Any]],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with Session(committed_engine) as session, session.begin():
+        session.add(
+            User(
+                name="Sample Advocate",
+                email="sample@lexflow.test",
+                role="Advocate",
+                is_sample=True,
+                password_hash="$argon2id$placeholder",
+            )
+        )
+    monkeypatch.setenv("LEXFLOW_ENV", "production")
+    monkeypatch.delenv("LEXFLOW_PASSWORD_HASH_PROFILE", raising=False)
+    monkeypatch.setenv("LEXFLOW_COOKIE_SECURE", "true")
+
+    assert entry.main() == 2
+    assert server_starts == []
+    assert "sample accounts can sign in" in capsys.readouterr().err

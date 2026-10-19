@@ -1,7 +1,9 @@
-import { User2, Gavel, CalendarClock, Clock, Building2, type LucideIcon } from 'lucide-react';
+import { User2, Gavel, CalendarClock, Building2, type LucideIcon } from 'lucide-react';
 import type { Case } from '../../types';
 import { Card, CardBody, CardHeader } from '../ui/Card';
-import { formatDate, isPastDate } from '../../lib/format';
+import { formatDate, formatTime, isPastDate } from '../../lib/format';
+import { TeamCard } from './TeamCard';
+import { HearingsCard } from './HearingsCard';
 
 export function OverviewTab({ legalCase: c }: { legalCase: Case }) {
   return (
@@ -22,7 +24,16 @@ export function OverviewTab({ legalCase: c }: { legalCase: Case }) {
                 <li key={event.id} className="relative">
                   <span className="absolute -left-[27px] top-1 grid h-3 w-3 place-items-center rounded-full border-2 border-white bg-brand-500" />
                   <p className="text-sm font-medium text-brand-900">{event.label}</p>
-                  <p className="text-xs text-brand-400">{formatDate(event.date)}</p>
+                  <p className="text-xs text-brand-400">
+                    {formatDate(event.date)}
+                    {/* Entries recorded in LexFlow say who made the change and when. */}
+                    {event.actor && (
+                      <>
+                        {' '}
+                        at {formatTime(event.recordedAt)} · {event.actor.name}
+                      </>
+                    )}
+                  </p>
                   <p className="mt-1 text-sm text-brand-600">{event.description}</p>
                 </li>
               ))}
@@ -51,26 +62,9 @@ export function OverviewTab({ legalCase: c }: { legalCase: Case }) {
           </CardBody>
         </Card>
 
-        <Card>
-          <CardHeader title="Hearings" />
-          <CardBody className="p-0">
-            {c.hearings.length === 0 ? (
-              <p className="px-5 py-6 text-sm text-brand-500">No hearings scheduled.</p>
-            ) : (
-              <ul className="divide-y divide-brand-100">
-                {c.hearings.map((h) => (
-                  <li key={h.id} className="px-5 py-3">
-                    <p className="text-sm font-medium text-brand-900">{h.purpose}</p>
-                    <p className="mt-1 flex items-center gap-1.5 text-xs text-brand-500">
-                      <Clock className="h-3.5 w-3.5" />
-                      {formatDate(h.date)} · {h.time ?? 'time to be confirmed'} · {h.court}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
+        <TeamCard legalCase={c} />
+
+        <HearingsCard legalCase={c} />
       </div>
     </div>
   );

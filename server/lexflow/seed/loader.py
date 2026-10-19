@@ -3,6 +3,11 @@
 Repeat-safe: every row has a deterministic UUID and is inserted with
 ``ON CONFLICT (id) DO NOTHING``, so a second run adds nothing. Every row is
 marked ``is_sample = true``. Sample documents have no stored file.
+
+Contact details of existing *sample* people are brought up to date on every run
+(an older database may still hold earlier addresses); rows that are not sample
+data are never changed. Loading sample data never sets a password: sample
+people cannot sign in until someone sets one with ``python -m lexflow.cli.users``.
 """
 
 from __future__ import annotations
@@ -14,7 +19,7 @@ from datetime import date, time
 from importlib import resources
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -42,6 +47,8 @@ def read_sample_data() -> dict[str, Any]:
 @dataclass
 class LoadResult:
     inserted: dict[str, int] = field(default_factory=dict)
+    # Existing sample rows whose contact details were brought up to date.
+    updated: dict[str, int] = field(default_factory=dict)
 
     @property
     def total(self) -> int:
@@ -166,8 +173,37 @@ def load_sample_data(session: Session, data: dict[str, Any] | None = None) -> Lo
     result.inserted["timeline_events"] = _insert(session, TimelineEvent, events)
     result.inserted["documents"] = _insert(session, Document, documents)
 
+    result.updated["users"] = _sync_contacts(
+        session, User, {advocate_id[a["name"]]: {"email": a["email"]} for a in data["advocates"]}
+    )
+    result.updated["clients"] = _sync_contacts(
+        session,
+        Client,
+        {
+            client_id[c["legacyId"]]: {"email": c["email"], "phone": c["phone"]}
+            for c in data["clients"]
+        },
+    )
+
     _sync_counters(session, [c["caseNumber"] for c in data["cases"]])
     return result
+
+
+def _sync_contacts(
+    session: Session, model: type[User] | type[Client], values: dict[Any, dict[str, str]]
+) -> int:
+    """Update contact fields of sample rows that differ. Never touches other rows."""
+    changed = 0
+    for row_id, fields in values.items():
+        differs = [getattr(model, name).is_distinct_from(value) for name, value in fields.items()]
+        statement = (
+            update(model)
+            .where(model.id == row_id, model.is_sample.is_(True), or_(*differs))
+            .values(**fields)
+            .returning(model.id)
+        )
+        changed += len(session.execute(statement).all())
+    return changed
 
 
 def _sync_counters(session: Session, case_numbers: list[str]) -> None:

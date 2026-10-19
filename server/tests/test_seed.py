@@ -147,6 +147,9 @@ def seed_database() -> Iterator[URL]:
 def _run_seed(url: URL, env: str) -> subprocess.CompletedProcess[str]:
     rendered = url.render_as_string(hide_password=False)
     environment = {**os.environ, "DATABASE_URL": rendered, "LEXFLOW_ENV": env}
+    if env != "test":
+        # The fast hashing profile is a test-only setting (refused elsewhere).
+        environment.pop("LEXFLOW_PASSWORD_HASH_PROFILE", None)
     return subprocess.run(
         [sys.executable, "-m", "lexflow.seed"],
         cwd=SERVER_ROOT,
@@ -186,3 +189,53 @@ def test_command_loads_once_in_development(seed_database: URL) -> None:
     assert second.returncode == 0, second.stderr
     assert "already loaded" in second.stdout
     assert _case_count(seed_database) == len(DATA["cases"])
+
+
+# --- fictional contact details --------------------------------------------------
+
+
+def test_every_sample_contact_is_unreachable() -> None:
+    for advocate in DATA["advocates"]:
+        assert advocate["email"].endswith("@lexflow.test"), advocate["name"]
+    for client in DATA["clients"]:
+        assert client["email"].endswith(".example"), client["name"]
+        # +91 followed by 0 is not a valid Indian number.
+        assert client["phone"].startswith("+91 0"), client["name"]
+
+
+def test_loading_sample_data_never_sets_a_password(db: Session) -> None:
+    load_sample_data(db)
+    assert (
+        db.scalar(select(func.count()).select_from(User).where(User.password_hash.is_not(None)))
+        == 0
+    )
+
+
+def test_reload_updates_old_sample_contacts_but_never_real_rows(db: Session) -> None:
+    load_sample_data(db)
+    first = load_sample_data(db)
+    assert first.updated == {"users": 0, "clients": 0}
+
+    aarav = db.get(Client, sample_uuid("client", "c-001"))
+    sethi = db.get(User, sample_uuid("advocate", "Vikram Sethi"))
+    nagrik = db.get(Client, sample_uuid("client", "c-006"))
+    assert aarav is not None and sethi is not None and nagrik is not None
+    # An older database: earlier addresses on sample rows ...
+    aarav.email, aarav.phone = "legal@aaravtextiles.in", "+91 22 4012 8890"
+    sethi.email = None
+    # ... and a row someone has since taken over as real data.
+    nagrik.is_sample, nagrik.email = False, "contact@real-client.example"
+    db.flush()
+
+    result = load_sample_data(db)
+    db.expire_all()
+
+    assert result.updated == {"users": 1, "clients": 1}
+    assert db.execute(
+        select(Client.email, Client.phone).where(Client.id == sample_uuid("client", "c-001"))
+    ).one() == ("legal@aarav-textiles.example", "+91 00000 00001")
+    assert db.scalar(select(User.email).where(User.id == sethi.id)) == "vikram.sethi@lexflow.test"
+    # Not sample data any more: never changed.
+    assert db.scalar(select(Client.email).where(Client.id == nagrik.id)) == (
+        "contact@real-client.example"
+    )

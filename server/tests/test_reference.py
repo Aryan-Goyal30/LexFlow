@@ -26,8 +26,8 @@ def test_clients_are_sorted_camel_case_and_marked_sample(client: TestClient, db:
     assert first == {
         "id": str(sample_uuid("client", "c-001")),
         "name": "Aarav Textiles Pvt. Ltd.",
-        "email": "legal@aaravtextiles.in",
-        "phone": "+91 22 4012 8890",
+        "email": "legal@aarav-textiles.example",
+        "phone": "+91 00000 00001",
         "company": "Aarav Textiles Pvt. Ltd., Mumbai",
         "isSample": True,
     }
@@ -54,11 +54,11 @@ def test_advocates_only_include_the_advocate_role(client: TestClient, db: Sessio
     assert aryan == {
         "id": str(sample_uuid("advocate", "Aryan Goyal")),
         "name": "Aryan Goyal",
-        "email": "aryan.goyal@lexflow.in",
+        "email": "aryan.goyal@lexflow.test",
         "isSample": True,
     }
-    # No e-mail address is invented for advocates the sample data lacks one for.
-    assert all(a["email"] is None for a in advocates[1:])
+    # Every sample advocate has a fictional address on the reserved .test domain.
+    assert all(a["email"].endswith("@lexflow.test") for a in advocates)
 
     real = next(c for c in client.get("/api/clients").json() if c["name"] == "Real Client")
     assert real["isSample"] is False

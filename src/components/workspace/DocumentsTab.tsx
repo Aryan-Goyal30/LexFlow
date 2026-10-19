@@ -1,12 +1,13 @@
 import { useRef, useState, type DragEvent } from 'react';
-import { ExternalLink, FileText, Loader2, Trash2, UploadCloud } from 'lucide-react';
+import { ExternalLink, FileText, Loader2, Share2, Trash2, UploadCloud } from 'lucide-react';
 import type { Case, CaseDocument } from '../../types';
-import { useDeleteDocument, useUploadDocument } from '../../hooks/useCases';
+import { useDeleteDocument, useShareDocument, useUploadDocument } from '../../hooks/useCases';
 import { ApiError, errorMessage } from '../../services/api/client';
 import { documentDownloadUrl } from '../../services/api/lexflow';
 import { Card, CardBody, CardHeader } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { formatDate } from '../../lib/format';
+import { DeletedDocumentsCard } from './DeletedDocumentsCard';
 import {
   ACCEPT_ATTRIBUTE,
   ACCEPTED_TYPES_LABEL,
@@ -43,6 +44,7 @@ function withFileName(name: string, error: unknown): string {
 export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
   const upload = useUploadDocument(c.id);
   const remove = useDeleteDocument(c.id);
+  const share = useShareDocument(c.id);
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -51,6 +53,7 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
   // Why each failed removal failed, by document id.
   const [removeErrors, setRemoveErrors] = useState<ReadonlyMap<string, string>>(new Map());
   const [busyNotice, setBusyNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const busy = progress !== null;
 
@@ -108,9 +111,15 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
   // once would lose the first one's outcome.)
   const removeDocument = async (doc: CaseDocument) => {
     setRemoveError(doc.id, null);
+    setNotice(null);
     setRemoving((prev) => new Set(prev).add(doc.id));
     try {
       await remove.mutateAsync(doc.id);
+      setNotice(
+        c.permissions.canRestoreDocuments
+          ? `Removed ${doc.name}. It can be restored from Deleted Documents below.`
+          : `Removed ${doc.name}.`,
+      );
     } catch (error) {
       // Already removed elsewhere (another tab, say): the goal is met.
       const alreadyGone = error instanceof ApiError && error.code === 'document-not-found';
@@ -138,9 +147,33 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
   };
 
+  const { canUploadDocuments, canDeleteDocuments, canShareDocuments } = c.permissions;
+
+  const toggleShared = (doc: CaseDocument) => {
+    setNotice(null);
+    const sharing = doc.sharedWithClientAt === null;
+    share.mutate(
+      { id: doc.id, share: sharing },
+      {
+        onSuccess: () =>
+          setNotice(
+            sharing
+              ? `Shared ${doc.name} with the client: it is now in their portal.`
+              : `Stopped sharing ${doc.name}: it has left the client's portal.`,
+          ),
+        onError: (error) =>
+          setRemoveError(doc.id, `${doc.name}: sharing was not changed. ${errorMessage(error)}`),
+      },
+    );
+  };
+
   return (
     <div className="space-y-6">
+      {!canUploadDocuments && (
+        <p className="text-sm text-brand-500">You can open this case's documents.</p>
+      )}
       <div
+        hidden={!canUploadDocuments}
         data-testid="document-drop-zone"
         onDragOver={(e) => {
           // Accept drops even while uploading (no dropEffect 'none', which
@@ -202,6 +235,11 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
           </p>
         )}
         {feedback && <UploadSummary feedback={feedback} />}
+        {notice && (
+          <p className="rounded-md bg-brand-50 px-3 py-2 text-sm text-brand-800 ring-1 ring-inset ring-brand-600/20">
+            {notice}
+          </p>
+        )}
       </div>
 
       {removeErrors.size > 0 && (
@@ -223,7 +261,7 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
               No documents yet. Upload the case papers to prepare this matter for analysis.
             </p>
           ) : (
-            <ul className="divide-y divide-brand-100">
+            <ul className="divide-y divide-brand-100" aria-label="Case documents">
               {c.documents.map((doc) => {
                 const isRemoving = removing.has(doc.id);
                 return (
@@ -235,8 +273,14 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
                       <p className="truncate text-sm font-medium text-brand-900">{doc.name}</p>
                       <p className="text-xs text-brand-500">
                         {doc.type} · {doc.size} · {formatDate(doc.uploadedOn)}
+                        {doc.uploadedBy && ` · added by ${doc.uploadedBy.name}`}
                         {!doc.hasFile && ' · sample record, no file attached'}
                       </p>
+                      {doc.sharedWithClientAt && (
+                        <p className="mt-0.5 text-xs font-medium text-accent-600">
+                          Shared with client
+                        </p>
+                      )}
                     </div>
                     {doc.hasFile && (
                       <a
@@ -250,20 +294,41 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
                         <ExternalLink className="h-4 w-4" aria-hidden="true" />
                       </a>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => void removeDocument(doc)}
-                      disabled={isRemoving}
-                      className="rounded-md p-2 text-brand-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-60"
-                      aria-label={isRemoving ? `Removing ${doc.name}` : `Remove ${doc.name}`}
-                      title={isRemoving ? 'Removing…' : 'Remove'}
-                    >
-                      {isRemoving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
-                      )}
-                    </button>
+                    {canShareDocuments && doc.hasFile && (
+                      <button
+                        type="button"
+                        onClick={() => toggleShared(doc)}
+                        disabled={share.isPending}
+                        aria-pressed={doc.sharedWithClientAt !== null}
+                        className="rounded-md p-2 text-brand-400 hover:bg-brand-50 hover:text-brand-800 disabled:opacity-60 aria-pressed:text-accent-600"
+                        aria-label={
+                          doc.sharedWithClientAt
+                            ? `Stop sharing ${doc.name} with the client`
+                            : `Share ${doc.name} with the client`
+                        }
+                        title={
+                          doc.sharedWithClientAt ? 'Stop sharing with client' : 'Share with client'
+                        }
+                      >
+                        <Share2 className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    )}
+                    {canDeleteDocuments && (
+                      <button
+                        type="button"
+                        onClick={() => void removeDocument(doc)}
+                        disabled={isRemoving}
+                        className="rounded-md p-2 text-brand-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-60"
+                        aria-label={isRemoving ? `Removing ${doc.name}` : `Remove ${doc.name}`}
+                        title={isRemoving ? 'Removing…' : 'Remove'}
+                      >
+                        {isRemoving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        )}
+                      </button>
+                    )}
                   </li>
                 );
               })}
@@ -271,6 +336,8 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
           )}
         </CardBody>
       </Card>
+
+      {c.permissions.canRestoreDocuments && <DeletedDocumentsCard caseId={c.id} />}
     </div>
   );
 }

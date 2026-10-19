@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 SERVER_ROOT = Path(__file__).resolve().parent.parent
@@ -44,6 +44,38 @@ class Settings(BaseSettings):
     allowed_hosts: list[str] = Field(
         default_factory=lambda: ["localhost", "127.0.0.1", "::1"], alias="LEXFLOW_ALLOWED_HOSTS"
     )
+    # Exact origins (scheme://host:port) allowed to make changes: the Vite dev
+    # server and `vite preview`. JSON list. Anything else is refused (CSRF).
+    allowed_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:4173",
+            "http://127.0.0.1:4173",
+        ],
+        alias="LEXFLOW_ALLOWED_ORIGINS",
+    )
+
+    # --- sign-in and sessions ----------------------------------------------------
+    # A session ends after this long without a request ...
+    session_idle_minutes: int = Field(default=30, gt=0, alias="LEXFLOW_SESSION_IDLE_MINUTES")
+    # ... and at the latest this long after sign-in.
+    session_absolute_hours: int = Field(default=12, gt=0, alias="LEXFLOW_SESSION_ABSOLUTE_HOURS")
+    # Send the session cookie only over HTTPS. Required (and enforced at start-up)
+    # when LEXFLOW_ENV=production; off for http://localhost development.
+    cookie_secure: bool = Field(default=False, alias="LEXFLOW_COOKIE_SECURE")
+    # Consecutive failed sign-ins that lock an account, and for how long.
+    login_max_failures: int = Field(default=5, ge=1, alias="LEXFLOW_LOGIN_MAX_FAILURES")
+    lockout_minutes: int = Field(default=15, gt=0, alias="LEXFLOW_LOCKOUT_MINUTES")
+    # How long a temporary password set by an administrator stays usable.
+    temporary_password_hours: int = Field(
+        default=72, gt=0, alias="LEXFLOW_TEMPORARY_PASSWORD_HOURS"
+    )
+    # Argon2id cost. "test-fast" exists only to keep the test suite quick and is
+    # refused outside LEXFLOW_ENV=test.
+    password_hash_profile: Literal["standard", "test-fast"] = Field(
+        default="standard", alias="LEXFLOW_PASSWORD_HASH_PROFILE"
+    )
 
     @field_validator("timezone")
     @classmethod
@@ -60,9 +92,26 @@ class Settings(BaseSettings):
         # Relative paths are relative to server/, not to the current directory.
         return value if value.is_absolute() else (SERVER_ROOT / value).resolve()
 
+    @field_validator("allowed_origins")
+    @classmethod
+    def _normalised_origins(cls, value: list[str]) -> list[str]:
+        return [origin.strip().rstrip("/").lower() for origin in value if origin.strip()]
+
+    @model_validator(mode="after")
+    def _test_only_settings(self) -> Settings:
+        # S105: "test-fast" names a hashing profile, it is not a password.
+        if self.password_hash_profile == "test-fast" and self.env != "test":  # noqa: S105
+            raise ValueError("LEXFLOW_PASSWORD_HASH_PROFILE=test-fast is only allowed in tests")
+        return self
+
     @property
     def tz(self) -> ZoneInfo:
         return ZoneInfo(self.timezone)
+
+    @property
+    def session_cookie_name(self) -> str:
+        # The __Host- prefix makes browsers insist on Secure, Path=/ and no Domain.
+        return "__Host-lexflow_session" if self.cookie_secure else "lexflow_session"
 
 
 @lru_cache

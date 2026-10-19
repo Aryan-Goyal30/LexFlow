@@ -20,6 +20,7 @@ from lexflow.models import Case, CaseNumberCounter, Client, Hearing, TimelineEve
 from lexflow.seed import sample_uuid
 from lexflow.seed.loader import load_sample_data, read_sample_data
 from lexflow.services.case_numbers import allocate_case_number
+from tests.conftest import committed_user, http_client, sign_in_as
 
 TODAY = date(2026, 10, 14)
 DATA = read_sample_data()
@@ -131,6 +132,8 @@ def test_detail_includes_ordered_children(client: TestClient, seeded: Session) -
             "time": "12:00",
             "court": "Court Room 26",
             "purpose": "Hearing on confirmation of the ad-interim injunction",
+            "status": "Scheduled",
+            "cancellationReason": None,
             "isSample": True,
         }
     ]
@@ -156,7 +159,7 @@ def test_detail_unknown_id_is_404(client: TestClient, case_id: str) -> None:
 
 
 def test_create_assigns_number_date_hearing_and_timeline(
-    client: TestClient, seeded: Session
+    client: TestClient, seeded: Session, admin: Any
 ) -> None:
     response = client.post("/api/cases", json=new_case(title="  Spaced Out Title  "))
 
@@ -177,10 +180,15 @@ def test_create_assigns_number_date_hearing_and_timeline(
             "time": None,  # unknown until listed; never guessed
             "court": "To be notified",
             "purpose": "First listing",
+            "status": "Scheduled",
+            "cancellationReason": None,
             "isSample": False,
         }
     ]
-    assert [(t["label"], t["actor"]) for t in created["timeline"]] == [("Matter opened", None)]
+    # The opening entry names who opened the case.
+    assert [(t["label"], t["actor"]) for t in created["timeline"]] == [
+        ("Matter opened", {"id": str(admin.id), "name": "Test Administrator"})
+    ]
     assert created["documents"] == []
 
     listed = client.get("/api/cases").json()
@@ -295,7 +303,9 @@ def test_first_number_of_a_year_skips_existing_numbers(seeded: Session) -> None:
 # --- update ---------------------------------------------------------------------
 
 
-def test_update_changes_fields_and_records_timeline(client: TestClient, seeded: Session) -> None:
+def test_update_changes_fields_and_records_timeline(
+    client: TestClient, seeded: Session, admin: Any
+) -> None:
     response = client.patch(
         f"/api/cases/{SATTVIK}",
         json={"status": "On Hold", "priority": "Critical", "courtName": None, "title": "Renamed"},
@@ -311,7 +321,7 @@ def test_update_changes_fields_and_records_timeline(client: TestClient, seeded: 
     assert updated["courtName"] is None
     last = updated["timeline"][-1]
     assert last["label"] == "Case details updated"
-    assert last["actor"] is None  # no signed-in user exists in Phase 1
+    assert last["actor"] == {"id": str(admin.id), "name": "Test Administrator"}
     assert "Status changed from In Progress to On Hold." in last["description"]
     assert "Priority changed from High to Critical." in last["description"]
     assert "Title updated." in last["description"]
@@ -484,13 +494,15 @@ def test_concurrent_case_creation_through_the_api(
     from lexflow.main import create_app
 
     client_id, advocate_id = committed_reference
+    email = committed_user(committed_engine)
     app = create_app()  # real sessions: every request commits
     app.dependency_overrides[get_today] = lambda: TODAY
     workers, statuses, numbers = 8, [], []
     barrier = threading.Barrier(workers)
 
     def create() -> None:
-        with TestClient(app) as http:
+        with http_client(app) as http:
+            sign_in_as(http, email)
             barrier.wait()
             response = http.post(
                 "/api/cases",

@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { delay, http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../test/renderApp';
-import { mockApiState, problem, server } from '../test/mockApi';
+import { mockApiState, problem, sampleApiCase, server } from '../test/mockApi';
 import { mockCases, mockClients } from '../data/mockData';
 import { todayIsoDate } from '../lib/format';
 
@@ -31,7 +31,9 @@ describe('New case form', () => {
   });
 
   it('shows an error with a retry when the form data cannot load', async () => {
-    server.use(http.get('*/api/clients', () => problem(503, 'internal-error', 'Database down.')));
+    server.use(
+      http.get('*/api/clients/options', () => problem(503, 'internal-error', 'Database down.')),
+    );
     const { user } = renderApp('/app/cases/new');
 
     expect(await screen.findByText("Couldn't load the form")).toBeInTheDocument();
@@ -103,7 +105,7 @@ describe('New case form', () => {
       http.post('*/api/cases', async () => {
         requests += 1;
         await delay(200);
-        return HttpResponse.json(mockApiState().cases[0], { status: 201 });
+        return HttpResponse.json(sampleApiCase('case-1005'), { status: 201 });
       }),
     );
     const { user } = renderApp('/app/cases/new');

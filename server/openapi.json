@@ -39,13 +39,164 @@
         }
       }
     },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Login",
+        "description": "Sign in with e-mail and password. Sets the session cookie.\n\nEvery refusal is the same 401 ``invalid-credentials``, whatever the reason.",
+        "operationId": "login_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignInIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Logout",
+        "description": "End the current session (if any) and clear the cookie. Always 204.",
+        "operationId": "logout_api_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Me",
+        "description": "Who is signed in. 401 ``not-authenticated`` without a live session.",
+        "operationId": "me_api_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/password": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Change Password",
+        "description": "Replace your own password (also a temporary one). Ends your other sessions.",
+        "operationId": "change_password_api_auth_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChangeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/clients": {
       "get": {
         "tags": [
           "reference data"
         ],
         "summary": "List Clients",
-        "description": "All clients, by name.",
+        "description": "Clients with their contact details, by name.\n\nAdministrators see every client; Advocates and Paralegals only the clients\nof cases they may see.",
         "operationId": "list_clients_api_clients_get",
         "responses": {
           "200": {
@@ -63,6 +214,108 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Create Client",
+        "description": "Add a client (Administrators and Advocates).",
+        "operationId": "create_client_api_clients_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clients/options": {
+      "get": {
+        "tags": [
+          "reference data"
+        ],
+        "summary": "Client Options",
+        "description": "Every client, by name, without contact details: the new-case form's choices.\n\nFor those who may open cases (Administrators and Advocates).",
+        "operationId": "client_options_api_clients_options_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ClientOption"
+                  },
+                  "type": "array",
+                  "title": "Response Client Options Api Clients Options Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/staff": {
+      "get": {
+        "tags": [
+          "reference data"
+        ],
+        "summary": "List Staff",
+        "description": "Active Advocates and Paralegals, by name: who can join a case team.",
+        "operationId": "list_staff_api_staff_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StaffOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Staff Api Staff Get"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/advocates": {
@@ -71,7 +324,7 @@
           "reference data"
         ],
         "summary": "List Advocates",
-        "description": "Users who can lead a case (role Advocate), by name.",
+        "description": "Active users who can lead a case (role Advocate), by name.",
         "operationId": "list_advocates_api_advocates_get",
         "responses": {
           "200": {
@@ -91,25 +344,168 @@
         }
       }
     },
-    "/api/cases": {
+    "/api/clients/{client_id}": {
       "get": {
         "tags": [
-          "cases"
+          "clients"
         ],
-        "summary": "List Cases",
-        "description": "Every case, newest first, with what the case list needs.",
-        "operationId": "list_cases_api_cases_get",
+        "summary": "Get Client",
+        "description": "A client's details and the cases of theirs you may see.\n\n404 for a client none of whose cases you may see (Administrators see all).",
+        "operationId": "get_client_api_clients__client_id__get",
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "$ref": "#/components/schemas/ClientDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Update Client",
+        "description": "Change a client's details (an Administrator, or an Advocate on one of their cases).",
+        "operationId": "update_client_api_clients__client_id__patch",
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases": {
+      "get": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "List Cases",
+        "description": "The cases you may see (all, for an Administrator), newest first.",
+        "operationId": "list_cases_api_cases_get",
+        "parameters": [
+          {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "exclude",
+                "include",
+                "only"
+              ],
+              "type": "string",
+              "description": "Archived cases: leave out (default), include, or only.",
+              "default": "exclude",
+              "title": "Archived"
+            },
+            "description": "Archived cases: leave out (default), include, or only."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/CaseSummary"
                   },
-                  "type": "array",
                   "title": "Response List Cases Api Cases Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -121,17 +517,17 @@
           "cases"
         ],
         "summary": "Create Case",
-        "description": "Open a new case. The server assigns the case number and opening date.",
+        "description": "Open a new case. The server assigns the case number and opening date.\n\nAdministrators and Advocates only; an Advocate must be the lead (403\n``field-not-permitted`` otherwise).",
         "operationId": "create_case_api_cases_post",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CaseCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -140,6 +536,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -163,7 +569,7 @@
           "cases"
         ],
         "summary": "Get Case",
-        "description": "One case with its documents, hearings and timeline.",
+        "description": "One case with its documents, hearings, timeline and your permissions on it.\n\nA case you may not see answers 404, exactly like one that does not exist.",
         "operationId": "get_case_api_cases__case_id__get",
         "parameters": [
           {
@@ -204,7 +610,7 @@
           "cases"
         ],
         "summary": "Update Case",
-        "description": "Change some of a case's details. Any change adds a timeline entry.\n\nPhase 1 has no sign-in, so the entry records no actor.",
+        "description": "Change some of a case's details. Any change adds a timeline entry by you.\n\nEach field needs its own permission (``permissions.editableFields`` in the\ncase detail); one refused field (403 ``field-not-permitted``) refuses the\nwhole request, so nothing changes. Changing the lead advocate or the client\nis for Administrators only.",
         "operationId": "update_case_api_cases__case_id__patch",
         "parameters": [
           {
@@ -238,6 +644,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -261,13 +677,285 @@
         }
       }
     },
+    "/api/cases/{case_id}/archive": {
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Archive Case",
+        "description": "Archive a case (Administrators): kept in full, read-only, hidden from lists.",
+        "operationId": "archive_case_api_cases__case_id__archive_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/unarchive": {
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Unarchive Case",
+        "description": "Restore an archived case (Administrators).",
+        "operationId": "unarchive_case_api_cases__case_id__unarchive_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/team": {
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Add Team Member",
+        "description": "Add an Advocate (as associate) or a Paralegal to the case team.\n\nThe Administrator or the case's lead advocate only.",
+        "operationId": "add_team_member_api_cases__case_id__team_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamMemberIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/team/{member_id}": {
+      "delete": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Remove Team Member",
+        "description": "Take someone off the case team (the Administrator or the lead advocate).",
+        "operationId": "remove_team_member_api_cases__case_id__team__member_id__delete",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "member_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Member Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/hearings/upcoming": {
       "get": {
         "tags": [
           "cases"
         ],
         "summary": "Upcoming Hearings",
-        "description": "Hearings on or after today across all cases, soonest first.",
+        "description": "Hearings on or after today on the cases you may see, soonest first.",
         "operationId": "upcoming_hearings_api_hearings_upcoming_get",
         "parameters": [
           {
@@ -375,16 +1063,6 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_upload_document_api_cases__case_id__documents_post"
-              }
-            }
-          }
-        },
         "responses": {
           "201": {
             "description": "Successful Response",
@@ -446,6 +1124,26 @@
               }
             }
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "One file: PDF, Word, text, PNG, JPG, GIF or WebP."
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -494,7 +1192,7 @@
           "documents"
         ],
         "summary": "Delete Document",
-        "description": "Remove a document and its stored file.",
+        "description": "Delete a document (Administrator or the lead advocate).\n\nThe document leaves the case but is kept, with its file, until restored or\npurged by an operator (``python -m lexflow.cli.documents purge``).",
         "operationId": "delete_document_api_documents__document_id__delete",
         "parameters": [
           {
@@ -510,6 +1208,1237 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{document_id}/share": {
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Share Document",
+        "description": "Share a document with the case's client: it appears in their portal.\n\nAdvocates on the case (and Administrators). Sample records cannot be\nshared (422 ``no-file``). Sharing it again changes nothing.",
+        "operationId": "share_document_api_documents__document_id__share_post",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{document_id}/unshare": {
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Unshare Document",
+        "description": "Stop sharing a document with the client (it leaves their portal at once).",
+        "operationId": "unshare_document_api_documents__document_id__unshare_post",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/documents/deleted": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "List Deleted Documents",
+        "description": "A case's deleted documents, most recently deleted first (Administrator or lead).",
+        "operationId": "list_deleted_documents_api_cases__case_id__documents_deleted_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeletedDocumentOut"
+                  },
+                  "title": "Response List Deleted Documents Api Cases  Case Id  Documents Deleted Get"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{document_id}/restore": {
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Restore Document",
+        "description": "Put a deleted document back on its case (Administrator or the lead advocate).\n\n409 ``duplicate`` while another document on the case has the same name.\nRestoring a document that is not deleted changes nothing.",
+        "operationId": "restore_document_api_documents__document_id__restore_post",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hearings": {
+      "get": {
+        "tags": [
+          "hearings"
+        ],
+        "summary": "Hearing Schedule",
+        "description": "Hearings across the cases you may see, in a date range, soonest first.\n\nArchived cases are left out; cancelled hearings only when asked for. The\nrange may span at most a year.",
+        "operationId": "hearing_schedule_api_hearings_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "First day (default: today).",
+              "title": "From"
+            },
+            "description": "First day (default: today)."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Last day (default: 30 days after the first).",
+              "title": "To"
+            },
+            "description": "Last day (default: 30 days after the first)."
+          },
+          {
+            "name": "includeCancelled",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Includecancelled"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 200,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HearingSchedule"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/hearings": {
+      "post": {
+        "tags": [
+          "hearings"
+        ],
+        "summary": "Schedule Hearing",
+        "description": "Schedule a hearing on a case. The date cannot be in the past.",
+        "operationId": "schedule_hearing_api_cases__case_id__hearings_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HearingIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hearings/{hearing_id}": {
+      "patch": {
+        "tags": [
+          "hearings"
+        ],
+        "summary": "Update Hearing",
+        "description": "Change a scheduled hearing. 409 ``hearing-cancelled`` once it is cancelled.",
+        "operationId": "update_hearing_api_hearings__hearing_id__patch",
+        "parameters": [
+          {
+            "name": "hearing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Hearing Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HearingUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hearings/{hearing_id}/cancel": {
+      "post": {
+        "tags": [
+          "hearings"
+        ],
+        "summary": "Cancel Hearing",
+        "description": "Cancel a hearing. It stays on the case, with the reason if one is given.",
+        "operationId": "cancel_hearing_api_hearings__hearing_id__cancel_post",
+        "parameters": [
+          {
+            "name": "hearing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Hearing Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HearingCancelIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/audit": {
+      "get": {
+        "tags": [
+          "administration"
+        ],
+        "summary": "Read Audit Log",
+        "description": "The audit log, newest first, filtered and a page at a time (read-only).\n\nAppend-only in the database, but not tamper-proof against someone with\ndatabase administrator rights.",
+        "operationId": "read_audit_log_api_admin_audit_get",
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An action, or a prefix ending in a dot (``document.``).",
+              "title": "Action"
+            },
+            "description": "An action, or a prefix ending in a dot (``document.``)."
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "success",
+                    "denied",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outcome"
+            }
+          },
+          {
+            "name": "actorId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actorid"
+            }
+          },
+          {
+            "name": "caseId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Caseid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "``nextBefore`` of a page.",
+              "title": "Before"
+            },
+            "description": "``nextBefore`` of a page."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "tags": [
+          "administration"
+        ],
+        "summary": "List Users",
+        "description": "Every account, by role and name.",
+        "operationId": "list_users_api_admin_users_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdminUserOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Users Api Admin Users Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "administration"
+        ],
+        "summary": "Create User",
+        "description": "Create an account with a temporary password (replaced at first sign-in).\n\nThe password is never returned. Client accounts need ``clientId``.",
+        "operationId": "create_user_api_admin_users_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/{user_id}": {
+      "patch": {
+        "tags": [
+          "administration"
+        ],
+        "summary": "Update User",
+        "description": "Change an account's name or e-mail address.",
+        "operationId": "update_user_api_admin_users__user_id__patch",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/{user_id}/disable": {
+      "post": {
+        "tags": [
+          "administration"
+        ],
+        "summary": "Disable User",
+        "description": "Stop an account from signing in and end its sessions.\n\n409 for your own account or the last active Administrator.",
+        "operationId": "disable_user_api_admin_users__user_id__disable_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/{user_id}/enable": {
+      "post": {
+        "tags": [
+          "administration"
+        ],
+        "summary": "Enable User",
+        "description": "Allow a disabled account to sign in again.",
+        "operationId": "enable_user_api_admin_users__user_id__enable_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/{user_id}/unlock": {
+      "post": {
+        "tags": [
+          "administration"
+        ],
+        "summary": "Unlock User",
+        "description": "Clear a lockout after repeated failed sign-ins.",
+        "operationId": "unlock_user_api_admin_users__user_id__unlock_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/{user_id}/password": {
+      "post": {
+        "tags": [
+          "administration"
+        ],
+        "summary": "Reset Password",
+        "description": "Give an account a temporary password: their sessions end, and they must\nchoose a new password at the next sign-in. Not for your own account (409).",
+        "operationId": "reset_password_api_admin_users__user_id__password_post",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemporaryPasswordIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/portal/cases": {
+      "get": {
+        "tags": [
+          "client portal"
+        ],
+        "summary": "List Cases",
+        "description": "Your cases (archived ones are not shown), newest first.",
+        "operationId": "list_cases_api_portal_cases_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PortalCaseSummary"
+                  },
+                  "type": "array",
+                  "title": "Response List Cases Api Portal Cases Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/portal/cases/{case_id}": {
+      "get": {
+        "tags": [
+          "client portal"
+        ],
+        "summary": "Get Case",
+        "description": "One of your cases, with its coming hearings and the documents shared with you.",
+        "operationId": "get_case_api_portal_cases__case_id__get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalCaseDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/portal/documents/{document_id}/download": {
+      "get": {
+        "tags": [
+          "client portal"
+        ],
+        "summary": "Download Document",
+        "description": "Download a document shared with you. Anything else answers 404.",
+        "operationId": "download_document_api_portal_documents__document_id__download_get",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The shared file.",
+            "content": {
+              "application/octet-stream": {}
+            }
           },
           "404": {
             "description": "Not Found",
@@ -545,6 +2474,195 @@
           "name"
         ],
         "title": "ActorOut"
+      },
+      "AdminUserCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "Administrator",
+              "Advocate",
+              "Paralegal",
+              "Client"
+            ],
+            "title": "Role"
+          },
+          "clientId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientid",
+            "description": "Required for Client accounts."
+          },
+          "temporaryPassword": {
+            "type": "string",
+            "maxLength": 1024,
+            "title": "Temporarypassword"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "role",
+          "temporaryPassword"
+        ],
+        "title": "AdminUserCreate",
+        "description": "A new account with a temporary password the person must replace at first sign-in."
+      },
+      "AdminUserOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "Administrator",
+              "Advocate",
+              "Paralegal",
+              "Client"
+            ],
+            "title": "Role"
+          },
+          "clientId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientid"
+          },
+          "clientName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientname",
+            "description": "For Client accounts: the client represented."
+          },
+          "isActive": {
+            "type": "boolean",
+            "title": "Isactive"
+          },
+          "isLocked": {
+            "type": "boolean",
+            "title": "Islocked",
+            "description": "Locked after repeated failed sign-ins."
+          },
+          "canSignIn": {
+            "type": "boolean",
+            "title": "Cansignin",
+            "description": "False until a password has been set."
+          },
+          "mustChangePassword": {
+            "type": "boolean",
+            "title": "Mustchangepassword"
+          },
+          "lastLoginAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastloginat"
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "clientId",
+          "clientName",
+          "isActive",
+          "isLocked",
+          "canSignIn",
+          "mustChangePassword",
+          "lastLoginAt",
+          "isSample"
+        ],
+        "title": "AdminUserOut",
+        "description": "An account as administrators see it. Never includes password or session details."
+      },
+      "AdminUserUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AdminUserUpdate",
+        "description": "Change an account's name or e-mail address (the role cannot change)."
       },
       "AdvocateOut": {
         "properties": {
@@ -582,20 +2700,165 @@
         ],
         "title": "AdvocateOut"
       },
-      "Body_upload_document_api_cases__case_id__documents_post": {
+      "AuditEventOut": {
         "properties": {
-          "file": {
+          "id": {
             "type": "string",
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "description": "One file: PDF, Word, text, PNG, JPG, GIF or WebP."
+            "format": "uuid",
+            "title": "Id"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurredat"
+          },
+          "actorId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actorid"
+          },
+          "actorName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actorname",
+            "description": "As it was when the event happened."
+          },
+          "actorRole": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actorrole"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "success",
+              "denied",
+              "failed"
+            ],
+            "title": "Outcome"
+          },
+          "targetType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Targettype"
+          },
+          "targetId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Targetid"
+          },
+          "caseId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caseid"
+          },
+          "caseNumber": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Casenumber"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
           }
         },
         "type": "object",
         "required": [
-          "file"
+          "id",
+          "occurredAt",
+          "actorId",
+          "actorName",
+          "actorRole",
+          "action",
+          "outcome",
+          "targetType",
+          "targetId",
+          "caseId",
+          "caseNumber",
+          "details"
         ],
-        "title": "Body_upload_document_api_cases__case_id__documents_post"
+        "title": "AuditEventOut",
+        "description": "One audit-log entry. ``details`` holds only whitelisted, non-secret values."
+      },
+      "AuditPage": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEventOut"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "nextBefore": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextbefore",
+            "description": "Pass as ``before`` for the next (older) page; null on the last page."
+          }
+        },
+        "type": "object",
+        "required": [
+          "events",
+          "nextBefore"
+        ],
+        "title": "AuditPage"
       },
       "CaseCreate": {
         "properties": {
@@ -812,6 +3075,19 @@
             "type": "integer",
             "title": "Documentcount"
           },
+          "archivedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archivedat",
+            "description": "When the case was archived (read-only until restored); null if active."
+          },
           "isSample": {
             "type": "boolean",
             "title": "Issample"
@@ -840,6 +3116,16 @@
             },
             "type": "array",
             "title": "Timeline"
+          },
+          "team": {
+            "items": {
+              "$ref": "#/components/schemas/TeamMemberOut"
+            },
+            "type": "array",
+            "title": "Team"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/CasePermissions"
           }
         },
         "type": "object",
@@ -859,13 +3145,87 @@
           "openedOn",
           "nextHearing",
           "documentCount",
+          "archivedAt",
           "isSample",
           "description",
           "documents",
           "hearings",
-          "timeline"
+          "timeline",
+          "team",
+          "permissions"
         ],
         "title": "CaseDetail"
+      },
+      "CasePermissions": {
+        "properties": {
+          "relation": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "lead",
+              "associate",
+              "paralegal",
+              "client",
+              "none"
+            ],
+            "title": "Relation"
+          },
+          "editableFields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Editablefields",
+            "description": "Fields this user may change (camelCase)."
+          },
+          "canChangeStatus": {
+            "type": "boolean",
+            "title": "Canchangestatus"
+          },
+          "canManageTeam": {
+            "type": "boolean",
+            "title": "Canmanageteam"
+          },
+          "canArchive": {
+            "type": "boolean",
+            "title": "Canarchive"
+          },
+          "canManageHearings": {
+            "type": "boolean",
+            "title": "Canmanagehearings"
+          },
+          "canUploadDocuments": {
+            "type": "boolean",
+            "title": "Canuploaddocuments"
+          },
+          "canDeleteDocuments": {
+            "type": "boolean",
+            "title": "Candeletedocuments"
+          },
+          "canRestoreDocuments": {
+            "type": "boolean",
+            "title": "Canrestoredocuments"
+          },
+          "canShareDocuments": {
+            "type": "boolean",
+            "title": "Cansharedocuments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "relation",
+          "editableFields",
+          "canChangeStatus",
+          "canManageTeam",
+          "canArchive",
+          "canManageHearings",
+          "canUploadDocuments",
+          "canDeleteDocuments",
+          "canRestoreDocuments",
+          "canShareDocuments"
+        ],
+        "title": "CasePermissions",
+        "description": "What the signed-in user may do on this case (to show the right controls).\n\nA convenience for the screens only: the server checks every action again."
       },
       "CaseSummary": {
         "properties": {
@@ -979,6 +3339,19 @@
             "type": "integer",
             "title": "Documentcount"
           },
+          "archivedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archivedat",
+            "description": "When the case was archived (read-only until restored); null if active."
+          },
           "isSample": {
             "type": "boolean",
             "title": "Issample"
@@ -1001,6 +3374,7 @@
           "openedOn",
           "nextHearing",
           "documentCount",
+          "archivedAt",
           "isSample"
         ],
         "title": "CaseSummary"
@@ -1136,6 +3510,128 @@
         "title": "CaseUpdate",
         "description": "Partial update. Only the fields present in the request change.\n\n``courtName`` and ``opposingParty`` may be null to clear them; the other\nfields cannot be null."
       },
+      "ClientDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          },
+          "cases": {
+            "items": {
+              "$ref": "#/components/schemas/CaseSummary"
+            },
+            "type": "array",
+            "title": "Cases",
+            "description": "The client's cases that you may see."
+          },
+          "canEdit": {
+            "type": "boolean",
+            "title": "Canedit",
+            "description": "Whether you may change these details."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "company",
+          "isSample",
+          "cases",
+          "canEdit"
+        ],
+        "title": "ClientDetail"
+      },
+      "ClientIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "phone"
+        ],
+        "title": "ClientIn",
+        "description": "A new client. Name, e-mail and phone are required; the company is optional."
+      },
+      "ClientOption": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "isSample"
+        ],
+        "title": "ClientOption",
+        "description": "A client as offered in the new-case form: no contact details."
+      },
       "ClientOut": {
         "properties": {
           "id": {
@@ -1181,6 +3677,187 @@
           "isSample"
         ],
         "title": "ClientOut"
+      },
+      "ClientUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ClientUpdate",
+        "description": "Change a client's details. Only the fields present change; ``company`` may be null."
+      },
+      "DeletedDocumentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "uploadedOn": {
+            "type": "string",
+            "format": "date",
+            "title": "Uploadedon"
+          },
+          "size": {
+            "type": "string",
+            "title": "Size",
+            "description": "Human-readable size, e.g. '512 KB'."
+          },
+          "sizeBytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sizebytes",
+            "description": "Exact size of the stored file; null without one."
+          },
+          "hasFile": {
+            "type": "boolean",
+            "title": "Hasfile",
+            "description": "False for sample records, which have no stored file."
+          },
+          "contentType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contenttype"
+          },
+          "downloadUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Downloadurl"
+          },
+          "uploadedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActorOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who uploaded it; null for sample records and earlier uploads."
+          },
+          "sharedWithClientAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sharedwithclientat",
+            "description": "When it was shared with the client (their portal shows it); null if not."
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Deletedat"
+          },
+          "deletedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActorOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who deleted it, if still known."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "uploadedOn",
+          "size",
+          "sizeBytes",
+          "hasFile",
+          "contentType",
+          "downloadUrl",
+          "uploadedBy",
+          "sharedWithClientAt",
+          "isSample",
+          "deletedAt",
+          "deletedBy"
+        ],
+        "title": "DeletedDocumentOut",
+        "description": "A deleted document, kept until restored or purged by an operator."
       },
       "DocumentOut": {
         "properties": {
@@ -1246,6 +3923,30 @@
             ],
             "title": "Downloadurl"
           },
+          "uploadedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActorOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who uploaded it; null for sample records and earlier uploads."
+          },
+          "sharedWithClientAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sharedwithclientat",
+            "description": "When it was shared with the client (their portal shows it); null if not."
+          },
           "isSample": {
             "type": "boolean",
             "title": "Issample"
@@ -1262,6 +3963,8 @@
           "hasFile",
           "contentType",
           "downloadUrl",
+          "uploadedBy",
+          "sharedWithClientAt",
           "isSample"
         ],
         "title": "DocumentOut"
@@ -1311,6 +4014,63 @@
         ],
         "title": "Health"
       },
+      "HearingCancelIn": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Optional, shown on the case."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "HearingCancelIn"
+      },
+      "HearingIn": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time",
+            "description": "24-hour HH:MM, or omitted."
+          },
+          "court": {
+            "type": "string",
+            "title": "Court"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "court",
+          "purpose"
+        ],
+        "title": "HearingIn",
+        "description": "Schedule a hearing. The time may be left out until the court lists it."
+      },
       "HearingOut": {
         "properties": {
           "id": {
@@ -1343,6 +4103,26 @@
             "type": "string",
             "title": "Purpose"
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Scheduled",
+              "Cancelled"
+            ],
+            "title": "Status",
+            "description": "Cancelled hearings are kept but are never the next or an upcoming hearing."
+          },
+          "cancellationReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancellationreason"
+          },
           "isSample": {
             "type": "boolean",
             "title": "Issample"
@@ -1355,9 +4135,440 @@
           "time",
           "court",
           "purpose",
+          "status",
+          "cancellationReason",
           "isSample"
         ],
         "title": "HearingOut"
+      },
+      "HearingSchedule": {
+        "properties": {
+          "hearings": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduledHearingOut"
+            },
+            "type": "array",
+            "title": "Hearings"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "description": "True when more hearings matched than the limit."
+          }
+        },
+        "type": "object",
+        "required": [
+          "hearings",
+          "truncated"
+        ],
+        "title": "HearingSchedule",
+        "description": "Hearings in a date range, soonest first."
+      },
+      "HearingUpdate": {
+        "properties": {
+          "date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time"
+          },
+          "court": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Court"
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purpose"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "HearingUpdate",
+        "description": "Change a scheduled hearing. Only the fields present change; ``time`` may be null."
+      },
+      "MeOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "Administrator",
+              "Advocate",
+              "Paralegal",
+              "Client"
+            ],
+            "title": "Role"
+          },
+          "clientId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientid",
+            "description": "For Client users: the client record they represent."
+          },
+          "mustChangePassword": {
+            "type": "boolean",
+            "title": "Mustchangepassword",
+            "description": "True while a temporary password must be replaced before anything else."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "clientId",
+          "mustChangePassword"
+        ],
+        "title": "MeOut",
+        "description": "The signed-in user. Never includes password or session details."
+      },
+      "PasswordChangeIn": {
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "maxLength": 1024,
+            "title": "Currentpassword"
+          },
+          "newPassword": {
+            "type": "string",
+            "maxLength": 1024,
+            "title": "Newpassword"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
+        "title": "PasswordChangeIn"
+      },
+      "PortalCaseDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "caseNumber": {
+            "type": "string",
+            "title": "Casenumber"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Open",
+              "In Progress",
+              "On Hold",
+              "Closed"
+            ],
+            "title": "Status"
+          },
+          "practiceArea": {
+            "type": "string",
+            "enum": [
+              "Corporate / Commercial",
+              "Civil",
+              "Criminal",
+              "Family",
+              "Intellectual Property",
+              "Constitutional / Administrative",
+              "Real Estate",
+              "Employment & Labour"
+            ],
+            "title": "Practicearea"
+          },
+          "leadAttorney": {
+            "type": "string",
+            "title": "Leadattorney"
+          },
+          "courtName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Courtname"
+          },
+          "openedOn": {
+            "type": "string",
+            "format": "date",
+            "title": "Openedon"
+          },
+          "nextHearing": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nexthearing"
+          },
+          "hearings": {
+            "items": {
+              "$ref": "#/components/schemas/PortalHearingOut"
+            },
+            "type": "array",
+            "title": "Hearings",
+            "description": "Scheduled hearings from today on."
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/PortalDocumentOut"
+            },
+            "type": "array",
+            "title": "Documents",
+            "description": "Documents shared with you."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "caseNumber",
+          "title",
+          "status",
+          "practiceArea",
+          "leadAttorney",
+          "courtName",
+          "openedOn",
+          "nextHearing",
+          "hearings",
+          "documents"
+        ],
+        "title": "PortalCaseDetail"
+      },
+      "PortalCaseSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "caseNumber": {
+            "type": "string",
+            "title": "Casenumber"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Open",
+              "In Progress",
+              "On Hold",
+              "Closed"
+            ],
+            "title": "Status"
+          },
+          "practiceArea": {
+            "type": "string",
+            "enum": [
+              "Corporate / Commercial",
+              "Civil",
+              "Criminal",
+              "Family",
+              "Intellectual Property",
+              "Constitutional / Administrative",
+              "Real Estate",
+              "Employment & Labour"
+            ],
+            "title": "Practicearea"
+          },
+          "leadAttorney": {
+            "type": "string",
+            "title": "Leadattorney"
+          },
+          "courtName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Courtname"
+          },
+          "openedOn": {
+            "type": "string",
+            "format": "date",
+            "title": "Openedon"
+          },
+          "nextHearing": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nexthearing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "caseNumber",
+          "title",
+          "status",
+          "practiceArea",
+          "leadAttorney",
+          "courtName",
+          "openedOn",
+          "nextHearing"
+        ],
+        "title": "PortalCaseSummary",
+        "description": "A case as its client sees it: no internal notes, priority or team."
+      },
+      "PortalDocumentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "size": {
+            "type": "string",
+            "title": "Size"
+          },
+          "sharedOn": {
+            "type": "string",
+            "format": "date",
+            "title": "Sharedon"
+          },
+          "downloadUrl": {
+            "type": "string",
+            "title": "Downloadurl"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "size",
+          "sharedOn",
+          "downloadUrl"
+        ],
+        "title": "PortalDocumentOut",
+        "description": "A document shared with the client."
+      },
+      "PortalHearingOut": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time"
+          },
+          "court": {
+            "type": "string",
+            "title": "Court"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "time",
+          "court",
+          "purpose"
+        ],
+        "title": "PortalHearingOut",
+        "description": "A scheduled hearing as the client sees it."
       },
       "Problem": {
         "properties": {
@@ -1414,6 +4625,221 @@
         "title": "Problem",
         "description": "RFC 9457 problem details, plus LexFlow's ``code`` and ``errors`` members."
       },
+      "ScheduledHearingOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time",
+            "description": "24-hour HH:MM, or null until the court lists it."
+          },
+          "court": {
+            "type": "string",
+            "title": "Court"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Scheduled",
+              "Cancelled"
+            ],
+            "title": "Status",
+            "description": "Cancelled hearings are kept but are never the next or an upcoming hearing."
+          },
+          "cancellationReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancellationreason"
+          },
+          "isSample": {
+            "type": "boolean",
+            "title": "Issample"
+          },
+          "caseId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Caseid"
+          },
+          "caseTitle": {
+            "type": "string",
+            "title": "Casetitle"
+          },
+          "caseNumber": {
+            "type": "string",
+            "title": "Casenumber"
+          },
+          "leadAttorney": {
+            "type": "string",
+            "title": "Leadattorney",
+            "description": "Name of the case's lead advocate."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "date",
+          "time",
+          "court",
+          "purpose",
+          "status",
+          "cancellationReason",
+          "isSample",
+          "caseId",
+          "caseTitle",
+          "caseNumber",
+          "leadAttorney"
+        ],
+        "title": "ScheduledHearingOut"
+      },
+      "SignInIn": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 1024,
+            "title": "Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "SignInIn"
+      },
+      "StaffOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "Administrator",
+              "Advocate",
+              "Paralegal",
+              "Client"
+            ],
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "role"
+        ],
+        "title": "StaffOut",
+        "description": "An active staff member, as offered when building a case team."
+      },
+      "TeamMemberIn": {
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Userid",
+            "description": "An active Advocate (associate) or Paralegal."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "userId"
+        ],
+        "title": "TeamMemberIn"
+      },
+      "TeamMemberOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "Administrator",
+              "Advocate",
+              "Paralegal",
+              "Client"
+            ],
+            "title": "Role"
+          },
+          "memberRole": {
+            "type": "string",
+            "enum": [
+              "associate",
+              "paralegal"
+            ],
+            "title": "Memberrole"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "role",
+          "memberRole"
+        ],
+        "title": "TeamMemberOut",
+        "description": "Someone on a case team besides the lead advocate."
+      },
+      "TemporaryPasswordIn": {
+        "properties": {
+          "temporaryPassword": {
+            "type": "string",
+            "maxLength": 1024,
+            "title": "Temporarypassword"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "temporaryPassword"
+        ],
+        "title": "TemporaryPasswordIn"
+      },
       "TimelineEventOut": {
         "properties": {
           "id": {
@@ -1443,7 +4869,13 @@
                 "type": "null"
               }
             ],
-            "description": "Who made the change. Null when no signed-in user did (always in Phase 1)."
+            "description": "Who made the change. Null for sample entries and changes made by the system."
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recordedat",
+            "description": "When the entry was recorded (UTC)."
           },
           "isSample": {
             "type": "boolean",
@@ -1457,6 +4889,7 @@
           "label",
           "description",
           "actor",
+          "recordedAt",
           "isSample"
         ],
         "title": "TimelineEventOut"
@@ -1493,6 +4926,26 @@
             "type": "string",
             "title": "Purpose"
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Scheduled",
+              "Cancelled"
+            ],
+            "title": "Status",
+            "description": "Cancelled hearings are kept but are never the next or an upcoming hearing."
+          },
+          "cancellationReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancellationreason"
+          },
           "isSample": {
             "type": "boolean",
             "title": "Issample"
@@ -1518,6 +4971,8 @@
           "time",
           "court",
           "purpose",
+          "status",
+          "cancellationReason",
           "isSample",
           "caseId",
           "caseTitle",

@@ -1,63 +1,132 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import type { User } from '../types';
-import { currentUser } from '../data/mockData';
+import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { CurrentUser } from '../types';
+import { ApiError, onAuthEvent } from '../services/api/client';
+import { lexflowApi } from '../services/api/lexflow';
 
 /**
- * Mock authentication for v0.1.
+ * Who is signed in, as the server says.
  *
- * There is no real backend yet: any email/password is accepted and resolves to a
- * single demo user. The provider shape (user + login/logout) is what later
- * milestones will wire to a real auth service, so pages should depend on this
- * hook rather than on the mock directly.
+ * The session lives in an HttpOnly cookie that scripts cannot read; the page
+ * only learns the user from `GET /api/auth/me`. Nothing about the session is
+ * kept in localStorage. Signing in, signing out and an ended session (any 401
+ * `not-authenticated`) all start from an empty cache, so one person's cases
+ * never show for the next person on the same browser.
  */
 
-interface AuthContextValue {
-  user: User | null;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-}
+export const ME_KEY = ['auth', 'me'] as const;
 
-const STORAGE_KEY = 'lexflow.auth';
+// Where the Phase 1 mock sign-in kept a user. Removed so nothing reads it.
+const LEGACY_STORAGE_KEY = 'lexflow.auth';
+
+interface AuthContextValue {
+  user: CurrentUser | null;
+  /** 'loading' until the server has answered who is signed in. */
+  status: 'loading' | 'ready' | 'error';
+  error: unknown;
+  retry: () => void;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<CurrentUser>;
+  logout: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<CurrentUser>;
+}
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-function readStoredUser(): User | null {
+async function fetchCurrentUser(): Promise<CurrentUser | null> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as User) : null;
-  } catch {
-    return null;
+    return await lexflowApi.me();
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return null;
+    throw error;
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(readStoredUser);
+  const queryClient = useQueryClient();
 
-  const login = useCallback(async (email: string, _password: string) => {
-    // Simulate a network round-trip so the UI can show a pending state.
-    await new Promise((resolve) => setTimeout(resolve, 450));
-    const signedIn: User = { ...currentUser, email: email.trim() || currentUser.email };
-    setUser(signedIn);
+  useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(signedIn));
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
     } catch {
-      /* storage unavailable — session stays in memory only */
+      /* storage unavailable: nothing to remove */
     }
   }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
+  const me = useQuery({
+    queryKey: ME_KEY,
+    queryFn: fetchCurrentUser,
+    staleTime: Infinity,
+    retry: false,
+  });
+
+  /** Forget everything fetched for the previous user, then record the new one. */
+  const startOver = useCallback(
+    (user: CurrentUser | null) => {
+      void queryClient.cancelQueries();
+      queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== ME_KEY[0] });
+      queryClient.getMutationCache().clear();
+      queryClient.setQueryData(ME_KEY, user);
+    },
+    [queryClient],
+  );
+
+  useEffect(
+    () =>
+      onAuthEvent((event) => {
+        if (event === 'unauthenticated') startOver(null);
+        else void queryClient.invalidateQueries({ queryKey: ME_KEY });
+      }),
+    [queryClient, startOver],
+  );
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const user = await lexflowApi.login(email, password);
+      startOver(user);
+      return user;
+    },
+    [startOver],
+  );
+
+  const logout = useCallback(async () => {
     try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* ignore */
+      await lexflowApi.logout();
+    } finally {
+      startOver(null);
     }
-  }, []);
+  }, [startOver]);
+
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      const user = await lexflowApi.changePassword(currentPassword, newPassword);
+      queryClient.setQueryData(ME_KEY, user);
+      return user;
+    },
+    [queryClient],
+  );
+
+  const user = me.data ?? null;
+  const status: AuthContextValue['status'] = me.isPending
+    ? 'loading'
+    : me.isError
+      ? 'error'
+      : 'ready';
+  const { refetch } = me;
+  const retry = useCallback(() => void refetch(), [refetch]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isAuthenticated: user !== null, login, logout }),
-    [user, login, logout],
+    () => ({
+      user,
+      status,
+      error: me.error,
+      retry,
+      isAuthenticated: user !== null,
+      login,
+      logout,
+      changePassword,
+    }),
+    [user, status, me.error, retry, login, logout, changePassword],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

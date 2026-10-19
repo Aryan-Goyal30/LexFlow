@@ -3,19 +3,44 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { useAuth } from '../../context/AuthContext';
+import { ErrorState, LoadingState } from '../ui/QueryState';
+import { CHANGE_PASSWORD_PATH, PORTAL_PATH } from '../../lib/paths';
 
 /**
  * Authenticated application shell: fixed sidebar + top bar, scrollable content
- * region rendered via <Outlet />. Without a (mock) session it redirects to the
- * sign-in screen, remembering the requested page so sign-in can return to it.
+ * region rendered via <Outlet />.
+ *
+ * It waits for the server to say who is signed in. Without a session it sends
+ * the visitor to sign-in, remembering the requested page; a user who still has
+ * to replace a temporary password can only reach the change-password page. The
+ * server enforces all of this too: the shell only keeps the screens consistent.
  */
 export function AppLayout() {
-  const { isAuthenticated } = useAuth();
+  const { user, status, error, retry } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  if (!isAuthenticated) {
+  if (status === 'loading') {
+    return (
+      <div className="grid min-h-screen place-items-center bg-brand-50">
+        <LoadingState label="Checking your session…" />
+      </div>
+    );
+  }
+  if (status === 'error') {
+    return (
+      <div className="grid min-h-screen place-items-center bg-brand-50">
+        <ErrorState title="Couldn't reach LexFlow" error={error} onRetry={retry} />
+      </div>
+    );
+  }
+  if (!user) {
     return <Navigate to="/" replace state={{ from: location.pathname + location.search }} />;
+  }
+  // Client accounts use the portal; the server refuses them every staff route.
+  if (user.role === 'Client') return <Navigate to={PORTAL_PATH} replace />;
+  if (user.mustChangePassword && location.pathname !== CHANGE_PASSWORD_PATH) {
+    return <Navigate to={CHANGE_PASSWORD_PATH} replace />;
   }
 
   return (

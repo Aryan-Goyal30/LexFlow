@@ -1,8 +1,9 @@
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, Check, Loader2 } from 'lucide-react';
-import { useAdvocates, useClients, useCreateCase } from '../hooks/useCases';
+import { useAdvocates, useClientOptions, useCreateCase } from '../hooks/useCases';
 import { useAuth } from '../context/AuthContext';
+import { canOpenCases } from '../lib/roles';
 import { ApiError, errorMessage } from '../services/api/client';
 import { Card, CardBody, CardHeader } from '../components/ui/Card';
 import { Button, ButtonLink } from '../components/ui/Button';
@@ -12,25 +13,13 @@ import type {
   Advocate,
   CasePriority,
   CaseStatus,
-  Client,
+  ClientOption,
   NewCaseInput,
   PracticeArea,
 } from '../types';
 import { validateNewCase, type NewCaseErrors, type NewCaseForm } from '../lib/validateNewCase';
 import { todayIsoDate } from '../lib/format';
-
-const PRACTICE_AREAS: PracticeArea[] = [
-  'Corporate / Commercial',
-  'Civil',
-  'Criminal',
-  'Family',
-  'Intellectual Property',
-  'Constitutional / Administrative',
-  'Real Estate',
-  'Employment & Labour',
-];
-const STATUSES: CaseStatus[] = ['Open', 'In Progress', 'On Hold', 'Closed'];
-const PRIORITIES: CasePriority[] = ['Low', 'Medium', 'High', 'Critical'];
+import { PRACTICE_AREAS, PRIORITIES, STATUSES } from '../lib/caseOptions';
 
 /** Order in which fields appear, used to focus the first invalid one. */
 const FIELD_ORDER: (keyof NewCaseForm)[] = [
@@ -63,11 +52,26 @@ function BackLink() {
 }
 
 export function NewCasePage() {
-  const clients = useClients();
+  const { user } = useAuth();
+  const addedClient = (useLocation().state as { addedClient?: string } | null)?.addedClient;
+  const mayOpen = canOpenCases(user);
+  const clients = useClientOptions({ enabled: mayOpen });
   const advocates = useAdvocates();
 
   let body: ReactNode;
-  if (clients.isPending || advocates.isPending) {
+  if (!mayOpen) {
+    body = (
+      <Card className="px-6 py-10 text-center">
+        <p role="status" className="text-sm text-brand-700">
+          Opening a case is for administrators and advocates. An advocate can add you to a case
+          team.
+        </p>
+        <ButtonLink to="/app/cases" variant="secondary" className="mt-4">
+          Back to cases
+        </ButtonLink>
+      </Card>
+    );
+  } else if (clients.isPending || advocates.isPending) {
     body = (
       <Card>
         <LoadingState label="Loading clients and advocates…" />
@@ -97,25 +101,44 @@ export function NewCasePage() {
         title="Add New Case"
         description="Open a new matter and add it to your case list."
       />
+      {addedClient && (
+        <p
+          role="status"
+          className="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800 ring-1 ring-inset ring-emerald-600/20"
+        >
+          Added {addedClient}. Open their first case below; the client appears on your client list
+          once you work on one of their cases.
+        </p>
+      )}
       {body}
     </>
   );
 }
 
-function NewCaseFormView({ clients, advocates }: { clients: Client[]; advocates: Advocate[] }) {
+function NewCaseFormView({
+  clients,
+  advocates,
+}: {
+  clients: ClientOption[];
+  advocates: Advocate[];
+}) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const createCase = useCreateCase();
   const uid = useId();
+  const [params] = useSearchParams();
+  const preselected = params.get('client');
+  const choosesLead = user?.role === 'Administrator';
 
   const [form, setForm] = useState<NewCaseForm>(() => ({
     title: '',
-    clientId: '',
+    // Opened from a client's page: that client, if it is one of the choices.
+    clientId: clients.some((c) => c.id === preselected) ? (preselected ?? '') : '',
     practiceArea: 'Civil',
     status: 'Open',
     priority: 'Medium',
-    // The signed-in (demo) user, if they are one of the advocates.
-    leadAdvocateId: (advocates.find((a) => a.name === user?.name) ?? advocates[0])?.id ?? '',
+    // An Advocate leads the cases they open; an Administrator picks anyone.
+    leadAdvocateId: (advocates.find((a) => a.id === user?.id) ?? advocates[0])?.id ?? '',
     courtName: '',
     opposingParty: '',
     nextHearing: '',
@@ -316,6 +339,7 @@ function NewCaseFormView({ clients, advocates }: { clients: Client[]; advocates:
                     className="input-field"
                     value={form.leadAdvocateId}
                     onChange={(e) => update('leadAdvocateId', e.target.value)}
+                    disabled={!choosesLead}
                   >
                     {advocates.length === 0 && <option value="">No advocates available</option>}
                     {advocates.map((advocate) => (
@@ -324,6 +348,9 @@ function NewCaseFormView({ clients, advocates }: { clients: Client[]; advocates:
                       </option>
                     ))}
                   </select>
+                  {!choosesLead && (
+                    <p className="mt-1 text-xs text-brand-400">You lead the cases you open.</p>
+                  )}
                 </Field>
 
                 <Field

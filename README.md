@@ -1,20 +1,23 @@
 # LexFlow — Legal Case Workspace & Research Assistant
 
-**v0.3 — Phase 1 (backend and persistence) implemented, awaiting review**
+**v0.4 — Phases 2 and 2b (accounts, roles, case work, client portal) implemented
+locally, awaiting review**
 
-LexFlow helps a lawyer work an active case. Each case has its own **workspace**
-where the advocate manages the case record and collects the case papers. AI
+LexFlow helps a law firm work its active cases. Each case has its own
+**workspace** where the team manages the case record, its hearings and the case
+papers. Clients follow their own matters in a separate **client portal**. AI
 analysis and precedent research are designed into the workspace but are **not
-connected to any AI service yet**.
+connected to any AI service**.
 
 The intended workflow:
 
 **create or open a case → manage case information → upload documents →
 analyse the case → research precedents → review the analysis**
 
-The first three steps work today and are **saved**: cases live in PostgreSQL and
-uploaded files on the local disk, behind a FastAPI server. The last three need an
-AI service and a collection of past judgments, which are later phases.
+The first three steps work today and are **saved** in PostgreSQL (files on the
+local disk) behind a FastAPI server, with real sign-in and role-based access.
+The last three need an AI service and a collection of past judgments, which are
+later phases.
 
 The sample data is set in an **Indian legal context** (Supreme Court of India,
 High Courts, District & Sessions Courts; "Advocate" terminology). All people,
@@ -22,75 +25,89 @@ organisations and matters in it are fictional, and the app labels them
 **Sample**.
 
 `docs/DEVELOPMENT_BRIEF.md` is the source of truth for the product direction
-and the phased roadmap. `docs/PHASE1_EXECUTION_LOG.md` records how Phase 1 was
-built and verified, and `docs/adr/` records the main decisions.
+and the phased roadmap. `docs/PHASE1_EXECUTION_LOG.md` and
+`docs/PHASE2_EXECUTION_LOG.md` record how each phase was built and verified,
+and `docs/adr/` records the main decisions.
 
-> **Local use only.** The API has **no authentication**: anyone who can reach it
-> can read and change every case and document. It refuses to listen on anything
-> but `127.0.0.1`. Do not expose it to a network or deploy it before Phase 2 adds
-> real sign-in. Don't put real client data in it.
+> **Local use only.** LexFlow now has real accounts, sessions and access
+> control, but it has not been reviewed for deployment: the API refuses to
+> listen on anything but `127.0.0.1`. Do not expose it to a network or put real
+> client data in it.
 
 ---
 
-## What works, what is mocked, what is not built
+## What works
 
-### Works now (saved in the database)
+### Accounts and roles
 
-- **Case list** (`/app/cases`, also where `/app` and sign-in land): search by
-  title, case number, client or lead advocate; status filters; next hearing
-  date (marked when it has passed) and document count per case. Loading, error
-  (with Try again), "no cases yet" and "no matching cases" are distinct states.
-- **New case form:** clients and advocates come from the API. Title (at least 4
-  characters), client, summary (at least 10 characters) and lead advocate are
-  required; a next hearing date cannot be in the past. The browser checks first
-  and the server checks again; server errors appear beside their fields and
-  nothing typed is lost. The **server allocates the case number**
-  (`LF-<year>-<sequence>`, per calendar year in India time). On success the new
-  case opens on its Documents tab.
-- **Case workspace** (`/app/cases/:caseId`) with four tabs: Overview,
-  Documents, AI Analysis, Research. The selected tab is in the URL
-  (`?tab=documents`, `?tab=analysis`, `?tab=research`; none means Overview).
-  Each tab change is a browser history entry; arrow keys, Home and End move
-  between tabs. An unknown case id shows "Case not found".
-- **Documents tab:** add files with the picker or by drag-and-drop: PDF, Word
-  (`.doc`, `.docx`), text and images (PNG, JPG, GIF, WebP), up to 25 MB each.
-  Files are uploaded one at a time with progress text, stored on the server, and
-  can be opened in a new tab and removed. The server re-checks every file (type,
-  size, empty, duplicate name, and that the **contents match the extension**)
-  and its reason is shown when it refuses one. Sample documents are records
-  only: "sample record, no file attached".
-- **AI Analysis tab:** an "Analysis Inputs" panel built from the saved case
-  record, a list of what the analysis will contain, and a clear "not connected"
-  state.
-- **Research tab:** a precedent search box, disabled, with a clear "not
-  connected" state.
-- **Practice Overview** (`/app/dashboard`): case counts and recent cases (from
-  the case list) and upcoming hearings, all from the API. The hearings panel
-  loads and fails independently of the case list.
-- **Sign-in screen and route guard** (simulated sign-in; see below) and a
-  **404 page**.
+- **Sign-in** with accounts created by an Administrator (no self-registration),
+  from the Administration screen or the command line. A temporary password must
+  be replaced at first sign-in. Five wrong passwords in a row lock an account
+  for 15 minutes. Sessions end after 30 minutes idle, 12 hours, sign-out, a
+  password change or when the account is disabled.
+- **Four roles.** *Administrators* see and manage everything. *Advocates* see
+  the cases they lead or are on the team of. *Paralegals* see the cases they are
+  assigned to and may change only the court and the opposing party. *Clients*
+  use the client portal only. The screens offer only what the server allows;
+  the server checks everything again, and a case you may not see is "not found".
 
-### Mocked
+### Cases (staff)
 
-- **Sign-in is simulated, not secure.** Any email and password are accepted;
-  the "session" is the demo user saved in `localStorage`. The API does not know
-  who is signed in. Real accounts and roles are Phase 2.
-- **Sample data** is fictional. It is defined in `src/data/mockData.ts`, exported
-  to `server/lexflow/seed/sample_data.json`, and loaded into a development
-  database by an explicit command. Sample dates are fixed, so some hearing dates
-  have passed; the UI marks those.
+- **Case list** (`/app/cases`): search, status filters, next hearing and
+  document count; archived cases on request ("Show archived").
+- **New case**, for Administrators and Advocates (an Advocate leads the cases
+  they open). The server allocates the case number (`LF-<year>-<sequence>`).
+- **Case workspace** (`/app/cases/:caseId`) with Overview, Documents, AI
+  Analysis and Research tabs (the tab is in the URL).
+- **Editing** (`/app/cases/:caseId/edit`): only the fields you may change are
+  shown, and only changed fields are sent. **Status** changes, and changes of
+  lead or client (Administrators), are recorded on the timeline with the person
+  and the time.
+- **Case team:** the Administrator or the lead adds or removes associate
+  advocates and paralegals; access follows at once.
+- **Archiving** (Administrators): the case is kept in full, read-only and out of
+  the default list until restored.
+- **Hearings:** anyone on the case schedules, changes and cancels hearings.
+  Cancelled hearings stay listed with the reason but never count as the next
+  hearing.
+- **Documents:** upload PDF, Word, text and images (up to 25 MB; the server
+  checks that the contents match the type), open, and remove. Removing is
+  **soft**: the Administrator or lead can restore it from "Deleted Documents";
+  only an operator command removes files for good. Advocates **share** documents
+  with the client explicitly.
+
+### Firm-wide pages
+
+- **Hearings** (`/app/hearings`): every hearing on your cases by day, with
+  presets (next 7 or 30 days, past 30 days), custom dates and cancelled ones on
+  request.
+- **Clients** (`/app/clients`): the clients of your cases (all, for
+  Administrators), with contact details and their cases; Administrators and
+  Advocates add clients, and those on a client's cases edit them.
+- **Practice Overview** (`/app/dashboard`): counts, recent cases, upcoming
+  hearings.
+- **Administration** (Administrators): **Accounts** (create, edit, temporary
+  passwords, unlock, disable/enable) and the **Audit log** (who did what and
+  when, with filters). The log cannot be changed through LexFlow and the
+  database rejects edits, but it is **not tamper-proof** against someone with
+  database administrator access.
+
+### Client portal (`/portal`)
+
+A Client account sees its own matters (not archived ones), their coming
+hearings and **only the documents an advocate shared**, with downloads. No
+internal notes, priority, team or timeline. Staff never see the portal and
+clients never reach the staff app.
 
 ### Not connected
 
 - **AI Analysis and Research.** The `AiService` interface in
   `src/services/ai/aiService.ts` is the integration point, but its only
-  implementation reports "not connected" and rejects every call. The app never
-  shows generated, sample or simulated analysis or precedents.
-- **Outcome assessment** is part of the data contract but deliberately not
-  displayed.
-
-LexFlow's AI is meant as **decision support** for the lawyer. It does not
-replace a lawyer's judgment or a court's decision.
+  implementation reports "not connected". The app never shows generated, sample
+  or simulated analysis or precedents. LexFlow's AI is meant as **decision
+  support**; it does not replace a lawyer's judgment or a court's decision.
+- The top-bar search and notifications are placeholders; "Precedent Library"
+  and "Notifications" in the sidebar are marked "Soon".
 
 ---
 
@@ -101,13 +118,17 @@ Prerequisites: **Node.js 20+** (developed on Node 24), **Python 3.12** and
 
 1. **Back end** — follow [`server/README.md`](server/README.md) once: create
    `server/.env` with your own database password, the Python environment, start
-   PostgreSQL and apply the migrations. Then load the fictional sample data
-   (development databases only):
+   PostgreSQL, apply the migrations and **create the first Administrator**:
 
    ```powershell
    cd server
-   .venv\Scripts\python -m lexflow.seed
+   .venv\Scripts\python -m alembic upgrade head
+   .venv\Scripts\python -m lexflow.cli.users create --email you@example.com --name "Your Name" --role Administrator
+   .venv\Scripts\python -m lexflow.seed     # optional fictional sample data (development only)
    ```
+
+   A database from Phase 1 needs migrations 0002 to 0007: **back it up first**
+   (see `server/README.md`).
 
 2. **Every day**, in two terminals:
 
@@ -124,10 +145,10 @@ Prerequisites: **Node.js 20+** (developed on Node 24), **Python 3.12** and
    npm run dev
    ```
 
-Sign in with the pre-filled demo details (don't use a real password). Vite
-forwards `/api` to the API, so the browser sees one origin and the API needs no
-CORS. To point Vite at a different API address, copy `.env.example` to
-`.env.local` (ignored by git) and set `LEXFLOW_API_PROXY_TARGET`.
+Sign in with the account you created. Vite forwards `/api` to the API, so the
+browser sees one origin and no CORS is granted. To point Vite at a different
+API address, copy `.env.example` to `.env.local` (ignored by git) and set
+`LEXFLOW_API_PROXY_TARGET`.
 
 ### Scripts
 
@@ -148,7 +169,8 @@ CORS. To point Vite at a different API address, copy `.env.example` to
 | `npm run preview`           | Serve the production build (also forwards `/api`)               |
 | `npm run check`             | Lint, format, typecheck, both drift checks, tests and build     |
 
-Back-end commands (tests, Ruff, mypy, migrations) are in `server/README.md`.
+Back-end commands (tests, Ruff, mypy, migrations, accounts, purging deleted
+documents) are in `server/README.md`.
 
 ### Changing the API
 
@@ -166,26 +188,23 @@ The API's OpenAPI document is the contract between the two halves:
 | Suite | Where | What it runs against |
 | --- | --- | --- |
 | Back end (pytest) | `server/tests/` | the real FastAPI app and a real PostgreSQL test database, rebuilt with the migrations each run |
-| Front end (Vitest) | `src/**/*.test.ts(x)` | the real routes, providers and pages in jsdom; the API is faked **at the network boundary** with MSW (`src/test/mockApi.ts`), mirroring the server's shapes, codes and messages |
+| Front end (Vitest) | `src/**/*.test.ts(x)` | the real routes, providers and pages in jsdom; the API is faked **at the network boundary** with MSW (`src/test/mockApi.ts`), mirroring the server's rules, shapes, codes and messages |
 | End-to-end (Playwright) | `e2e/` | Chromium, the Vite dev server, the real API and a separate `lexflow_e2e` database |
 
-The back-end tests cover the schema and migrations, sample-data loading (and
-refusing to load outside development), validation and RFC 9457 error responses,
-case-number allocation under concurrency, the PATCH row lock, uploads (size,
-including that an oversized body stops being read at the limit; type, content,
-duplicates, storage failures and rollbacks; the work runs off the event loop),
-downloads and their headers, and the local-only protections (refusing to listen
-beyond 127.0.0.1, Host allow-list, Origin check). Test uploads go to a temporary
-folder, never to `server/var/uploads`.
+The back-end tests cover, besides the Phase 1 ground (schema and migrations,
+validation, uploads and downloads, local-only protections): sign-in, sessions,
+CSRF and Origin checks, lockout and the account command line; **every route
+refusing anonymous callers** (enumerated from the OpenAPI document); each role's
+access to each action and field on a case; editing, archiving and teams;
+hearings and the firm-wide schedule; soft deletion, restore and the purge
+command; clients; the client portal's **isolation** (every staff route refuses
+a Client, every portal route refuses staff, one client never reaches
+another's records); account administration; and the audit log, including that
+it never holds a password. Security-relevant rules were each checked to fail
+their tests when the guarding line was removed (see the Phase 2 execution log).
 
-The front-end tests cover the loading and error states of the case list, the
-case workspace, the new-case form and Practice Overview; the empty states of
-the case list and Practice Overview; an unreachable API (including the dev
-proxy's empty 500); keeping data on screen when a refresh fails; client and
-server validation errors on the form; uploads with progress and server
-rejections, including across tab switches; removing documents, one or several
-at once; the route guard; tab state in the URL; and the AI states (with a fake
-AI service, the only other faked boundary).
+The front-end tests cover the screens' states and what each role is offered,
+with the fake API enforcing the same rules as the server.
 
 ### End-to-end tests
 
@@ -197,18 +216,24 @@ npm run e2e
 
 Global setup drops and recreates the **`lexflow_e2e`** database (same server and
 credentials as `DATABASE_URL`), applies the migrations, loads the sample data,
-empties `server/var/e2e-uploads` and starts an API on `127.0.0.1:8001`. Vite runs
-on port 5174 and forwards `/api` there. Your development database and uploads
-are never touched. The tests sign in, read the case list, create a case and
-reload, upload two files, check the downloaded bytes and headers, open a file,
-delete one, check that the server rejects a fake PDF, **restart the API** and
-check everything is still there, and open an unknown case.
+creates the test accounts with a **random password for that run** (kept in the
+git-ignored `e2e/.state`, passed through an environment variable, never on a
+command line), empties `server/var/e2e-uploads` and starts an API on
+`127.0.0.1:8001`. Vite runs on port 5174 and forwards `/api` there. Your
+development database and uploads are never touched.
+
+The tests sign in and out, check the lockout and the CSRF header, check what
+each role sees and what the server refuses when the screens are bypassed, edit,
+archive and restore a case, build a case team, delete and restore a document
+(byte-identical), schedule, change and cancel a hearing, add a client and open
+their first case, share a document with a client and see it in the portal (and
+leave it when unshared), administer an account from creation to disabling, read
+the audit log, upload and download files, restart the API and check everything
+is still there.
 
 Stopping the API is identity-checked: each start puts a random run id on the
 API's command line, and the harness only stops a process whose command line
-(as the operating system reports it) still carries that id. A process id left
-by an interrupted run, possibly reused by another program, is never signalled.
-`e2e/harness.spec.ts` tests this with decoy processes.
+still carries that id (`e2e/harness.spec.ts` tests this with decoy processes).
 
 ### Continuous integration
 
@@ -221,22 +246,23 @@ requests, with three jobs:
   (lint and format), mypy (strict), `alembic upgrade head`, pytest, OpenAPI
   drift check;
 - **e2e:** PostgreSQL service, Playwright Chromium, `npm run e2e`; the report
-  and API log are kept as an artifact when a test fails.
+  and the API's request log (method, path, status; no credentials) are kept as
+  an artifact when a test fails.
 
-The repository has no GitHub remote yet, so the workflow has not run on GitHub.
-The same commands have been run locally.
+The repository has no GitHub remote, so the workflow has not run on GitHub. The
+same commands have been run locally.
 
 ---
 
 ## Architecture
 
 ```
- Browser ── pages & workspace tabs (src/pages, src/components/workspace)
+ Browser ── staff app (/app) and client portal (/portal)
                 │                                   │
-      useCases hooks (TanStack Query)        useAiAssistant(case)
+      hooks (TanStack Query)                 useAiAssistant(case)
                 │                                   │
       typed API client (src/services/api)    AI service seam → "not connected"
-                │  fetch /api/...
+                │  fetch /api/... (session cookie, X-LexFlow-Request header)
  Vite dev server ── proxy /api ──► FastAPI on 127.0.0.1:8000 (server/lexflow)
                                       │                    │
                               PostgreSQL 17           local disk storage
@@ -244,54 +270,59 @@ The same commands have been run locally.
                                                      a Storage interface)
 ```
 
-- **Pages talk to hooks, not to `fetch`.** `src/hooks/useCases.ts` wraps each
-  endpoint in a TanStack Query query or mutation; mutations refresh the affected
-  queries, so the list, the workspace and the dashboard stay in step.
+- **Access control is on the server.** A session gate refuses anonymous
+  requests before reading them; routers require the right roles; per-case and
+  per-field rules are in `server/lexflow/authz.py`; the portal's queries filter
+  on the client's own id. The front end hides what is not allowed, for clarity.
+- **Pages talk to hooks, not to `fetch`.** Mutations refresh the affected
+  queries; signing in or out clears every cached query.
 - **One contract.** The server's Pydantic models produce `server/openapi.json`;
-  `openapi-typescript` turns it into `src/services/api/schema.gen.ts`, and
-  `src/types/index.ts` names those types for the app.
-- **Errors** are RFC 9457 problem details (`application/problem+json`) with a
-  stable `code` and, for validation, a list of field errors in the form's own
-  wording. `ApiError` in `src/services/api/client.ts` carries them to the UI.
-- **Files** are stored under random keys, never under the uploaded name. The
-  database holds the name, size, type and SHA-256; downloads are streamed with
-  `nosniff`, `no-store` and a safe `Content-Disposition`.
+  `openapi-typescript` turns it into `src/services/api/schema.gen.ts`.
+- **Errors** are RFC 9457 problem details with a stable `code` and field errors
+  in the form's own wording.
+- **Nothing is destroyed in the app:** cases are archived, hearings cancelled,
+  documents soft-deleted; purging is a separate, guarded command.
 
 ### API
 
 | Method & path | Purpose |
 | --- | --- |
-| `GET /api/health` | API and database status (503 when the database is down) |
-| `GET /api/clients`, `GET /api/advocates` | Reference data for the new-case form |
-| `GET /api/cases`, `POST /api/cases` | List cases (newest first); create a case |
-| `GET /api/cases/{id}`, `PATCH /api/cases/{id}` | One case with hearings, timeline and documents; update fields |
-| `GET /api/hearings/upcoming?limit=` | Upcoming hearings across all cases |
-| `GET /api/cases/{id}/documents`, `POST /api/cases/{id}/documents` | List; upload one file (multipart, field `file`) |
-| `GET /api/documents/{id}/download`, `DELETE /api/documents/{id}` | Download a stored file; delete a document and its file |
+| `GET /api/health` | API and database status (public) |
+| `POST /api/auth/login`, `POST /api/auth/logout` | Sign in and out (public) |
+| `GET /api/auth/me`, `POST /api/auth/password` | Who is signed in; change your password |
+| `GET /api/cases?archived=`, `POST /api/cases` | Cases you may see; open a case |
+| `GET`/`PATCH /api/cases/{id}` | One case with hearings, timeline, documents, team and your permissions; change fields |
+| `POST /api/cases/{id}/archive`, `/unarchive` | Archive or restore a case |
+| `POST /api/cases/{id}/team`, `DELETE /api/cases/{id}/team/{userId}` | Case team |
+| `POST /api/cases/{id}/hearings`, `PATCH /api/hearings/{id}`, `POST /api/hearings/{id}/cancel` | Schedule, change, cancel hearings |
+| `GET /api/hearings?from=&to=&includeCancelled=`, `GET /api/hearings/upcoming` | Hearing schedule; upcoming hearings |
+| `GET`/`POST /api/cases/{id}/documents`, `GET /api/cases/{id}/documents/deleted` | Documents; upload; deleted ones |
+| `GET /api/documents/{id}/download`, `DELETE /api/documents/{id}`, `POST .../restore`, `.../share`, `.../unshare` | Download, (soft) delete, restore, share with the client |
+| `GET`/`POST /api/clients`, `GET`/`PATCH /api/clients/{id}`, `GET /api/clients/options` | Clients |
+| `GET /api/advocates`, `GET /api/staff` | Reference lists |
+| `/api/portal/cases`, `/api/portal/cases/{id}`, `/api/portal/documents/{id}/download` | Client portal (Client accounts only) |
+| `/api/admin/users...`, `GET /api/admin/audit` | Account administration and the audit log (Administrators only) |
 
 Interactive documentation is at http://127.0.0.1:8000/docs while the API runs.
-`PATCH` is implemented and tested on the server; the UI has no edit screen yet.
 
 ### Project structure
 
 ```
 src/
 ├── main.tsx, router.tsx, index.css
-├── types/index.ts               # App names for the generated API types (+ mock User)
-├── types/ai.ts                  # AI contract: CaseAnalysis, Precedent, LegalIssue…
-├── services/api/                # client.ts (fetch, ApiError), lexflow.ts (endpoints), schema.gen.ts (generated)
+├── types/                       # App names for the generated API types; AI contract
+├── services/api/                # client.ts (fetch, CSRF header, ApiError), lexflow.ts, schema.gen.ts (generated)
 ├── services/ai/aiService.ts     # AiService interface + "not connected" implementation
-├── hooks/useCases.ts            # Queries and mutations for cases, documents, reference data
-├── hooks/useAiAssistant.ts      # Per-case AI state
-├── context/AuthContext.tsx      # Simulated sign-in, localStorage session
+├── hooks/                       # useCases (cases, documents, hearings, clients, portal), useAdmin, useAiAssistant
+├── context/AuthContext.tsx      # Who is signed in (from /api/auth/me); sign-in and sign-out
 ├── data/mockData.ts             # Fictional sample data (source of the seed JSON)
-├── lib/                         # format, documentFiles, validateNewCase, paths, queryClient
-├── components/                  # layout/, ui/ (incl. QueryState), workspace/ (tabs)
-├── pages/                       # Login, Cases, NewCase, CaseWorkspace, Dashboard, NotFound
+├── lib/                         # paths, roles, format, fields, caseOptions, documentFiles, ...
+├── components/                  # layout/ (app and portal shells), ui/, workspace/, clients/, admin/
+├── pages/                       # staff pages, admin/, portal/
 └── test/                        # setup, renderApp, mockApi (MSW fake API)
 server/
-├── lexflow/                     # FastAPI app: api/, services/, seed/, models, schemas, storage, security
-├── migrations/                  # Alembic
+├── lexflow/                     # FastAPI app: api/, services/, auth/, cli/, seed/, authz, audit, models, schemas
+├── migrations/                  # Alembic (0001 to 0007)
 ├── tests/                       # pytest
 └── scripts/                     # export_openapi.py, e2e.py
 e2e/                             # Playwright tests and the API start/stop helpers
@@ -302,19 +333,18 @@ scripts/                         # api-types.mjs, export-sample-data.mjs
 
 ## Limitations
 
-- **No authentication or authorisation** (Phase 2). The API is protected only
-  by listening on `127.0.0.1`, a Host allow-list (against DNS rebinding) and an
-  Origin check on writes (against cross-site requests). These protect a local
-  development machine; they are not access control.
+- **Not reviewed for deployment.** No HTTPS setup, reverse proxy, rate limiting
+  beyond the per-account lockout, e-mail (password resets are done by an
+  Administrator), or multi-factor sign-in.
+- The audit log is append-only through the app and the database but not
+  tamper-proof.
 - Files are stored unencrypted on the local disk; there is no virus scanning,
   backup or retention policy.
-- Cases can be created and viewed in the UI, not edited or deleted (the API
-  supports `PATCH`).
-- The top-bar search and notifications bell are placeholders; several sidebar
-  items are marked "Soon".
-- No AI analysis, precedent search or judgment collection.
+- No AI analysis, OCR, precedent search, judgment collection or outcome
+  prediction.
 
 ## Next phase
 
-According to `docs/DEVELOPMENT_BRIEF.md`, Phase 2 is **real authentication,
-roles and case editing**, on top of this backend.
+According to `docs/DEVELOPMENT_BRIEF.md`, Phase 3 is **document text
+extraction** (processing status per document, text chunks with page numbers),
+followed by the judgment collection and the AI analysis and research features.

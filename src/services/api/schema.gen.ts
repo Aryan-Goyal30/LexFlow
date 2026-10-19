@@ -24,6 +24,88 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Login
+         * @description Sign in with e-mail and password. Sets the session cookie.
+         *
+         *     Every refusal is the same 401 ``invalid-credentials``, whatever the reason.
+         */
+        post: operations["login_api_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logout
+         * @description End the current session (if any) and clear the cookie. Always 204.
+         */
+        post: operations["logout_api_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Me
+         * @description Who is signed in. 401 ``not-authenticated`` without a live session.
+         */
+        get: operations["me_api_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Password
+         * @description Replace your own password (also a temporary one). Ends your other sessions.
+         */
+        post: operations["change_password_api_auth_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/clients": {
         parameters: {
             query?: never;
@@ -33,9 +115,58 @@ export interface paths {
         };
         /**
          * List Clients
-         * @description All clients, by name.
+         * @description Clients with their contact details, by name.
+         *
+         *     Administrators see every client; Advocates and Paralegals only the clients
+         *     of cases they may see.
          */
         get: operations["list_clients_api_clients_get"];
+        put?: never;
+        /**
+         * Create Client
+         * @description Add a client (Administrators and Advocates).
+         */
+        post: operations["create_client_api_clients_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/clients/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Client Options
+         * @description Every client, by name, without contact details: the new-case form's choices.
+         *
+         *     For those who may open cases (Administrators and Advocates).
+         */
+        get: operations["client_options_api_clients_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Staff
+         * @description Active Advocates and Paralegals, by name: who can join a case team.
+         */
+        get: operations["list_staff_api_staff_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -53,7 +184,7 @@ export interface paths {
         };
         /**
          * List Advocates
-         * @description Users who can lead a case (role Advocate), by name.
+         * @description Active users who can lead a case (role Advocate), by name.
          */
         get: operations["list_advocates_api_advocates_get"];
         put?: never;
@@ -62,6 +193,32 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/clients/{client_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Client
+         * @description A client's details and the cases of theirs you may see.
+         *
+         *     404 for a client none of whose cases you may see (Administrators see all).
+         */
+        get: operations["get_client_api_clients__client_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Client
+         * @description Change a client's details (an Administrator, or an Advocate on one of their cases).
+         */
+        patch: operations["update_client_api_clients__client_id__patch"];
         trace?: never;
     };
     "/api/cases": {
@@ -73,13 +230,16 @@ export interface paths {
         };
         /**
          * List Cases
-         * @description Every case, newest first, with what the case list needs.
+         * @description The cases you may see (all, for an Administrator), newest first.
          */
         get: operations["list_cases_api_cases_get"];
         put?: never;
         /**
          * Create Case
          * @description Open a new case. The server assigns the case number and opening date.
+         *
+         *     Administrators and Advocates only; an Advocate must be the lead (403
+         *     ``field-not-permitted`` otherwise).
          */
         post: operations["create_case_api_cases_post"];
         delete?: never;
@@ -97,7 +257,9 @@ export interface paths {
         };
         /**
          * Get Case
-         * @description One case with its documents, hearings and timeline.
+         * @description One case with its documents, hearings, timeline and your permissions on it.
+         *
+         *     A case you may not see answers 404, exactly like one that does not exist.
          */
         get: operations["get_case_api_cases__case_id__get"];
         put?: never;
@@ -107,11 +269,96 @@ export interface paths {
         head?: never;
         /**
          * Update Case
-         * @description Change some of a case's details. Any change adds a timeline entry.
+         * @description Change some of a case's details. Any change adds a timeline entry by you.
          *
-         *     Phase 1 has no sign-in, so the entry records no actor.
+         *     Each field needs its own permission (``permissions.editableFields`` in the
+         *     case detail); one refused field (403 ``field-not-permitted``) refuses the
+         *     whole request, so nothing changes. Changing the lead advocate or the client
+         *     is for Administrators only.
          */
         patch: operations["update_case_api_cases__case_id__patch"];
+        trace?: never;
+    };
+    "/api/cases/{case_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive Case
+         * @description Archive a case (Administrators): kept in full, read-only, hidden from lists.
+         */
+        post: operations["archive_case_api_cases__case_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unarchive Case
+         * @description Restore an archived case (Administrators).
+         */
+        post: operations["unarchive_case_api_cases__case_id__unarchive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/team": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Team Member
+         * @description Add an Advocate (as associate) or a Paralegal to the case team.
+         *
+         *     The Administrator or the case's lead advocate only.
+         */
+        post: operations["add_team_member_api_cases__case_id__team_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/team/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Team Member
+         * @description Take someone off the case team (the Administrator or the lead advocate).
+         */
+        delete: operations["remove_team_member_api_cases__case_id__team__member_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/hearings/upcoming": {
@@ -123,7 +370,7 @@ export interface paths {
         };
         /**
          * Upcoming Hearings
-         * @description Hearings on or after today across all cases, soonest first.
+         * @description Hearings on or after today on the cases you may see, soonest first.
          */
         get: operations["upcoming_hearings_api_hearings_upcoming_get"];
         put?: never;
@@ -194,9 +441,393 @@ export interface paths {
         post?: never;
         /**
          * Delete Document
-         * @description Remove a document and its stored file.
+         * @description Delete a document (Administrator or the lead advocate).
+         *
+         *     The document leaves the case but is kept, with its file, until restored or
+         *     purged by an operator (``python -m lexflow.cli.documents purge``).
          */
         delete: operations["delete_document_api_documents__document_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{document_id}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Share Document
+         * @description Share a document with the case's client: it appears in their portal.
+         *
+         *     Advocates on the case (and Administrators). Sample records cannot be
+         *     shared (422 ``no-file``). Sharing it again changes nothing.
+         */
+        post: operations["share_document_api_documents__document_id__share_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{document_id}/unshare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unshare Document
+         * @description Stop sharing a document with the client (it leaves their portal at once).
+         */
+        post: operations["unshare_document_api_documents__document_id__unshare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/documents/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Deleted Documents
+         * @description A case's deleted documents, most recently deleted first (Administrator or lead).
+         */
+        get: operations["list_deleted_documents_api_cases__case_id__documents_deleted_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{document_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Document
+         * @description Put a deleted document back on its case (Administrator or the lead advocate).
+         *
+         *     409 ``duplicate`` while another document on the case has the same name.
+         *     Restoring a document that is not deleted changes nothing.
+         */
+        post: operations["restore_document_api_documents__document_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/hearings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Hearing Schedule
+         * @description Hearings across the cases you may see, in a date range, soonest first.
+         *
+         *     Archived cases are left out; cancelled hearings only when asked for. The
+         *     range may span at most a year.
+         */
+        get: operations["hearing_schedule_api_hearings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/hearings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Schedule Hearing
+         * @description Schedule a hearing on a case. The date cannot be in the past.
+         */
+        post: operations["schedule_hearing_api_cases__case_id__hearings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/hearings/{hearing_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Hearing
+         * @description Change a scheduled hearing. 409 ``hearing-cancelled`` once it is cancelled.
+         */
+        patch: operations["update_hearing_api_hearings__hearing_id__patch"];
+        trace?: never;
+    };
+    "/api/hearings/{hearing_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Hearing
+         * @description Cancel a hearing. It stays on the case, with the reason if one is given.
+         */
+        post: operations["cancel_hearing_api_hearings__hearing_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Audit Log
+         * @description The audit log, newest first, filtered and a page at a time (read-only).
+         *
+         *     Append-only in the database, but not tamper-proof against someone with
+         *     database administrator rights.
+         */
+        get: operations["read_audit_log_api_admin_audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Users
+         * @description Every account, by role and name.
+         */
+        get: operations["list_users_api_admin_users_get"];
+        put?: never;
+        /**
+         * Create User
+         * @description Create an account with a temporary password (replaced at first sign-in).
+         *
+         *     The password is never returned. Client accounts need ``clientId``.
+         */
+        post: operations["create_user_api_admin_users_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update User
+         * @description Change an account's name or e-mail address.
+         */
+        patch: operations["update_user_api_admin_users__user_id__patch"];
+        trace?: never;
+    };
+    "/api/admin/users/{user_id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable User
+         * @description Stop an account from signing in and end its sessions.
+         *
+         *     409 for your own account or the last active Administrator.
+         */
+        post: operations["disable_user_api_admin_users__user_id__disable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{user_id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enable User
+         * @description Allow a disabled account to sign in again.
+         */
+        post: operations["enable_user_api_admin_users__user_id__enable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{user_id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlock User
+         * @description Clear a lockout after repeated failed sign-ins.
+         */
+        post: operations["unlock_user_api_admin_users__user_id__unlock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{user_id}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Password
+         * @description Give an account a temporary password: their sessions end, and they must
+         *     choose a new password at the next sign-in. Not for your own account (409).
+         */
+        post: operations["reset_password_api_admin_users__user_id__password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Cases
+         * @description Your cases (archived ones are not shown), newest first.
+         */
+        get: operations["list_cases_api_portal_cases_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/cases/{case_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Case
+         * @description One of your cases, with its coming hearings and the documents shared with you.
+         */
+        get: operations["get_case_api_portal_cases__case_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/documents/{document_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Document
+         * @description Download a document shared with you. Anything else answers 404.
+         */
+        get: operations["download_document_api_portal_documents__document_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -216,6 +847,83 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * AdminUserCreate
+         * @description A new account with a temporary password the person must replace at first sign-in.
+         */
+        AdminUserCreate: {
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "Administrator" | "Advocate" | "Paralegal" | "Client";
+            /**
+             * Clientid
+             * @description Required for Client accounts.
+             */
+            clientId?: string | null;
+            /** Temporarypassword */
+            temporaryPassword: string;
+        };
+        /**
+         * AdminUserOut
+         * @description An account as administrators see it. Never includes password or session details.
+         */
+        AdminUserOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string | null;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "Administrator" | "Advocate" | "Paralegal" | "Client";
+            /** Clientid */
+            clientId: string | null;
+            /**
+             * Clientname
+             * @description For Client accounts: the client represented.
+             */
+            clientName: string | null;
+            /** Isactive */
+            isActive: boolean;
+            /**
+             * Islocked
+             * @description Locked after repeated failed sign-ins.
+             */
+            isLocked: boolean;
+            /**
+             * Cansignin
+             * @description False until a password has been set.
+             */
+            canSignIn: boolean;
+            /** Mustchangepassword */
+            mustChangePassword: boolean;
+            /** Lastloginat */
+            lastLoginAt: string | null;
+            /** Issample */
+            isSample: boolean;
+        };
+        /**
+         * AdminUserUpdate
+         * @description Change an account's name or e-mail address (the role cannot change).
+         */
+        AdminUserUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Email */
+            email?: string | null;
+        };
         /** AdvocateOut */
         AdvocateOut: {
             /**
@@ -230,13 +938,59 @@ export interface components {
             /** Issample */
             isSample: boolean;
         };
-        /** Body_upload_document_api_cases__case_id__documents_post */
-        Body_upload_document_api_cases__case_id__documents_post: {
+        /**
+         * AuditEventOut
+         * @description One audit-log entry. ``details`` holds only whitelisted, non-secret values.
+         */
+        AuditEventOut: {
             /**
-             * File
-             * @description One file: PDF, Word, text, PNG, JPG, GIF or WebP.
+             * Id
+             * Format: uuid
              */
-            file: string;
+            id: string;
+            /**
+             * Occurredat
+             * Format: date-time
+             */
+            occurredAt: string;
+            /** Actorid */
+            actorId: string | null;
+            /**
+             * Actorname
+             * @description As it was when the event happened.
+             */
+            actorName: string | null;
+            /** Actorrole */
+            actorRole: string | null;
+            /** Action */
+            action: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "success" | "denied" | "failed";
+            /** Targettype */
+            targetType: string | null;
+            /** Targetid */
+            targetId: string | null;
+            /** Caseid */
+            caseId: string | null;
+            /** Casenumber */
+            caseNumber: string | null;
+            /** Details */
+            details: {
+                [key: string]: unknown;
+            };
+        };
+        /** AuditPage */
+        AuditPage: {
+            /** Events */
+            events: components["schemas"]["AuditEventOut"][];
+            /**
+             * Nextbefore
+             * @description Pass as ``before`` for the next (older) page; null on the last page.
+             */
+            nextBefore: string | null;
         };
         /** CaseCreate */
         CaseCreate: {
@@ -338,6 +1092,11 @@ export interface components {
             nextHearing: string | null;
             /** Documentcount */
             documentCount: number;
+            /**
+             * Archivedat
+             * @description When the case was archived (read-only until restored); null if active.
+             */
+            archivedAt: string | null;
             /** Issample */
             isSample: boolean;
             /** Description */
@@ -348,6 +1107,43 @@ export interface components {
             hearings: components["schemas"]["HearingOut"][];
             /** Timeline */
             timeline: components["schemas"]["TimelineEventOut"][];
+            /** Team */
+            team: components["schemas"]["TeamMemberOut"][];
+            permissions: components["schemas"]["CasePermissions"];
+        };
+        /**
+         * CasePermissions
+         * @description What the signed-in user may do on this case (to show the right controls).
+         *
+         *     A convenience for the screens only: the server checks every action again.
+         */
+        CasePermissions: {
+            /**
+             * Relation
+             * @enum {string}
+             */
+            relation: "admin" | "lead" | "associate" | "paralegal" | "client" | "none";
+            /**
+             * Editablefields
+             * @description Fields this user may change (camelCase).
+             */
+            editableFields: string[];
+            /** Canchangestatus */
+            canChangeStatus: boolean;
+            /** Canmanageteam */
+            canManageTeam: boolean;
+            /** Canarchive */
+            canArchive: boolean;
+            /** Canmanagehearings */
+            canManageHearings: boolean;
+            /** Canuploaddocuments */
+            canUploadDocuments: boolean;
+            /** Candeletedocuments */
+            canDeleteDocuments: boolean;
+            /** Canrestoredocuments */
+            canRestoreDocuments: boolean;
+            /** Cansharedocuments */
+            canShareDocuments: boolean;
         };
         /** CaseSummary */
         CaseSummary: {
@@ -408,6 +1204,11 @@ export interface components {
             nextHearing: string | null;
             /** Documentcount */
             documentCount: number;
+            /**
+             * Archivedat
+             * @description When the case was archived (read-only until restored); null if active.
+             */
+            archivedAt: string | null;
             /** Issample */
             isSample: boolean;
         };
@@ -438,6 +1239,63 @@ export interface components {
             /** Description */
             description?: string | null;
         };
+        /** ClientDetail */
+        ClientDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Phone */
+            phone: string;
+            /** Company */
+            company: string | null;
+            /** Issample */
+            isSample: boolean;
+            /**
+             * Cases
+             * @description The client's cases that you may see.
+             */
+            cases: components["schemas"]["CaseSummary"][];
+            /**
+             * Canedit
+             * @description Whether you may change these details.
+             */
+            canEdit: boolean;
+        };
+        /**
+         * ClientIn
+         * @description A new client. Name, e-mail and phone are required; the company is optional.
+         */
+        ClientIn: {
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Phone */
+            phone: string;
+            /** Company */
+            company?: string | null;
+        };
+        /**
+         * ClientOption
+         * @description A client as offered in the new-case form: no contact details.
+         */
+        ClientOption: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Issample */
+            isSample: boolean;
+        };
         /** ClientOut */
         ClientOut: {
             /**
@@ -455,6 +1313,75 @@ export interface components {
             company: string | null;
             /** Issample */
             isSample: boolean;
+        };
+        /**
+         * ClientUpdate
+         * @description Change a client's details. Only the fields present change; ``company`` may be null.
+         */
+        ClientUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Company */
+            company?: string | null;
+        };
+        /**
+         * DeletedDocumentOut
+         * @description A deleted document, kept until restored or purged by an operator.
+         */
+        DeletedDocumentOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+            /**
+             * Uploadedon
+             * Format: date
+             */
+            uploadedOn: string;
+            /**
+             * Size
+             * @description Human-readable size, e.g. '512 KB'.
+             */
+            size: string;
+            /**
+             * Sizebytes
+             * @description Exact size of the stored file; null without one.
+             */
+            sizeBytes: number | null;
+            /**
+             * Hasfile
+             * @description False for sample records, which have no stored file.
+             */
+            hasFile: boolean;
+            /** Contenttype */
+            contentType: string | null;
+            /** Downloadurl */
+            downloadUrl: string | null;
+            /** @description Who uploaded it; null for sample records and earlier uploads. */
+            uploadedBy: components["schemas"]["ActorOut"] | null;
+            /**
+             * Sharedwithclientat
+             * @description When it was shared with the client (their portal shows it); null if not.
+             */
+            sharedWithClientAt: string | null;
+            /** Issample */
+            isSample: boolean;
+            /**
+             * Deletedat
+             * Format: date-time
+             */
+            deletedAt: string;
+            /** @description Who deleted it, if still known. */
+            deletedBy: components["schemas"]["ActorOut"] | null;
         };
         /** DocumentOut */
         DocumentOut: {
@@ -491,6 +1418,13 @@ export interface components {
             contentType: string | null;
             /** Downloadurl */
             downloadUrl: string | null;
+            /** @description Who uploaded it; null for sample records and earlier uploads. */
+            uploadedBy: components["schemas"]["ActorOut"] | null;
+            /**
+             * Sharedwithclientat
+             * @description When it was shared with the client (their portal shows it); null if not.
+             */
+            sharedWithClientAt: string | null;
             /** Issample */
             isSample: boolean;
         };
@@ -517,6 +1451,34 @@ export interface components {
              */
             database: "ok" | "unavailable";
         };
+        /** HearingCancelIn */
+        HearingCancelIn: {
+            /**
+             * Reason
+             * @description Optional, shown on the case.
+             */
+            reason?: string | null;
+        };
+        /**
+         * HearingIn
+         * @description Schedule a hearing. The time may be left out until the court lists it.
+         */
+        HearingIn: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /**
+             * Time
+             * @description 24-hour HH:MM, or omitted.
+             */
+            time?: string | null;
+            /** Court */
+            court: string;
+            /** Purpose */
+            purpose: string;
+        };
         /** HearingOut */
         HearingOut: {
             /**
@@ -538,8 +1500,200 @@ export interface components {
             court: string;
             /** Purpose */
             purpose: string;
+            /**
+             * Status
+             * @description Cancelled hearings are kept but are never the next or an upcoming hearing.
+             * @enum {string}
+             */
+            status: "Scheduled" | "Cancelled";
+            /** Cancellationreason */
+            cancellationReason: string | null;
             /** Issample */
             isSample: boolean;
+        };
+        /**
+         * HearingSchedule
+         * @description Hearings in a date range, soonest first.
+         */
+        HearingSchedule: {
+            /** Hearings */
+            hearings: components["schemas"]["ScheduledHearingOut"][];
+            /**
+             * Truncated
+             * @description True when more hearings matched than the limit.
+             */
+            truncated: boolean;
+        };
+        /**
+         * HearingUpdate
+         * @description Change a scheduled hearing. Only the fields present change; ``time`` may be null.
+         */
+        HearingUpdate: {
+            /** Date */
+            date?: string | null;
+            /** Time */
+            time?: string | null;
+            /** Court */
+            court?: string | null;
+            /** Purpose */
+            purpose?: string | null;
+        };
+        /**
+         * MeOut
+         * @description The signed-in user. Never includes password or session details.
+         */
+        MeOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string | null;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "Administrator" | "Advocate" | "Paralegal" | "Client";
+            /**
+             * Clientid
+             * @description For Client users: the client record they represent.
+             */
+            clientId: string | null;
+            /**
+             * Mustchangepassword
+             * @description True while a temporary password must be replaced before anything else.
+             */
+            mustChangePassword: boolean;
+        };
+        /** PasswordChangeIn */
+        PasswordChangeIn: {
+            /** Currentpassword */
+            currentPassword: string;
+            /** Newpassword */
+            newPassword: string;
+        };
+        /** PortalCaseDetail */
+        PortalCaseDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Casenumber */
+            caseNumber: string;
+            /** Title */
+            title: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "Open" | "In Progress" | "On Hold" | "Closed";
+            /**
+             * Practicearea
+             * @enum {string}
+             */
+            practiceArea: "Corporate / Commercial" | "Civil" | "Criminal" | "Family" | "Intellectual Property" | "Constitutional / Administrative" | "Real Estate" | "Employment & Labour";
+            /** Leadattorney */
+            leadAttorney: string;
+            /** Courtname */
+            courtName: string | null;
+            /**
+             * Openedon
+             * Format: date
+             */
+            openedOn: string;
+            /** Nexthearing */
+            nextHearing: string | null;
+            /**
+             * Hearings
+             * @description Scheduled hearings from today on.
+             */
+            hearings: components["schemas"]["PortalHearingOut"][];
+            /**
+             * Documents
+             * @description Documents shared with you.
+             */
+            documents: components["schemas"]["PortalDocumentOut"][];
+        };
+        /**
+         * PortalCaseSummary
+         * @description A case as its client sees it: no internal notes, priority or team.
+         */
+        PortalCaseSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Casenumber */
+            caseNumber: string;
+            /** Title */
+            title: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "Open" | "In Progress" | "On Hold" | "Closed";
+            /**
+             * Practicearea
+             * @enum {string}
+             */
+            practiceArea: "Corporate / Commercial" | "Civil" | "Criminal" | "Family" | "Intellectual Property" | "Constitutional / Administrative" | "Real Estate" | "Employment & Labour";
+            /** Leadattorney */
+            leadAttorney: string;
+            /** Courtname */
+            courtName: string | null;
+            /**
+             * Openedon
+             * Format: date
+             */
+            openedOn: string;
+            /** Nexthearing */
+            nextHearing: string | null;
+        };
+        /**
+         * PortalDocumentOut
+         * @description A document shared with the client.
+         */
+        PortalDocumentOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+            /** Size */
+            size: string;
+            /**
+             * Sharedon
+             * Format: date
+             */
+            sharedOn: string;
+            /** Downloadurl */
+            downloadUrl: string;
+        };
+        /**
+         * PortalHearingOut
+         * @description A scheduled hearing as the client sees it.
+         */
+        PortalHearingOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Time */
+            time: string | null;
+            /** Court */
+            court: string;
+            /** Purpose */
+            purpose: string;
         };
         /**
          * Problem
@@ -565,6 +1719,114 @@ export interface components {
             /** Errors */
             errors?: components["schemas"]["FieldError"][];
         };
+        /** ScheduledHearingOut */
+        ScheduledHearingOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /**
+             * Time
+             * @description 24-hour HH:MM, or null until the court lists it.
+             */
+            time: string | null;
+            /** Court */
+            court: string;
+            /** Purpose */
+            purpose: string;
+            /**
+             * Status
+             * @description Cancelled hearings are kept but are never the next or an upcoming hearing.
+             * @enum {string}
+             */
+            status: "Scheduled" | "Cancelled";
+            /** Cancellationreason */
+            cancellationReason: string | null;
+            /** Issample */
+            isSample: boolean;
+            /**
+             * Caseid
+             * Format: uuid
+             */
+            caseId: string;
+            /** Casetitle */
+            caseTitle: string;
+            /** Casenumber */
+            caseNumber: string;
+            /**
+             * Leadattorney
+             * @description Name of the case's lead advocate.
+             */
+            leadAttorney: string;
+        };
+        /** SignInIn */
+        SignInIn: {
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+        };
+        /**
+         * StaffOut
+         * @description An active staff member, as offered when building a case team.
+         */
+        StaffOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "Administrator" | "Advocate" | "Paralegal" | "Client";
+        };
+        /** TeamMemberIn */
+        TeamMemberIn: {
+            /**
+             * Userid
+             * Format: uuid
+             * @description An active Advocate (associate) or Paralegal.
+             */
+            userId: string;
+        };
+        /**
+         * TeamMemberOut
+         * @description Someone on a case team besides the lead advocate.
+         */
+        TeamMemberOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "Administrator" | "Advocate" | "Paralegal" | "Client";
+            /**
+             * Memberrole
+             * @enum {string}
+             */
+            memberRole: "associate" | "paralegal";
+        };
+        /** TemporaryPasswordIn */
+        TemporaryPasswordIn: {
+            /** Temporarypassword */
+            temporaryPassword: string;
+        };
         /** TimelineEventOut */
         TimelineEventOut: {
             /**
@@ -581,8 +1843,14 @@ export interface components {
             label: string;
             /** Description */
             description: string;
-            /** @description Who made the change. Null when no signed-in user did (always in Phase 1). */
+            /** @description Who made the change. Null for sample entries and changes made by the system. */
             actor: components["schemas"]["ActorOut"] | null;
+            /**
+             * Recordedat
+             * Format: date-time
+             * @description When the entry was recorded (UTC).
+             */
+            recordedAt: string;
             /** Issample */
             isSample: boolean;
         };
@@ -607,6 +1875,14 @@ export interface components {
             court: string;
             /** Purpose */
             purpose: string;
+            /**
+             * Status
+             * @description Cancelled hearings are kept but are never the next or an upcoming hearing.
+             * @enum {string}
+             */
+            status: "Scheduled" | "Cancelled";
+            /** Cancellationreason */
+            cancellationReason: string | null;
             /** Issample */
             isSample: boolean;
             /**
@@ -657,6 +1933,137 @@ export interface operations {
             };
         };
     };
+    login_api_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignInIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    logout_api_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_api_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    change_password_api_auth_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChangeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     list_clients_api_clients_get: {
         parameters: {
             query?: never;
@@ -673,6 +2080,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClientOut"][];
+                };
+            };
+        };
+    };
+    create_client_api_clients_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    client_options_api_clients_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientOption"][];
+                };
+            };
+        };
+    };
+    list_staff_api_staff_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffOut"][];
                 };
             };
         };
@@ -697,9 +2186,96 @@ export interface operations {
             };
         };
     };
-    list_cases_api_cases_get: {
+    get_client_api_clients__client_id__get: {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    update_client_api_clients__client_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_cases_api_cases_get: {
+        parameters: {
+            query?: {
+                /** @description Archived cases: leave out (default), include, or only. */
+                archived?: "exclude" | "include" | "only";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -713,6 +2289,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CaseSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -737,6 +2322,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Unprocessable Entity */
@@ -805,6 +2399,15 @@ export interface operations {
                     "application/json": components["schemas"]["CaseDetail"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -815,6 +2418,207 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    archive_case_api_cases__case_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unarchive_case_api_cases__case_id__unarchive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    add_team_member_api_cases__case_id__team_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamMemberIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    remove_team_member_api_cases__case_id__team__member_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -898,7 +2702,13 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_upload_document_api_cases__case_id__documents_post"];
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description One file: PDF, Word, text, PNG, JPG, GIF or WebP.
+                     */
+                    file: string;
+                };
             };
         };
         responses: {
@@ -1006,6 +2816,807 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    share_document_api_documents__document_id__share_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unshare_document_api_documents__document_id__unshare_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_deleted_documents_api_cases__case_id__documents_deleted_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletedDocumentOut"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    restore_document_api_documents__document_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    hearing_schedule_api_hearings_get: {
+        parameters: {
+            query?: {
+                /** @description First day (default: today). */
+                from?: string | null;
+                /** @description Last day (default: 30 days after the first). */
+                to?: string | null;
+                includeCancelled?: boolean;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HearingSchedule"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    schedule_hearing_api_cases__case_id__hearings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HearingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    update_hearing_api_hearings__hearing_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hearing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HearingUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    cancel_hearing_api_hearings__hearing_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hearing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HearingCancelIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    read_audit_log_api_admin_audit_get: {
+        parameters: {
+            query?: {
+                /** @description An action, or a prefix ending in a dot (``document.``). */
+                action?: string | null;
+                outcome?: ("success" | "denied" | "failed") | null;
+                actorId?: string | null;
+                caseId?: string | null;
+                from?: string | null;
+                to?: string | null;
+                /** @description ``nextBefore`` of a page. */
+                before?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPage"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_users_api_admin_users_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserOut"][];
+                };
+            };
+        };
+    };
+    create_user_api_admin_users_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUserCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    update_user_api_admin_users__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUserUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    disable_user_api_admin_users__user_id__disable_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    enable_user_api_admin_users__user_id__enable_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unlock_user_api_admin_users__user_id__unlock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    reset_password_api_admin_users__user_id__password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemporaryPasswordIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_cases_api_portal_cases_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalCaseSummary"][];
+                };
+            };
+        };
+    };
+    get_case_api_portal_cases__case_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalCaseDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    download_document_api_portal_documents__document_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The shared file. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": unknown;
+                };
             };
             /** @description Not Found */
             404: {

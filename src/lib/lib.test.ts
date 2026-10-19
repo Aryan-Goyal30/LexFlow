@@ -64,8 +64,25 @@ describe('safeReturnPath', () => {
   });
 
   it('falls back to the case list for anything else', () => {
-    for (const from of [undefined, null, 42, '/', '//evil.example', 'https://evil.example']) {
+    for (const from of [
+      undefined,
+      null,
+      42,
+      '/',
+      '//evil.example',
+      'https://evil.example',
+      '/application', // looks like /app, is not
+      '/portal/cases/x', // staff never return into the portal
+    ]) {
       expect(safeReturnPath(from)).toBe(HOME_PATH);
+      expect(safeReturnPath(from, 'Advocate')).toBe(HOME_PATH);
+    }
+  });
+
+  it('keeps a client inside the portal', () => {
+    expect(safeReturnPath('/portal/cases/case-1005', 'Client')).toBe('/portal/cases/case-1005');
+    for (const from of ['/app/cases', '/portalx', '//evil.example', undefined]) {
+      expect(safeReturnPath(from, 'Client')).toBe('/portal');
     }
   });
 });

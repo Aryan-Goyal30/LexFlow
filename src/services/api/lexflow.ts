@@ -1,10 +1,30 @@
 import type {
+  AdminUser,
+  AdminUserChanges,
+  AdminUserInput,
+  AuditFilters,
+  AuditPage,
   Advocate,
+  ArchivedFilter,
   Case,
+  CaseChanges,
+  DeletedDocument,
+  HearingChanges,
+  HearingInput,
+  HearingRange,
+  HearingSchedule,
   CaseDocument,
   CaseSummary,
   Client,
+  ClientChanges,
+  ClientDetail,
+  ClientInput,
+  ClientOption,
+  CurrentUser,
   NewCaseInput,
+  PortalCase,
+  PortalCaseDetail,
+  StaffMember,
   UpcomingHearing,
 } from '../../types';
 import { apiFetch, apiUrl } from './client';
@@ -13,8 +33,97 @@ import { apiFetch, apiUrl } from './client';
 
 const id = (value: string) => encodeURIComponent(value);
 
+const json = (body: unknown): RequestInit => ({
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+});
+
 export const lexflowApi = {
-  listCases: () => apiFetch<CaseSummary[]>('/cases'),
+  me: () => apiFetch<CurrentUser>('/auth/me'),
+
+  login: (email: string, password: string) =>
+    apiFetch<CurrentUser>('/auth/login', json({ email, password })),
+
+  logout: () => apiFetch<void>('/auth/logout', { method: 'POST' }),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiFetch<CurrentUser>('/auth/password', json({ currentPassword, newPassword })),
+
+  listCases: (archived: ArchivedFilter = 'exclude') =>
+    apiFetch<CaseSummary[]>(archived === 'exclude' ? '/cases' : `/cases?archived=${archived}`),
+
+  updateCase: (caseId: string, changes: CaseChanges) =>
+    apiFetch<Case>(`/cases/${id(caseId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(changes),
+    }),
+
+  setArchived: (caseId: string, archive: boolean) =>
+    apiFetch<Case>(`/cases/${id(caseId)}/${archive ? 'archive' : 'unarchive'}`, {
+      method: 'POST',
+    }),
+
+  addTeamMember: (caseId: string, userId: string) =>
+    apiFetch<Case>(`/cases/${id(caseId)}/team`, json({ userId })),
+
+  removeTeamMember: (caseId: string, userId: string) =>
+    apiFetch<Case>(`/cases/${id(caseId)}/team/${id(userId)}`, { method: 'DELETE' }),
+
+  listStaff: () => apiFetch<StaffMember[]>('/staff'),
+
+  listUsers: () => apiFetch<AdminUser[]>('/admin/users'),
+
+  auditLog: (filters: AuditFilters, before: string | null) => {
+    const params = new URLSearchParams({ limit: '50' });
+    for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value);
+    if (before) params.set('before', before);
+    return apiFetch<AuditPage>(`/admin/audit?${params}`);
+  },
+
+  createUser: (input: AdminUserInput) => apiFetch<AdminUser>('/admin/users', json(input)),
+
+  updateUser: (userId: string, changes: AdminUserChanges) =>
+    apiFetch<AdminUser>(`/admin/users/${id(userId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(changes),
+    }),
+
+  userAction: (userId: string, action: 'disable' | 'enable' | 'unlock') =>
+    apiFetch<AdminUser>(`/admin/users/${id(userId)}/${action}`, { method: 'POST' }),
+
+  resetUserPassword: (userId: string, temporaryPassword: string) =>
+    apiFetch<AdminUser>(`/admin/users/${id(userId)}/password`, json({ temporaryPassword })),
+
+  shareDocument: (documentId: string, share: boolean) =>
+    apiFetch<CaseDocument>(`/documents/${id(documentId)}/${share ? 'share' : 'unshare'}`, {
+      method: 'POST',
+    }),
+
+  portalCases: () => apiFetch<PortalCase[]>('/portal/cases'),
+
+  portalCase: (caseId: string) => apiFetch<PortalCaseDetail>(`/portal/cases/${id(caseId)}`),
+
+  scheduleHearing: (caseId: string, input: HearingInput) =>
+    apiFetch<Case>(`/cases/${id(caseId)}/hearings`, json(input)),
+
+  updateHearing: (hearingId: string, changes: HearingChanges) =>
+    apiFetch<Case>(`/hearings/${id(hearingId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(changes),
+    }),
+
+  cancelHearing: (hearingId: string, reason: string) =>
+    apiFetch<Case>(`/hearings/${id(hearingId)}/cancel`, json({ reason: reason || null })),
+
+  listDeletedDocuments: (caseId: string) =>
+    apiFetch<DeletedDocument[]>(`/cases/${id(caseId)}/documents/deleted`),
+
+  restoreDocument: (documentId: string) =>
+    apiFetch<CaseDocument>(`/documents/${id(documentId)}/restore`, { method: 'POST' }),
 
   getCase: (caseId: string) => apiFetch<Case>(`/cases/${id(caseId)}`),
 
@@ -27,7 +136,25 @@ export const lexflowApi = {
 
   listClients: () => apiFetch<Client[]>('/clients'),
 
+  listClientOptions: () => apiFetch<ClientOption[]>('/clients/options'),
+
+  getClient: (clientId: string) => apiFetch<ClientDetail>(`/clients/${id(clientId)}`),
+
+  createClient: (input: ClientInput) => apiFetch<Client>('/clients', json(input)),
+
+  updateClient: (clientId: string, changes: ClientChanges) =>
+    apiFetch<Client>(`/clients/${id(clientId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(changes),
+    }),
+
   listAdvocates: () => apiFetch<Advocate[]>('/advocates'),
+
+  hearingSchedule: ({ from, to, includeCancelled }: HearingRange) =>
+    apiFetch<HearingSchedule>(
+      `/hearings?${new URLSearchParams({ from, to, includeCancelled: String(includeCancelled) })}`,
+    ),
 
   upcomingHearings: (limit: number) =>
     apiFetch<UpcomingHearing[]>(`/hearings/upcoming?limit=${limit}`),

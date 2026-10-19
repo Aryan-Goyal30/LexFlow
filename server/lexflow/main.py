@@ -10,11 +10,24 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 
-from fastapi import FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request, Response
 
 from lexflow import __version__
-from lexflow.api import cases, documents, health, reference
+from lexflow.api import (
+    admin,
+    auth,
+    cases,
+    clients,
+    documents,
+    health,
+    hearings,
+    portal,
+    reference,
+)
+from lexflow.auth.deps import require_roles, require_user
+from lexflow.auth.gate import SessionGateMiddleware
 from lexflow.config import get_settings
+from lexflow.domain import ADMINISTRATOR, CLIENT, STAFF_ROLES
 from lexflow.errors import CatchAllMiddleware, install_error_handlers
 from lexflow.openapi import install_openapi
 from lexflow.security import LocalOnlyMiddleware
@@ -41,14 +54,22 @@ def create_app() -> FastAPI:
     install_openapi(app)
 
     # Middleware: the last one added runs first. Request order is
-    #   access log -> local-only check -> upload size limit -> catch-all -> routes
-    # so rejected and failed requests are still logged and get nosniff.
+    #   access log -> local-only check (Host, CSRF) -> session gate
+    #   -> upload size limit -> catch-all -> routes
+    # so rejected and failed requests are still logged and get nosniff, and no
+    # request body is read before the caller has shown a session cookie.
     app.add_middleware(CatchAllMiddleware)
     install_upload_limit(app, settings.max_upload_bytes)
+    app.add_middleware(SessionGateMiddleware, session_cookie=settings.session_cookie_name)
     hosts = list(settings.allowed_hosts)
     if settings.env == "test":
         hosts.append("testserver")  # the host name Starlette's TestClient sends
-    app.add_middleware(LocalOnlyMiddleware, allowed_hosts=hosts)
+    app.add_middleware(
+        LocalOnlyMiddleware,
+        allowed_hosts=hosts,
+        allowed_origins=settings.allowed_origins,
+        session_cookie=settings.session_cookie_name,
+    )
 
     @app.middleware("http")
     async def _access_log_and_headers(
@@ -69,7 +90,20 @@ def create_app() -> FastAPI:
         return response
 
     app.include_router(health.router, prefix=API_PREFIX)
-    app.include_router(reference.router, prefix=API_PREFIX)
-    app.include_router(cases.router, prefix=API_PREFIX)
-    app.include_router(documents.router, prefix=API_PREFIX)
+    app.include_router(auth.router, prefix=API_PREFIX)
+    # Everything but health and sign-in needs a signed-in user (who has no
+    # pending temporary password). These routers are for staff; routes add
+    # per-case and per-field checks on top (lexflow.authz).
+    staff = [Depends(require_user), Depends(require_roles(*STAFF_ROLES))]
+    app.include_router(reference.router, prefix=API_PREFIX, dependencies=staff)
+    # After reference: /clients/options must win over /clients/{client_id}.
+    app.include_router(clients.router, prefix=API_PREFIX, dependencies=staff)
+    app.include_router(cases.router, prefix=API_PREFIX, dependencies=staff)
+    app.include_router(documents.router, prefix=API_PREFIX, dependencies=staff)
+    app.include_router(hearings.router, prefix=API_PREFIX, dependencies=staff)
+    administrators = [Depends(require_user), Depends(require_roles(ADMINISTRATOR))]
+    app.include_router(admin.router, prefix=API_PREFIX, dependencies=administrators)
+    # The client portal: Client accounts only (and they reach nothing above).
+    clients_only = [Depends(require_user), Depends(require_roles(CLIENT))]
+    app.include_router(portal.router, prefix=API_PREFIX, dependencies=clients_only)
     return app

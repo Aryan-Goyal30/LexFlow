@@ -16,7 +16,9 @@ import atexit
 import os
 import shutil
 import tempfile
+import uuid
 from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +30,9 @@ from sqlalchemy import URL, Connection, Engine, create_engine, make_url, text
 from sqlalchemy.orm import Session
 
 SERVER_ROOT = Path(__file__).resolve().parent.parent
+
+# Shared fixtures for the access-rule tests (people in roles around one case).
+pytest_plugins = ["tests.access_fixtures"]
 
 
 def _test_database_url() -> URL:
@@ -51,6 +56,14 @@ TEST_DATABASE_URL: URL = _test_database_url()
 # before anything imports lexflow.config.
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL.render_as_string(hide_password=False)
 os.environ["LEXFLOW_ENV"] = "test"
+# Cheap Argon2 parameters keep the suite fast; settings refuse this outside tests.
+os.environ["LEXFLOW_PASSWORD_HASH_PROFILE"] = "test-fast"
+
+# What the browser app sends with every change: its origin and the CSRF header.
+APP_ORIGIN = "http://localhost:5173"
+APP_HEADERS = {"Origin": APP_ORIGIN, "X-LexFlow-Request": "1"}
+# A password used only by test accounts in the throwaway test database.
+TEST_PASSWORD = "correct horse battery staple"
 
 # Uploads go to a folder of this test session, never to the development store
 # (server/var/uploads), even for a test that doesn't choose its own storage.
@@ -131,21 +144,122 @@ def db(connection: Connection) -> Iterator[Session]:
     session.close()
 
 
+def shared_sessions(db: Session) -> Any:
+    """Independent sessions that write into the test transaction.
+
+    Keeps ordinary tests isolated. The real behaviour (committing although the
+    request fails) is covered by tests that use ``committed_engine`` and no
+    overrides (``tests/test_auth_committed.py``).
+    """
+
+    @contextmanager
+    def scope() -> Iterator[Session]:
+        yield db
+        db.commit()  # releases the savepoint; the outer test transaction still rolls back
+
+    return scope
+
+
 @pytest.fixture
 def app(db: Session) -> FastAPI:
     """The real application, with every request using the test transaction."""
-    from lexflow.db import get_session
+    from lexflow.db import get_independent_sessions, get_session
     from lexflow.main import create_app
 
     application = create_app()
     application.dependency_overrides[get_session] = lambda: db
+    application.dependency_overrides[get_independent_sessions] = lambda: shared_sessions(db)
     return application
 
 
+def http_client(app: FastAPI, **kwargs: Any) -> TestClient:
+    """A test client that behaves like the browser app (origin and CSRF header)."""
+    return TestClient(app, headers=APP_HEADERS, **kwargs)
+
+
 @pytest.fixture
-def client(app: FastAPI) -> Iterator[TestClient]:
+def admin(db: Session) -> Any:
+    """The Administrator that the ``client`` fixture is signed in as."""
+    return make_user(
+        db, role="Administrator", email="admin@lexflow.test", name="Test Administrator"
+    )
+
+
+@pytest.fixture
+def client(app: FastAPI, admin: Any) -> Iterator[TestClient]:
+    """Signed in as an Administrator through the real sign-in endpoint."""
+    with http_client(app, raise_server_exceptions=False) as test_client:
+        sign_in(test_client, admin)
+        yield test_client
+
+
+@pytest.fixture
+def anon_client(app: FastAPI) -> Iterator[TestClient]:
+    """Behaves like the browser app, but nobody is signed in."""
+    with http_client(app, raise_server_exceptions=False) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def raw_client(app: FastAPI) -> Iterator[TestClient]:
+    """No origin and no CSRF header: for tests of the request checks themselves."""
     with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
+
+
+def make_user(
+    db: Session,
+    *,
+    role: str,
+    email: str | None = None,
+    name: str | None = None,
+    password: str | None = TEST_PASSWORD,
+    client_id: Any = None,
+    **fields: Any,
+) -> Any:
+    """Add a user (committed into the test transaction) who can sign in with ``password``."""
+    from lexflow.auth.passwords import hash_password
+    from lexflow.models import User
+
+    tag = uuid.uuid4().hex[:8]
+    user = User(
+        name=name or f"Test {role} {tag}",
+        email=email or f"{role.lower()}-{tag}@lexflow.test",
+        role=role,
+        client_id=client_id,
+        password_hash=hash_password(password, "test-fast") if password else None,
+        **fields,
+    )
+    db.add(user)
+    db.commit()
+    return user
+
+
+def sign_in(http: TestClient, user: Any, password: str = TEST_PASSWORD) -> None:
+    sign_in_as(http, user.email, password)
+
+
+def sign_in_as(http: TestClient, email: str, password: str = TEST_PASSWORD) -> None:
+    response = http.post("/api/auth/login", json={"email": email, "password": password})
+    assert response.status_code == 200, response.text
+
+
+def committed_user(engine: Engine, *, role: str = "Administrator", email: str | None = None) -> str:
+    """A user committed for real (for tests on ``committed_engine``); returns the e-mail."""
+    from lexflow.auth.passwords import hash_password
+    from lexflow.models import User
+
+    address = email or f"{role.lower()}-{uuid.uuid4().hex[:8]}@lexflow.test"
+    with Session(engine) as session, session.begin():
+        session.add(
+            User(
+                name=f"Committed {role}",
+                email=address,
+                role=role,
+                password_hash=hash_password(TEST_PASSWORD, "test-fast"),
+            )
+        )
+    return address
 
 
 @pytest.fixture
@@ -155,7 +269,7 @@ def committed_engine(engine: Engine) -> Iterator[Engine]:
     with engine.begin() as conn:
         conn.execute(
             text(
-                "TRUNCATE documents, timeline_events, hearings, cases, clients, users, "
-                "case_number_counters RESTART IDENTITY CASCADE"
+                "TRUNCATE audit_events, sessions, case_members, documents, timeline_events, "
+                "hearings, cases, clients, users, case_number_counters RESTART IDENTITY CASCADE"
             )
         )

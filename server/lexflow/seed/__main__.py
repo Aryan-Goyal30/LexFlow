@@ -40,6 +40,9 @@ def main() -> int:
         )
         return 1
 
+    refreshed = sum(result.updated.values())
+    if refreshed:
+        print(f"Updated the fictional contact details of {refreshed} existing sample records.")
     if result.total == 0:
         print("Sample data already loaded; nothing to add.")
     else:

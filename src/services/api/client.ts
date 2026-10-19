@@ -83,17 +83,58 @@ async function toApiError(response: Response): Promise<ApiError> {
   });
 }
 
+const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+/**
+ * Sign-in events any request can reveal: the session has ended (401
+ * `not-authenticated`), or a temporary password must be replaced first. The
+ * sign-in state listens and reacts (forgets cached data, routes the user).
+ */
+export type AuthEvent = 'unauthenticated' | 'password-change-required';
+
+const authListeners = new Set<(event: AuthEvent) => void>();
+
+export function onAuthEvent(listener: (event: AuthEvent) => void): () => void {
+  authListeners.add(listener);
+  return () => {
+    authListeners.delete(listener);
+  };
+}
+
+function announce(error: ApiError) {
+  const event: AuthEvent | null =
+    error.status === 401 && error.code === 'not-authenticated'
+      ? 'unauthenticated'
+      : error.code === 'password-change-required'
+        ? 'password-change-required'
+        : null;
+  if (event) authListeners.forEach((listener) => listener(event));
+}
+
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const method = (init.method ?? 'GET').toUpperCase();
   let response: Response;
   try {
     response = await fetch(apiUrl(path), {
       ...init,
-      headers: { Accept: 'application/json', ...init.headers },
+      // The session cookie is HttpOnly: the browser attaches it, scripts never see it.
+      credentials: 'same-origin',
+      headers: {
+        Accept: 'application/json',
+        // Required by the API on every change (CSRF protection): a page on another
+        // origin cannot add this header without a CORS preflight, which is never granted.
+        ...(UNSAFE_METHODS.has(method) ? { 'X-LexFlow-Request': '1' } : {}),
+        ...init.headers,
+      },
     });
   } catch {
     throw unreachable(0);
   }
-  if (!response.ok) throw await toApiError(response);
+  if (!response.ok) {
+    const error = await toApiError(response);
+    announce(error);
+    throw error;
+  }
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }

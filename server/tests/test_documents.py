@@ -127,16 +127,26 @@ class AsgiRequest:
     """
 
     def __init__(
-        self, path: str, boundary: str, chunks: list[bytes], content_length: int | None = None
+        self,
+        path: str,
+        boundary: str,
+        chunks: list[bytes],
+        content_length: int | None = None,
+        session: str | None = None,
     ) -> None:
         self.path = path
         self.chunks = chunks
         self.headers = [
             (b"host", b"testserver"),
+            (b"x-lexflow-request", b"1"),
             (b"content-type", f"multipart/form-data; boundary={boundary}".encode()),
         ]
         if content_length is not None:
             self.headers.append((b"content-length", str(content_length).encode()))
+        if session is not None:
+            # As a browser sends it: the session cookie together with the app's origin.
+            self.headers.append((b"cookie", f"lexflow_session={session}".encode()))
+            self.headers.append((b"origin", b"http://localhost:5173"))
         self.body_reads = 0
         self.bytes_read = 0
         self.status: int | None = None
@@ -415,12 +425,18 @@ def test_rejects_files_over_the_limit(
 
 
 def test_large_declared_body_is_refused_before_reading(
-    seeded: Session, app: FastAPI, storage_root: Path
+    client: TestClient, seeded: Session, app: FastAPI, storage_root: Path
 ) -> None:
     app.state.upload_limit = 1000
     boundary = "lexflowboundary"
     body = multipart(boundary, "Huge.pdf", PDF + b"0" * 500_000)  # far beyond the limit
-    request = AsgiRequest(UPLOAD, boundary, [body], content_length=len(body))
+    request = AsgiRequest(
+        UPLOAD,
+        boundary,
+        [body],
+        content_length=len(body),
+        session=client.cookies["lexflow_session"],
+    )
 
     status = request.send_to(app)
 
@@ -430,14 +446,15 @@ def test_large_declared_body_is_refused_before_reading(
 
 
 def test_streamed_body_without_length_stops_being_read_at_the_limit(
-    seeded: Session, app: FastAPI, storage_root: Path
+    client: TestClient, seeded: Session, app: FastAPI, storage_root: Path
 ) -> None:
     app.state.upload_limit = 1000
     allowed = 1000 + MULTIPART_OVERHEAD  # what the middleware lets through
     boundary = "lexflowboundary"
     body = multipart(boundary, "Stream.pdf", PDF + b"0" * (200 * 8192))
     chunks = [body[i : i + 8192] for i in range(0, len(body), 8192)]
-    request = AsgiRequest(UPLOAD, boundary, chunks)  # chunked: no Content-Length
+    # chunked: no Content-Length
+    request = AsgiRequest(UPLOAD, boundary, chunks, session=client.cookies["lexflow_session"])
 
     status = request.send_to(app)
 
@@ -447,6 +464,18 @@ def test_streamed_body_without_length_stops_being_read_at_the_limit(
     assert request.body_reads < len(chunks) // 4
     assert stored_files(storage_root) == [] and staging_files(storage_root) == []
     assert document_count(seeded) == 4
+
+
+def test_an_anonymous_upload_is_refused_before_any_body_is_read(
+    seeded: Session, app: FastAPI, storage_root: Path
+) -> None:
+    boundary = "lexflowboundary"
+    body = multipart(boundary, "Anonymous.pdf", PDF)
+    request = AsgiRequest(UPLOAD, boundary, [body])  # no session cookie
+
+    assert request.send_to(app) == 401
+    assert request.body_reads == 0
+    assert stored_files(storage_root) == [] and staging_files(storage_root) == []
 
 
 def test_streamed_body_without_length_is_refused_through_the_client(
@@ -570,18 +599,26 @@ def test_download_errors(client: TestClient, seeded: Session, storage_root: Path
 # --- delete --------------------------------------------------------------------------------
 
 
-def test_delete_removes_record_and_file(
+def test_delete_hides_the_document_but_keeps_record_and_file(
     client: TestClient, seeded: Session, storage_root: Path
 ) -> None:
     created = upload(client, "Rejoinder.pdf", PDF).json()
-    assert len(stored_files(storage_root)) == 1
+    case_path = f"/api/cases/{CASE}"
+    count_before = client.get(case_path).json()["documentCount"]
 
     response = client.delete(f"/api/documents/{created['id']}")
 
     assert response.status_code == 204
     assert response.content == b""
-    assert seeded.get(Document, uuid.UUID(created["id"])) is None
-    assert stored_files(storage_root) == []
+    # Kept, marked deleted, with its file, so it can be restored.
+    seeded.expire_all()
+    row = seeded.get(Document, uuid.UUID(created["id"]))
+    assert row is not None and row.deleted_at is not None and row.deleted_by_id is not None
+    assert len(stored_files(storage_root)) == 1
+    # Gone from every ordinary read.
+    detail = client.get(case_path).json()
+    assert created["id"] not in {d["id"] for d in detail["documents"]}
+    assert detail["documentCount"] == count_before - 1
     problem(client.delete(f"/api/documents/{created['id']}"), 404, "document-not-found")
     problem(client.get(created["downloadUrl"]), 404, "document-not-found")
 
@@ -590,7 +627,9 @@ def test_delete_sample_record_without_file(client: TestClient, seeded: Session) 
     sample = sample_uuid("document", "d-18")
 
     assert client.delete(f"/api/documents/{sample}").status_code == 204
-    assert seeded.get(Document, sample) is None
+    seeded.expire_all()
+    row = seeded.get(Document, sample)
+    assert row is not None and row.deleted_at is not None
 
 
 # --- persistence --------------------------------------------------------------------------
@@ -607,7 +646,8 @@ def test_files_survive_an_application_restart(
     restarted = create_app()  # a new application instance, new storage object
     restarted.dependency_overrides[get_session] = lambda: seeded
     restarted.dependency_overrides[get_storage] = lambda: LocalDiskStorage(storage_root)
-    with TestClient(restarted) as fresh:
+    # The session also survives the restart: it lives in the database.
+    with TestClient(restarted, cookies=dict(client.cookies)) as fresh:
         response = fresh.get(created["downloadUrl"])
         assert response.status_code == 200 and response.content == PDF
         assert fresh.get(f"/api/cases/{CASE}").json()["documents"][0]["id"] == created["id"]

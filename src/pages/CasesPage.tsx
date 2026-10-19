@@ -2,10 +2,12 @@ import { useId, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, FolderOpen } from 'lucide-react';
 import { useCaseList } from '../hooks/useCases';
+import { useAuth } from '../context/AuthContext';
+import { canOpenCases } from '../lib/roles';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Card } from '../components/ui/Card';
 import { ButtonLink } from '../components/ui/Button';
-import { StatusBadge, PriorityBadge, SampleBadge } from '../components/ui/Badge';
+import { ArchivedBadge, StatusBadge, PriorityBadge, SampleBadge } from '../components/ui/Badge';
 import { ErrorState, LoadingState, StaleDataNotice } from '../components/ui/QueryState';
 import { formatDate, isPastDate } from '../lib/format';
 import type { CaseStatus, CaseSummary } from '../types';
@@ -19,11 +21,23 @@ const STATUS_FILTERS: Array<CaseStatus | 'All'> = [
 ];
 
 export function CasesPage() {
-  const { data: cases, isPending, isError, error, refetch } = useCaseList();
+  const [showArchived, setShowArchived] = useState(false);
+  const archivedToggleId = useId();
+  const {
+    data: cases,
+    isPending,
+    isError,
+    error,
+    refetch,
+  } = useCaseList(showArchived ? 'include' : 'exclude');
+  const { user } = useAuth();
+  const mayOpen = canOpenCases(user);
 
   let description = 'Loading…';
   if (cases) {
-    description = `${cases.length} matter${cases.length === 1 ? '' : 's'} on file.`;
+    const archivedCount = cases.filter((c) => c.archivedAt).length;
+    description = `${cases.length} matter${cases.length === 1 ? '' : 's'} on file`;
+    description += showArchived ? `, ${archivedCount} of them archived.` : '.';
     if (cases.some((c) => c.isSample)) {
       description += ' Cases marked Sample are fictional, and their dates are fixed.';
     }
@@ -35,10 +49,27 @@ export function CasesPage() {
         title="Cases"
         description={cases || isPending ? description : undefined}
         actions={
-          <ButtonLink to="/app/cases/new">
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            New Case
-          </ButtonLink>
+          <div className="flex items-center gap-4">
+            <label
+              htmlFor={archivedToggleId}
+              className="inline-flex items-center gap-2 text-sm text-brand-700"
+            >
+              <input
+                id={archivedToggleId}
+                type="checkbox"
+                className="h-4 w-4 rounded border-brand-300"
+                checked={showArchived}
+                onChange={(e) => setShowArchived(e.target.checked)}
+              />
+              Show archived
+            </label>
+            {mayOpen && (
+              <ButtonLink to="/app/cases/new">
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                New Case
+              </ButtonLink>
+            )}
+          </div>
         }
       />
 
@@ -59,10 +90,19 @@ export function CasesPage() {
         <Card className="flex flex-col items-center justify-center px-6 py-16 text-center">
           <FolderOpen className="h-10 w-10 text-brand-300" strokeWidth={1.5} aria-hidden="true" />
           <p className="mt-3 text-sm font-medium text-brand-700">No cases yet</p>
-          <p className="mt-1 text-sm text-brand-500">Create the first case to get started.</p>
-          <ButtonLink to="/app/cases/new" variant="secondary" className="mt-4">
-            New Case
-          </ButtonLink>
+          {mayOpen ? (
+            <>
+              <p className="mt-1 text-sm text-brand-500">Create the first case to get started.</p>
+              <ButtonLink to="/app/cases/new" variant="secondary" className="mt-4">
+                New Case
+              </ButtonLink>
+            </>
+          ) : (
+            <p className="mt-1 text-sm text-brand-500">
+              No cases are assigned to you yet. An advocate or administrator can add you to a case
+              team.
+            </p>
+          )}
         </Card>
       ) : (
         <CaseTable cases={cases} />
@@ -165,6 +205,7 @@ function CaseTable({ cases }: { cases: CaseSummary[] }) {
                         </span>
                         <span className="mt-0.5 flex items-center gap-2 text-xs text-brand-500">
                           {c.caseNumber}
+                          {c.archivedAt && <ArchivedBadge />}
                           {c.isSample && <SampleBadge />}
                         </span>
                       </Link>

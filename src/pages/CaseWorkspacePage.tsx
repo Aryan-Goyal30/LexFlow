@@ -6,7 +6,8 @@ import { useCase } from '../hooks/useCases';
 import { useAiAssistant } from '../hooks/useAiAssistant';
 import { ApiError } from '../services/api/client';
 import { Card } from '../components/ui/Card';
-import { StatusBadge, PriorityBadge, SampleBadge } from '../components/ui/Badge';
+import { ArchivedBadge, StatusBadge, PriorityBadge, SampleBadge } from '../components/ui/Badge';
+import { ArchivedNotice, CaseActions } from '../components/workspace/CaseActions';
 import { ErrorState, LoadingState, StaleDataNotice } from '../components/ui/QueryState';
 import { ButtonLink } from '../components/ui/Button';
 import { Tabs, type TabItem } from '../components/ui/Tabs';
@@ -17,6 +18,7 @@ import { AnalysisTab } from '../components/workspace/AnalysisTab';
 import { ResearchTab } from '../components/workspace/ResearchTab';
 import { formatDate, isPastDate } from '../lib/format';
 import { HOME_PATH } from '../lib/paths';
+import { relationLabel } from '../lib/roles';
 
 type WorkspaceTab = 'overview' | 'documents' | 'analysis' | 'research';
 
@@ -134,9 +136,13 @@ function Workspace({ legalCase: c }: { legalCase: Case }) {
           </span>
           <StatusBadge status={c.status} />
           <PriorityBadge priority={c.priority} />
+          {c.archivedAt && <ArchivedBadge />}
           {c.isSample && <SampleBadge />}
         </div>
-        <h1 className="mt-2 text-2xl font-bold text-brand-900">{c.title}</h1>
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <h1 className="text-2xl font-bold text-brand-900">{c.title}</h1>
+          <CaseActions legalCase={c} />
+        </div>
         <p className="mt-1 text-sm text-brand-500">
           {c.practiceArea} · {c.clientName} · Opened {formatDate(c.openedOn)}
           {c.nextHearing && (
@@ -147,7 +153,14 @@ function Workspace({ legalCase: c }: { legalCase: Case }) {
             </>
           )}
         </p>
+        {relationLabel(c.permissions.relation) && (
+          <p className="mt-1 text-xs text-brand-400">
+            Your access: {relationLabel(c.permissions.relation)}
+          </p>
+        )}
       </header>
+
+      <ArchivedNotice legalCase={c} />
 
       <Tabs items={tabs} active={tab} onChange={selectTab} idBase={idBase} label="Case workspace" />
 

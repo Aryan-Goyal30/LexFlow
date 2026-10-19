@@ -16,6 +16,7 @@ import { StatusBadge, PriorityBadge, SampleBadge } from '../components/ui/Badge'
 import { ButtonLink } from '../components/ui/Button';
 import { ErrorState, LoadingState, StaleDataNotice } from '../components/ui/QueryState';
 import { formatDate } from '../lib/format';
+import { canOpenCases } from '../lib/roles';
 import type { CaseSummary } from '../types';
 
 export function DashboardPage() {
@@ -28,10 +29,12 @@ export function DashboardPage() {
         title="Practice Overview"
         description={`Welcome back, ${firstName}. Counts and hearings across all your cases.`}
         actions={
-          <ButtonLink to="/app/cases/new">
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            New Case
-          </ButtonLink>
+          canOpenCases(user) && (
+            <ButtonLink to="/app/cases/new">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              New Case
+            </ButtonLink>
+          )
         }
       />
       <CaseOverview />

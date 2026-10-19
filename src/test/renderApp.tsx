@@ -10,11 +10,9 @@ import {
   type NavigateFunction,
 } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
-import { currentUser } from '../data/mockData';
+import { DEFAULT_TEST_USER, mockCurrentUser, mockSignIn } from './mockApi';
+import { ME_KEY } from '../context/AuthContext';
 import { routes } from '../router';
-
-// Must match STORAGE_KEY in AuthContext.
-const AUTH_STORAGE_KEY = 'lexflow.auth';
 
 /*
  * Tests run the real route table through <MemoryRouter> + useRoutes rather
@@ -42,8 +40,16 @@ function RouterProbe({ probe }: { probe: Probe }) {
  * Renders the real routes, providers and pages, starting at `path`.
  * `url()` reads the current path and query; `go(n)` moves through history.
  */
-export function renderApp(path: string, { signedIn = true }: { signedIn?: boolean } = {}) {
-  if (signedIn) localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentUser));
+export function renderApp(
+  path: string,
+  {
+    signedIn = true,
+    as = DEFAULT_TEST_USER,
+    sessionKnown = true,
+  }: { signedIn?: boolean; as?: string; sessionKnown?: boolean } = {},
+) {
+  // A session on the fake server, as if this person had signed in.
+  if (signedIn) mockSignIn(as);
 
   const probe: Probe = { location: null, navigate: null };
   // applyAccept: false lets a test pick a file the `accept` hint would hide,
@@ -55,6 +61,10 @@ export function renderApp(path: string, { signedIn = true }: { signedIn?: boolea
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+
+  // Start where the app is once it has asked the server who is signed in, so
+  // page tests see the page's own states (`sessionKnown: false` tests the check).
+  if (sessionKnown) queryClient.setQueryData(ME_KEY, mockCurrentUser());
 
   render(
     <QueryClientProvider client={queryClient}>

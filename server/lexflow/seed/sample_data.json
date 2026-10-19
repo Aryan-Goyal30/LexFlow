@@ -3,66 +3,66 @@
   "advocates": [
     {
       "name": "Aryan Goyal",
-      "email": "aryan.goyal@lexflow.in"
+      "email": "aryan.goyal@lexflow.test"
     },
     {
       "name": "Rajat Deshpande",
-      "email": null
+      "email": "rajat.deshpande@lexflow.test"
     },
     {
       "name": "Farhan Qureshi",
-      "email": null
+      "email": "farhan.qureshi@lexflow.test"
     },
     {
       "name": "Meera Nair",
-      "email": null
+      "email": "meera.nair@lexflow.test"
     },
     {
       "name": "Vikram Sethi",
-      "email": null
+      "email": "vikram.sethi@lexflow.test"
     }
   ],
   "clients": [
     {
       "legacyId": "c-001",
       "name": "Aarav Textiles Pvt. Ltd.",
-      "email": "legal@aaravtextiles.in",
-      "phone": "+91 22 4012 8890",
+      "email": "legal@aarav-textiles.example",
+      "phone": "+91 00000 00001",
       "company": "Aarav Textiles Pvt. Ltd., Mumbai"
     },
     {
       "legacyId": "c-002",
       "name": "Suresh Iyer",
-      "email": "suresh.iyer@example.in",
-      "phone": "+91 98860 21745",
+      "email": "suresh.iyer@client.example",
+      "phone": "+91 00000 00002",
       "company": null
     },
     {
       "legacyId": "c-003",
       "name": "Vikram Chauhan",
-      "email": "chauhan.vikram@example.in",
-      "phone": "+91 99102 55830",
+      "email": "chauhan.vikram@client.example",
+      "phone": "+91 00000 00003",
       "company": null
     },
     {
       "legacyId": "c-004",
       "name": "Neha Sharma",
-      "email": "neha.sharma@example.in",
-      "phone": "+91 98450 66214",
+      "email": "neha.sharma@client.example",
+      "phone": "+91 00000 00004",
       "company": null
     },
     {
       "legacyId": "c-005",
       "name": "Sattvik Foods Pvt. Ltd.",
-      "email": "ip@sattvikfoods.in",
-      "phone": "+91 20 6721 4400",
+      "email": "ip@sattvik-foods.example",
+      "phone": "+91 00000 00005",
       "company": "Sattvik Foods Pvt. Ltd., Pune"
     },
     {
       "legacyId": "c-006",
       "name": "Nagrik Adhikar Foundation",
-      "email": "contact@nagrikadhikar.org.in",
-      "phone": "+91 11 4155 2200",
+      "email": "contact@nagrik-adhikar.example",
+      "phone": "+91 00000 00006",
       "company": "Nagrik Adhikar Foundation (Regd.), New Delhi"
     }
   ],

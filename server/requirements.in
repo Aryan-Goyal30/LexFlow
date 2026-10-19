@@ -10,3 +10,5 @@ pydantic-settings
 python-multipart
 # Windows has no system time-zone database; zoneinfo needs this package.
 tzdata
+# Password hashing (Argon2id) for sign-in.
+argon2-cffi

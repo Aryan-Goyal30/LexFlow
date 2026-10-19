@@ -26,8 +26,24 @@ async function loadMockData() {
   return import(url);
 }
 
-function build({ currentUser, mockClients, advocates, mockCases }) {
-  const advocateNames = new Set(advocates);
+// Sample people must be unreachable: reserved domains only (RFC 2606 / RFC 6761),
+// and phone numbers that no real Indian number can have.
+const RESERVED_EMAIL = /@([a-z0-9-]+\.)*(test|example)$/;
+const UNREACHABLE_PHONE = /^\+91 0/;
+
+function checkFictional(kind, name, email, phone) {
+  if (!RESERVED_EMAIL.test(email)) {
+    throw new Error(`${kind} ${name}: e-mail ${email} is not on a reserved domain`);
+  }
+  if (phone !== undefined && !UNREACHABLE_PHONE.test(phone)) {
+    throw new Error(`${kind} ${name}: phone number could belong to a real person`);
+  }
+}
+
+function build({ mockClients, advocates, mockCases }) {
+  const advocateNames = new Set(advocates.map((a) => a.name));
+  for (const a of advocates) checkFictional('advocate', a.name, a.email);
+  for (const c of mockClients) checkFictional('client', c.name, c.email, c.phone);
   for (const c of mockCases) {
     if (!advocateNames.has(c.leadAttorney)) {
       throw new Error(`${c.id}: lead advocate ${c.leadAttorney} is not in advocates`);
@@ -41,11 +57,7 @@ function build({ currentUser, mockClients, advocates, mockCases }) {
     _note:
       'Fictional sample data, generated from src/data/mockData.ts by ' +
       'scripts/export-sample-data.mjs. Do not edit by hand.',
-    advocates: advocates.map((name) => ({
-      name,
-      // Only the demo user has an e-mail address in the source; none is invented.
-      email: name === currentUser.name ? currentUser.email : null,
-    })),
+    advocates: advocates.map((a) => ({ name: a.name, email: a.email })),
     clients: mockClients.map((c) => ({
       legacyId: c.id,
       name: c.name,

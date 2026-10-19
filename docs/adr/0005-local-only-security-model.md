@@ -1,6 +1,7 @@
 # 0005 — Local-only security model until authentication exists
 
-Status: Accepted (Phase 1). To be revisited in Phase 2 (real authentication).
+Status: Superseded in part by [0011](0011-sessions-passwords-and-csrf.md) (Phase 2 adds
+authentication; the loopback binding and Host allow-list below still apply).
 
 ## Context
 

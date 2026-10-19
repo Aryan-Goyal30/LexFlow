@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, contextmanager
 from functools import lru_cache
 
 from fastapi import Depends
@@ -33,3 +34,24 @@ def get_session(engine: Engine = Depends(get_engine)) -> Iterator[Session]:
     factory = sessionmaker(bind=engine, expire_on_commit=False)
     with factory() as session:
         yield session
+
+
+IndependentSessions = Callable[[], AbstractContextManager[Session]]
+
+
+def get_independent_sessions(engine: Engine = Depends(get_engine)) -> IndependentSessions:
+    """Short-lived sessions that commit on their own, whatever the request does.
+
+    Used for records that must survive a failed request: failed sign-in counters,
+    lockouts and audit events. A ``with`` block commits when it ends normally
+    and rolls back if it raises.
+    """
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+
+    @contextmanager
+    def scope() -> Iterator[Session]:
+        with factory() as session:
+            yield session
+            session.commit()
+
+    return scope

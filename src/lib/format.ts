@@ -26,6 +26,13 @@ export function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/** The time of day of an ISO timestamp, in the user's time zone (e.g. "3:05 pm"). */
+export function formatTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+}
+
 /** Today as YYYY-MM-DD in the user's local time zone (not UTC). */
 export function todayIsoDate(now: Date = new Date()): string {
   const y = now.getFullYear();

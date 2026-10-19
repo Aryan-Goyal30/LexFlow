@@ -258,7 +258,13 @@ describe('Documents tab', () => {
     await waitFor(() =>
       expect(screen.queryByRole('link', { name: 'Open Rejoinder.pdf' })).not.toBeInTheDocument(),
     );
-    expect(mockApiState().files.size).toBe(0);
+    expect(
+      screen.getByText('Removed Rejoinder.pdf. It can be restored from Deleted Documents below.'),
+    ).toBeVisible();
+    // Deletion is soft: the document and its file are kept, ready to restore.
+    const deleted = await screen.findByRole('list', { name: 'Deleted documents' });
+    expect(within(deleted).getByText('Rejoinder.pdf')).toBeVisible();
+    expect(mockApiState().files.size).toBe(1);
   });
 
   it('shows pending and error states when removal fails', async () => {
@@ -355,7 +361,8 @@ describe('Documents tab', () => {
     await user.click(screen.getByRole('button', { name: `Remove ${first}` }));
     await user.click(screen.getByRole('button', { name: `Remove ${second}` }));
 
-    await waitFor(() => expect(screen.queryByText(second)).not.toBeInTheDocument());
+    const live = screen.getByRole('list', { name: 'Case documents' });
+    await waitFor(() => expect(within(live).queryByText(second)).not.toBeInTheDocument());
     expect(await screen.findByRole('alert')).toHaveTextContent(
       `${first} was not removed. Disk unavailable.`,
     );

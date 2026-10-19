@@ -6,7 +6,7 @@ rules use the firm's calendar, not the server's, and tests can fix the date.
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from fastapi import Depends
 
@@ -15,3 +15,8 @@ from lexflow.config import Settings, get_settings
 
 def get_today(settings: Settings = Depends(get_settings)) -> date:
     return datetime.now(settings.tz).date()
+
+
+def get_now() -> datetime:
+    """The current instant in UTC. Sessions and lockouts use it; tests override it."""
+    return datetime.now(UTC)

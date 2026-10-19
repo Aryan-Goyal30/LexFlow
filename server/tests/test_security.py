@@ -1,4 +1,4 @@
-"""Protections for the unauthenticated Phase 1 API, and safe error handling."""
+"""Request checks (Host, CSRF header, Origin) and safe error handling."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import logging
 import threading
 import uuid
 from collections.abc import Iterator
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
@@ -15,9 +16,17 @@ from sqlalchemy.orm import Session
 
 from lexflow.clock import get_today
 from lexflow.models import TimelineEvent
-from lexflow.security import host_name, origin_is_loopback
+from lexflow.security import has_cookie, host_name, normalise_origin
 from lexflow.seed import sample_uuid
 from lexflow.seed.loader import load_sample_data
+from tests.conftest import (
+    APP_HEADERS,
+    committed_user,
+    http_client,
+    make_user,
+    sign_in,
+    sign_in_as,
+)
 from tests.test_cases import TODAY, new_case
 
 SATTVIK = str(sample_uuid("case", "case-1005"))
@@ -56,39 +65,97 @@ def test_host_name_parsing() -> None:
     assert host_name("") == ""
 
 
-# --- cross-site requests: changes only from loopback origins --------------------
+# --- cross-site request forgery: header, exact origin, origin with a cookie ------
 
 
-@pytest.mark.parametrize("origin", ["https://evil.example", "http://192.168.1.20:5173", "null"])
-def test_cross_site_changes_are_refused(client: TestClient, seeded: Session, origin: str) -> None:
-    attempts = [
-        client.post("/api/cases", json=new_case(), headers={"origin": origin}),
-        client.patch(
-            f"/api/cases/{SATTVIK}", json={"status": "Closed"}, headers={"origin": origin}
-        ),
-        client.post(
+def _change_attempts(http: TestClient, headers: dict[str, str]) -> list[Any]:
+    return [
+        http.post("/api/cases", json=new_case(), headers=headers),
+        http.patch(f"/api/cases/{SATTVIK}", json={"status": "Closed"}, headers=headers),
+        http.post(
             f"/api/cases/{SATTVIK}/documents",
             files={"file": ("A.pdf", b"%PDF-1.4\n", "application/pdf")},
-            headers={"origin": origin},
+            headers=headers,
         ),
-        client.delete(
-            f"/api/documents/{sample_uuid('document', 'd-18')}", headers={"origin": origin}
+        http.delete(f"/api/documents/{sample_uuid('document', 'd-18')}", headers=headers),
+        http.post(
+            "/api/auth/login", json={"email": "x@lexflow.test", "password": "x"}, headers=headers
         ),
     ]
-    for response in attempts:
+
+
+def test_changes_without_the_app_header_are_refused(
+    raw_client: TestClient, client: TestClient, seeded: Session
+) -> None:
+    # Even from the right origin: a cross-site form can't add the header.
+    for response in _change_attempts(raw_client, {"origin": "http://localhost:5173"}):
         assert response.status_code == 403, response.text
-        assert response.json()["code"] == "forbidden-origin"
-    # Nothing changed.
+        assert response.json()["code"] == "csrf-header-missing"
     assert client.get(f"/api/cases/{SATTVIK}").json()["status"] == "In Progress"
 
 
-def test_changes_from_the_local_front_end_are_accepted(client: TestClient, seeded: Session) -> None:
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "https://evil.example",
+        "http://192.168.1.20:5173",
+        "null",
+        "http://localhost:3000",  # another program on this computer
+        "http://127.0.0.1:8000",  # e.g. Swagger UI: read-only by design
+        "https://localhost:5173",  # right host and port, wrong scheme
+        "http://localhost.evil.example:5173",
+    ],
+)
+def test_changes_from_other_origins_are_refused(
+    raw_client: TestClient, client: TestClient, seeded: Session, origin: str
+) -> None:
+    for response in _change_attempts(raw_client, {"origin": origin, "x-lexflow-request": "1"}):
+        assert response.status_code == 403, response.text
+        assert response.json()["code"] == "forbidden-origin"
+    assert client.get(f"/api/cases/{SATTVIK}").json()["status"] == "In Progress"
+
+
+@pytest.mark.parametrize(
+    "origin", ["http://localhost:5173", "http://127.0.0.1:5173", "HTTP://LOCALHOST:5173/"]
+)
+def test_changes_from_the_local_front_end_are_accepted(
+    client: TestClient, seeded: Session, origin: str
+) -> None:
     response = client.patch(
         f"/api/cases/{SATTVIK}",
         json={"priority": "Critical"},
-        headers={"origin": "http://localhost:5173"},
+        headers={"origin": origin, "x-lexflow-request": "1"},
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
+
+
+def test_the_header_alone_does_not_make_a_change_acceptable(
+    raw_client: TestClient, seeded: Session
+) -> None:
+    # Past the CSRF checks, a request without a session is still refused.
+    response = raw_client.patch(
+        f"/api/cases/{SATTVIK}", json={"priority": "Critical"}, headers={"x-lexflow-request": "1"}
+    )
+    assert response.status_code == 401
+    assert response.json()["code"] == "not-authenticated"
+
+
+def test_a_request_with_the_session_cookie_must_name_its_origin(
+    app: FastAPI, seeded: Session
+) -> None:
+    user = make_user(seeded, role="Administrator")
+    with http_client(app, raise_server_exceptions=False) as http:
+        sign_in(http, user)
+        cookies = dict(http.cookies)
+    # Browsers always send Origin with a change; a cookie without one is refused.
+    with TestClient(app, raise_server_exceptions=False, cookies=cookies) as bare:
+        response = bare.patch(
+            f"/api/cases/{SATTVIK}",
+            json={"priority": "Critical"},
+            headers={"x-lexflow-request": "1"},
+        )
+    assert response.status_code == 403
+    assert response.json()["code"] == "origin-required"
 
 
 def test_reads_are_not_blocked_by_origin(client: TestClient, seeded: Session) -> None:
@@ -98,28 +165,19 @@ def test_reads_are_not_blocked_by_origin(client: TestClient, seeded: Session) ->
     assert "access-control-allow-origin" not in response.headers
 
 
-@pytest.mark.parametrize(
-    ("origin", "allowed"),
-    [
-        ("http://localhost:5173", True),
-        ("http://127.0.0.1:8000", True),
-        ("http://[::1]:5173", True),
-        ("https://localhost", True),
-        ("https://evil.example", False),
-        ("http://localhost.evil.example", False),
-        ("file://", False),
-        ("null", False),
-    ],
-)
-def test_origin_rule(origin: str, allowed: bool) -> None:
-    assert origin_is_loopback(origin) is allowed
+def test_origin_and_cookie_helpers() -> None:
+    assert normalise_origin(" HTTP://LocalHost:5173/ ") == "http://localhost:5173"
+    assert has_cookie("a=1; lexflow_session=abc", "lexflow_session")
+    assert not has_cookie("a=1", "lexflow_session")
+    assert not has_cookie(None, "lexflow_session")
+    assert APP_HEADERS["X-LexFlow-Request"] == "1"
 
 
 # --- unexpected errors: problem response, nothing sensitive logged --------------
 
 
 def test_unexpected_error_is_problem_and_logs_no_message(
-    app: FastAPI, caplog: pytest.LogCaptureFixture
+    app: FastAPI, admin: Any, caplog: pytest.LogCaptureFixture
 ) -> None:
     marker = "CONFIDENTIAL-CLIENT-DATA-4711"
 
@@ -127,7 +185,8 @@ def test_unexpected_error_is_problem_and_logs_no_message(
     def boom() -> None:
         raise RuntimeError(f"failed while handling {marker}")
 
-    with caplog.at_level(logging.INFO), TestClient(app, raise_server_exceptions=True) as client:
+    with caplog.at_level(logging.INFO), http_client(app, raise_server_exceptions=True) as client:
+        sign_in(client, admin)
         # raise_server_exceptions=True: the error must not escape the app at all.
         response = client.get("/api/boom")
 
@@ -207,6 +266,7 @@ def test_double_submitted_update_records_one_entry(
 ) -> None:
     from lexflow.main import create_app
 
+    email = committed_user(committed_engine)
     app = create_app()  # real sessions: each request commits
     app.dependency_overrides[get_today] = lambda: TODAY
     workers = 6
@@ -214,7 +274,8 @@ def test_double_submitted_update_records_one_entry(
     statuses: list[int] = []
 
     def submit() -> None:
-        with TestClient(app) as http:
+        with http_client(app) as http:
+            sign_in_as(http, email)
             barrier.wait()
             statuses.append(
                 http.patch(f"/api/cases/{SATTVIK}", json={"status": "Closed"}).status_code

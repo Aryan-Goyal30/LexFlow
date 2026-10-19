@@ -165,12 +165,17 @@ export async function stopRecordedApi(file: string = RECORD_FILE): Promise<StopO
   return 'stopped';
 }
 
-/** Recreate the e2e database with the sample data, and empty its upload folder. */
-export function prepareDatabase(): void {
+/**
+ * Recreate the e2e database with the sample data and the e2e sign-in accounts
+ * (all with `password`), and empty its upload folder. The password goes to the
+ * child in its environment, never on its command line.
+ */
+export function prepareDatabase(password: string): void {
   rmSync(LOG_FILE, { force: true }); // one log per run
   const result = spawnSync(python(), ['scripts/e2e.py', 'prepare'], {
     cwd: SERVER,
     stdio: 'inherit',
+    env: { ...process.env, LEXFLOW_E2E_PASSWORD: password },
   });
   if (result.error) {
     throw new Error(`Could not run ${python()}: ${result.error.message}. ${pythonHint}`);

@@ -1,7 +1,8 @@
-import { useNavigate } from 'react-router-dom';
-import { Menu, LogOut, Search, Bell } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, LogOut, Search, Bell, KeyRound } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { initials } from '../../lib/format';
+import { CHANGE_PASSWORD_PATH } from '../../lib/paths';
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -11,8 +12,9 @@ export function Topbar({ onMenuClick }: TopbarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    // Ends the session on the server; the local cache is cleared either way.
+    await logout().catch(() => undefined);
     navigate('/', { replace: true });
   };
 
@@ -55,9 +57,17 @@ export function Topbar({ onMenuClick }: TopbarProps) {
             <p className="text-sm font-semibold text-brand-900">{user?.name}</p>
             <p className="text-xs text-brand-500">{user?.role}</p>
           </div>
+          <Link
+            to={CHANGE_PASSWORD_PATH}
+            className="rounded-md p-2 text-brand-500 hover:bg-brand-50 hover:text-brand-800"
+            aria-label="Change password"
+            title="Change password"
+          >
+            <KeyRound className="h-[18px] w-[18px]" />
+          </Link>
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => void handleLogout()}
             className="rounded-md p-2 text-brand-500 hover:bg-brand-50 hover:text-brand-800"
             aria-label="Sign out"
             title="Sign out"

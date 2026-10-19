@@ -3,37 +3,55 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Scale, FileText, FolderKanban, CalendarClock, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
-import { safeReturnPath } from '../lib/paths';
+import { ApiError, errorMessage } from '../services/api/client';
+import { passwordPathFor, safeReturnPath } from '../lib/paths';
 
 export function LoginPage() {
-  const { isAuthenticated, login } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   // Set by the route guard when a signed-out user opened a page inside the app.
-  const returnTo = safeReturnPath((location.state as { from?: unknown } | null)?.from);
+  const from = (location.state as { from?: unknown } | null)?.from;
 
-  const [email, setEmail] = useState('aryan.goyal@lexflow.in');
-  const [password, setPassword] = useState('demo1234');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (isAuthenticated) {
-    return <Navigate to={returnTo} replace />;
+  if (user) {
+    return (
+      <Navigate
+        to={user.mustChangePassword ? passwordPathFor(user.role) : safeReturnPath(from, user.role)}
+        replace
+      />
+    );
   }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!email.trim() || !password.trim()) {
+    if (!email.trim() || !password) {
       setError('Enter your email and password to continue.');
       return;
     }
     setSubmitting(true);
     try {
-      await login(email, password);
-      navigate(returnTo, { replace: true });
-    } catch {
-      setError('Unable to sign in. Please try again.');
+      const signedIn = await login(email, password);
+      navigate(
+        signedIn.mustChangePassword
+          ? passwordPathFor(signedIn.role)
+          : safeReturnPath(from, signedIn.role),
+        { replace: true },
+      );
+    } catch (err) {
+      // The server gives the same answer for every refusal (unknown account,
+      // wrong password, locked, disabled), so this does too.
+      setError(
+        err instanceof ApiError && err.status === 401
+          ? 'Email or password is incorrect.'
+          : errorMessage(err),
+      );
+      setPassword('');
     } finally {
       setSubmitting(false);
     }
@@ -97,8 +115,7 @@ export function LoginPage() {
 
           <h1 className="text-2xl font-bold text-brand-900">Sign in</h1>
           <p className="mt-1 text-sm text-brand-500">
-            Access your case workspace. Use the pre-filled demo credentials or any email and
-            password.
+            Sign in with the account your administrator created for you.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
@@ -146,9 +163,16 @@ export function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-xs text-brand-400">
-            This prototype only simulates sign-in. Any email and password are accepted and nothing
-            is verified, so don't enter a real password.
+            Accounts are created by an administrator; there is no self-registration. After 5
+            incorrect attempts an account is locked for 15 minutes.
           </p>
+          {import.meta.env.DEV && (
+            <p className="mt-3 rounded-md bg-brand-50 px-3 py-2 text-center text-xs text-brand-500">
+              Development: create an account with{' '}
+              <code className="font-mono">python -m lexflow.cli.users create</code> (see
+              server/README.md).
+            </p>
+          )}
         </div>
       </div>
     </div>

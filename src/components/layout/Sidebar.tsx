@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -15,6 +16,8 @@ interface NavItem {
   label: string;
   icon: typeof LayoutDashboard;
   enabled: boolean;
+  /** Shown only to Administrators. */
+  adminOnly?: boolean;
 }
 
 // Documents, analysis and research live inside each case's workspace. The
@@ -23,10 +26,10 @@ const navItems: NavItem[] = [
   { to: '/app/cases', label: 'Cases', icon: FolderKanban, enabled: true },
   { to: '/app/dashboard', label: 'Practice Overview', icon: LayoutDashboard, enabled: true },
   { to: '/app/research', label: 'Precedent Library', icon: BookOpenText, enabled: false },
-  { to: '/app/hearings', label: 'Hearings', icon: CalendarClock, enabled: false },
-  { to: '/app/clients', label: 'Clients', icon: Users, enabled: false },
+  { to: '/app/hearings', label: 'Hearings', icon: CalendarClock, enabled: true },
+  { to: '/app/clients', label: 'Clients', icon: Users, enabled: true },
   { to: '/app/notifications', label: 'Notifications', icon: Bell, enabled: false },
-  { to: '/app/admin', label: 'Administration', icon: ShieldCheck, enabled: false },
+  { to: '/app/admin', label: 'Administration', icon: ShieldCheck, enabled: true, adminOnly: true },
 ];
 
 interface SidebarProps {
@@ -35,6 +38,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onNavigate }: SidebarProps) {
+  const { user } = useAuth();
+  const items = navItems.filter((item) => !item.adminOnly || user?.role === 'Administrator');
   return (
     <>
       {/* Mobile backdrop */}
@@ -64,7 +69,7 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {navItems.map((item) => {
+          {items.map((item) => {
             const Icon = item.icon;
             if (!item.enabled) {
               return (

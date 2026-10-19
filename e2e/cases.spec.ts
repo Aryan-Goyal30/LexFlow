@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { storageStatePath } from './support/accounts';
 import { restartBackend } from './support/backend';
 
 // One story, in order: each test builds on the case the previous one created.
@@ -19,16 +20,14 @@ const BRIEF = {
 
 let caseUrl = '';
 
-async function signIn(page: Page) {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/app\/cases$/);
-}
-
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+// Signed in (by global setup) as the sample lead advocate, Aryan Goyal.
+test.use({ storageState: storageStatePath('advocate') });
+
 test.beforeEach(async ({ page }) => {
-  await signIn(page);
+  await page.goto('/app/cases');
+  await expect(page.getByRole('heading', { name: 'Cases' })).toBeVisible();
 });
 
 test('the case list comes from the API, with sample cases labelled', async ({ page }) => {
@@ -89,14 +88,18 @@ test('documents upload, open, persist and delete', async ({ page }) => {
   await expect(tab.locator('body')).toContainText('E2E notes.');
   await tab.close();
 
-  // Remove the brief: gone from the list, from the server, and after a reload.
+  // Remove the brief: gone from the case and from downloads, also after a
+  // reload, but kept under Deleted Documents (deletion is soft).
   const briefHref = await openBrief.getAttribute('href');
+  const live = page.getByRole('list', { name: 'Case documents' });
+  const deleted = page.getByRole('list', { name: 'Deleted documents' });
   await page.getByRole('button', { name: `Remove ${BRIEF.name}` }).click();
-  await expect(page.getByText(BRIEF.name)).toHaveCount(0);
+  await expect(live.getByText(BRIEF.name)).toHaveCount(0);
   expect((await page.request.get(briefHref ?? '')).status()).toBe(404);
   await page.reload();
   await expect(openNotes).toBeVisible();
-  await expect(page.getByText(BRIEF.name)).toHaveCount(0);
+  await expect(live.getByText(BRIEF.name)).toHaveCount(0);
+  await expect(deleted.getByText(BRIEF.name)).toBeVisible();
 });
 
 test('the server rejects a file whose contents do not match its type', async ({ page }) => {

@@ -32,6 +32,15 @@ export function PriorityBadge({ priority }: { priority: CasePriority }) {
   return <Pill text={priority} className={priorityStyles[priority]} />;
 }
 
+/** Marks an archived case: kept in full, read-only, hidden from the default list. */
+export function ArchivedBadge() {
+  return (
+    <span className="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-600/30">
+      Archived
+    </span>
+  );
+}
+
 /** Marks fictional sample records so they are never mistaken for real data. */
 export function SampleBadge() {
   return (

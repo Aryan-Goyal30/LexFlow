@@ -1,4 +1,4 @@
-import type { CasePriority, CaseStatus, PracticeArea, User } from '../types';
+import type { CasePriority, CaseStatus, PracticeArea } from '../types';
 
 /**
  * Fictional sample data, set in an Indian legal context (Supreme Court of
@@ -11,8 +11,13 @@ import type { CasePriority, CaseStatus, PracticeArea, User } from '../types';
  *   into a development database (marked `is_sample`);
  * - front-end tests build their fake API responses from them.
  *
- * The running app never reads case data from here; it uses the API. Only the
- * simulated sign-in uses `currentUser`.
+ * The running app never reads anything from here: case data and the signed-in
+ * user both come from the API.
+ *
+ * Contact details are fictional by construction: e-mail addresses use the
+ * reserved `.test` and `.example` domains (RFC 2606 / RFC 6761) and phone numbers
+ * start with 0 after the country code, which no Indian number does, so no real
+ * person can be reached through them.
  */
 
 export interface SampleClient {
@@ -67,62 +72,61 @@ export interface SampleCase {
   timeline: SampleEvent[];
 }
 
-export const currentUser: User = {
-  id: 'u-001',
-  name: 'Aryan Goyal',
-  email: 'aryan.goyal@lexflow.in',
-  role: 'Advocate',
-};
-
 export const mockClients: SampleClient[] = [
   {
     id: 'c-001',
     name: 'Aarav Textiles Pvt. Ltd.',
-    email: 'legal@aaravtextiles.in',
-    phone: '+91 22 4012 8890',
+    email: 'legal@aarav-textiles.example',
+    phone: '+91 00000 00001',
     company: 'Aarav Textiles Pvt. Ltd., Mumbai',
   },
   {
     id: 'c-002',
     name: 'Suresh Iyer',
-    email: 'suresh.iyer@example.in',
-    phone: '+91 98860 21745',
+    email: 'suresh.iyer@client.example',
+    phone: '+91 00000 00002',
   },
   {
     id: 'c-003',
     name: 'Vikram Chauhan',
-    email: 'chauhan.vikram@example.in',
-    phone: '+91 99102 55830',
+    email: 'chauhan.vikram@client.example',
+    phone: '+91 00000 00003',
   },
   {
     id: 'c-004',
     name: 'Neha Sharma',
-    email: 'neha.sharma@example.in',
-    phone: '+91 98450 66214',
+    email: 'neha.sharma@client.example',
+    phone: '+91 00000 00004',
   },
   {
     id: 'c-005',
     name: 'Sattvik Foods Pvt. Ltd.',
-    email: 'ip@sattvikfoods.in',
-    phone: '+91 20 6721 4400',
+    email: 'ip@sattvik-foods.example',
+    phone: '+91 00000 00005',
     company: 'Sattvik Foods Pvt. Ltd., Pune',
   },
   {
     id: 'c-006',
     name: 'Nagrik Adhikar Foundation',
-    email: 'contact@nagrikadhikar.org.in',
-    phone: '+91 11 4155 2200',
+    email: 'contact@nagrik-adhikar.example',
+    phone: '+91 00000 00006',
     company: 'Nagrik Adhikar Foundation (Regd.), New Delhi',
   },
 ];
 
+export interface SampleAdvocate {
+  name: string;
+  /** Fictional sign-in address on the reserved `.test` domain. */
+  email: string;
+}
+
 /** Advocates on record for the firm (used as "Lead Advocate" options). */
-export const advocates: string[] = [
-  'Aryan Goyal',
-  'Rajat Deshpande',
-  'Farhan Qureshi',
-  'Meera Nair',
-  'Vikram Sethi',
+export const advocates: SampleAdvocate[] = [
+  { name: 'Aryan Goyal', email: 'aryan.goyal@lexflow.test' },
+  { name: 'Rajat Deshpande', email: 'rajat.deshpande@lexflow.test' },
+  { name: 'Farhan Qureshi', email: 'farhan.qureshi@lexflow.test' },
+  { name: 'Meera Nair', email: 'meera.nair@lexflow.test' },
+  { name: 'Vikram Sethi', email: 'vikram.sethi@lexflow.test' },
 ];
 
 export const mockCases: SampleCase[] = [
