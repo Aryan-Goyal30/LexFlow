@@ -101,9 +101,10 @@ class Settings(BaseSettings):
     )
     worker_lease_seconds: int = Field(default=300, gt=0, alias="LEXFLOW_WORKER_LEASE_SECONDS")
     worker_max_attempts: int = Field(default=3, ge=1, le=10, alias="LEXFLOW_WORKER_MAX_ATTEMPTS")
-    # Embeddings: "disabled" (default) stores chunks without vectors; "local" uses
-    # a model on this computer, which must first be downloaded explicitly with
-    # `python -m lexflow.cli.models download`. Nothing is sent to other services.
+    # Embeddings: "disabled" (default) stores chunks without vectors. "local" (a
+    # model on this computer; nothing sent to other services) is refused until the
+    # database can store vectors: see lexflow/embeddings.py and
+    # `python -m lexflow.cli.models status`.
     embeddings: Literal["disabled", "local"] = Field(default="disabled", alias="LEXFLOW_EMBEDDINGS")
     embedding_model: str = Field(default="BAAI/bge-small-en-v1.5", alias="LEXFLOW_EMBEDDING_MODEL")
     model_dir: Path = Field(default=Path("var/models"), alias="LEXFLOW_MODEL_DIR")

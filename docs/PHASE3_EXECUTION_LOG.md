@@ -80,7 +80,7 @@ checked before use.
 | P3-M2 | Extractors (PDF, DOCX, TXT) with limits, in a child process; fixtures | done |
 | P3-M3 | Page-aware chunking and the worker loop | done |
 | P3-M4 | Text viewer, retry, live status, audit | done |
-| P3-M5 | pgvector (gated), embeddings provider, model command | pending |
+| P3-M5 | pgvector (gated), embeddings provider, model command | done, reduced: vector storage blocked (image) |
 | P3-M6 | Hardening, backfill command, docs, regression, migration gate | pending |
 
 ## P3-M1 — Schema, queue, processing status (done)
@@ -228,9 +228,93 @@ occurrence shows its assertion.
 | `npm run check` | exit 0, 16 test files (157 tests), API types in sync, build OK |
 | `npx playwright test` (real API + real worker) | **32 passed** |
 
+## P3-M5 — Embeddings: image check (blocked), provider gate, status command (done, reduced)
+
+**Image compatibility — `pgvector/pgvector:pg17` FAILS; not used.**
+
+| | current `postgres:17` | `pgvector/pgvector:pg17` | `pgvector/pgvector:pg17-trixie` |
+|---|---|---|---|
+| Digest | `sha256:2d2b8998d310…` | `sha256:ac08538c6f8b…` | `sha256:7a7e9f22015b…` |
+| PostgreSQL package | 17.11-1.pgdg13+2 | 17.11-1.pgdg12+2 | 17.11-1.pgdg13+2 |
+| Debian / glibc | 13 / 2.41-12+deb13u4 | **12 / 2.36-9+deb12u14** | 13 / 2.41-12+deb13u4 |
+| pgvector | none | 0.8.7 | 0.8.7 |
+
+Every database in the cluster uses the libc provider, collation `en_US.utf8`,
+recorded collation version **2.41**. Running the existing data directory on the
+`pg17` (bookworm, glibc 2.36) image would change the collation library under
+existing text indexes (PostgreSQL warns of a version mismatch; indexes may
+return wrong results until rebuilt). So the approved `pg17` tag was **not**
+applied to `lexflow`, CI or `compose.yaml`.
+
+`pg17-trixie` matches the current image exactly. Evidence (isolated: a
+throwaway container `lexflow-pgvector-rehearsal` on tmpfs, no shared volume,
+no published port): the fresh backup restored with `--exit-on-error`; recorded
+and actual collation version both 2.41; `CREATE EXTENSION vector` gave 0.8.7;
+a cosine-distance query worked; counts intact (7 cases, 28 documents, 6 users,
+17 audit events, revision 0007); `REINDEX DATABASE` succeeded. Not tested: the
+existing data directory itself under the new image (the swap). The container
+is stopped, not removed (a safety check blocked the removal; remove it with
+`docker rm lexflow-pgvector-rehearsal`).
+
+**Blocker (owner decision needed):** switching to `pgvector/pgvector:pg17-trixie`
+is a different tag from the one approved. Until the owner approves it (or
+another image), vector storage (planned migration 0009, `vector(384)`), the
+local `bge-small-en-v1.5` provider, the model download command and the
+worker's indexing step are **not implemented**. No model was downloaded;
+`fastembed` was not installed.
+
+**Done instead (independent of the image):**
+- `server/lexflow/embeddings.py`: `EmbeddingProvider` interface;
+  `provider_for(settings)` returns nothing when embeddings are disabled and
+  raises `EmbeddingsUnavailableError` (with the reason) for `local`. The worker
+  checks this before claiming any job and the command exits 2 with the reason,
+  instead of marking chunks "pending" that nothing would index (the M3 worker
+  did that). Chunks are always stored with index status "disabled".
+- `python -m lexflow.cli.models status` (read-only): the setting, the model
+  name, what is in the model folder (never created), and whether the database
+  server offers/has pgvector. On `lexflow` today: disabled; model folder does
+  not exist; pgvector not offered.
+- Tests: `tests/test_embeddings.py` (9). Mutation checks: refusal removed,
+  worker check removed — both caught.
+
+**Database gate for 0008 on `lexflow` — all checks passed; applied.**
+1. Target: `server/.env` → `postgresql+psycopg` 127.0.0.1:5432 `lexflow`; only
+   `lexflow-db-1` publishes that port. Revision 0007. Rows: alembic_version 1,
+   audit_events 17, case_members 0, case_number_counters 2, cases 7, clients 6,
+   documents 28, hearings 7, sessions 2, timeline_events 27, users 6.
+2. Backup: `pg_dump -Fc` in the container, copied to
+   `server/var/backups/lexflow-20261020-phase3-pre-0008.dump` (40,529 bytes,
+   SHA-256 `2b058840737ef50c1d185f378e801182ed6057d8f8dc3ad19fa86b91be82a22e`,
+   same inside and outside the container; git-ignored; 11 table-data entries).
+3. Restored into a new scratch database `lexflow_p3_restore` (`--no-owner
+   --exit-on-error`). Fingerprints (every table: columns, row count, md5 over
+   every row) identical to `lexflow` taken right after the dump, and `lexflow`
+   unchanged during the backup. `pg_dump --schema-only` identical (620 lines,
+   excluding pg_dump's random `\restrict` keys).
+4. Migration SQL (`alembic upgrade 0007:0008 --sql`): 3 `CREATE TABLE`, 2
+   `CREATE INDEX`, the `alembic_version` update; no `ALTER`/`DROP`/`DELETE` of
+   existing objects. New foreign keys cascade from documents to the new
+   tables only.
+5. Rehearsal on `lexflow_p3_restore` only (the script refuses other names):
+   upgrade 0008 → existing 10 tables identical, 3 new tables empty; downgrade
+   0007 → whole database identical to before; upgrade 0008 again → identical.
+6. Re-checked the backup checksum and that `lexflow` was still identical, then
+   `alembic upgrade 0008` (exit 0). After: revision **0008 (head)**; existing
+   10 tables identical (same columns, counts, checksums); new tables empty;
+   `alembic check`: no differences. Scratch `lexflow_p3_restore` (at 0008) left
+   for inspection.
+
+Existing documents have no extraction job yet (nothing is queued by the
+migration); the explicit backfill command comes in P3-M6.
+
+| Command | Result |
+|---|---|
+| `pytest tests/test_embeddings.py tests/test_worker.py` | **21 passed** |
+| ruff, ruff format, mypy (Windows and `--platform linux`) | clean (110 source files) |
+
 ---
 
-Checkpoint: P3-M4 committed (see `git log`). Next action: P3-M5 — PostgreSQL
-image compatibility check for `pgvector/pgvector:pg17` (no change to `lexflow`
-without the full database safety procedure), migration 0009, embeddings
-provider (disabled by default), `lexflow.cli.models` command.
+Checkpoint: P3-M5 committed (see `git log`); `lexflow` at 0008. Next action:
+P3-M6 — backfill command (`python -m lexflow.cli.documents queue-extraction`),
+docs (README, server README, `.env.example`, ADRs), full regression, restart
+the API on the new code and start the worker.

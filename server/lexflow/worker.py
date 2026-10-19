@@ -34,6 +34,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from lexflow.config import Settings, get_settings
 from lexflow.db import engine_for
+from lexflow.embeddings import EmbeddingsUnavailableError, provider_for
 from lexflow.extraction import Extracted, ExtractionError, Limits
 from lexflow.extraction.chunking import chunk_sections
 from lexflow.extraction.runner import run_extraction
@@ -136,7 +137,6 @@ def process(
             outcome=outcome,
             now=now(),
             max_attempts=settings.worker_max_attempts,
-            index_status="disabled" if settings.embeddings == "disabled" else "pending",
         )
     if isinstance(outcome, queue.Failure):
         logger.info("document %s: %s (%s)", document_id, status, outcome.code)
@@ -178,7 +178,9 @@ def run(
     sleep: Callable[[float], None] = time.sleep,
 ) -> int:
     """Claim and process jobs. With ``once``, stop when nothing is waiting.
-    Returns how many jobs were processed."""
+    Returns how many jobs were processed. Raises ``EmbeddingsUnavailableError`` before
+    claiming anything when the configured embeddings cannot be produced."""
+    provider_for(settings)  # chunks are stored with index status "disabled"
     processed = 0
     while True:
         with sessions() as session:
@@ -222,6 +224,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     except KeyboardInterrupt:
         logger.info("worker %s stopped", worker_id)
         return 0
+    except EmbeddingsUnavailableError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     except DBAPIError:
         print(
             "The database could not be used: is it running, and are the migrations "
