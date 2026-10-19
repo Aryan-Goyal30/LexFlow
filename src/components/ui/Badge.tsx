@@ -31,3 +31,15 @@ export function StatusBadge({ status }: { status: CaseStatus }) {
 export function PriorityBadge({ priority }: { priority: CasePriority }) {
   return <Pill text={priority} className={priorityStyles[priority]} />;
 }
+
+/** Marks fictional sample records so they are never mistaken for real data. */
+export function SampleBadge() {
+  return (
+    <span
+      className="inline-flex items-center rounded px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-accent-600 ring-1 ring-inset ring-accent-500/40"
+      title="Fictional sample data"
+    >
+      Sample
+    </span>
+  );
+}

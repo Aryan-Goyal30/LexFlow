@@ -21,7 +21,11 @@ describe('route guard and sign-in (mock auth)', () => {
     await user.click(await screen.findByRole('button', { name: 'Sign in' }));
 
     await waitFor(() => expect(url()).toBe('/app/cases/case-1005?tab=research'));
-    expect(screen.getByRole('tab', { name: /Research/ })).toHaveAttribute('aria-selected', 'true');
+    // The workspace loads the case from the API before its tabs appear.
+    expect(await screen.findByRole('tab', { name: /Research/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   it('requires an email and password before signing in', async () => {

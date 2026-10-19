@@ -1,14 +1,71 @@
-import type { Case, Client, User } from '../types';
+import type { CasePriority, CaseStatus, PracticeArea, User } from '../types';
 
 /**
- * Mock data for LexFlow v0.1.
+ * Fictional sample data, set in an Indian legal context (Supreme Court of
+ * India, High Courts, District & Sessions Courts). All people, organisations,
+ * case numbers and matters below are entirely fictional.
  *
- * Everything here is in-memory only and is set in an Indian legal context
- * (Supreme Court of India, High Courts, District & Sessions Courts). All people,
- * organisations, case numbers and matters below are entirely fictional and are
- * provided only for demonstration. A later milestone replaces this module with
- * API calls; the rest of the app depends on the types, not on this file.
+ * This file is the single source of the sample records:
+ * - `scripts/export-sample-data.mjs` writes them to
+ *   `server/lexflow/seed/sample_data.json`, which `python -m lexflow.seed` loads
+ *   into a development database (marked `is_sample`);
+ * - front-end tests build their fake API responses from them.
+ *
+ * The running app never reads case data from here; it uses the API. Only the
+ * simulated sign-in uses `currentUser`.
  */
+
+export interface SampleClient {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  company?: string;
+}
+
+export interface SampleDocument {
+  id: string;
+  name: string;
+  type: string;
+  uploadedOn: string;
+  /** A label only: sample records have no file, so there is no measured size. */
+  size: string;
+}
+
+export interface SampleHearing {
+  id: string;
+  date: string;
+  time: string;
+  court: string;
+  purpose: string;
+}
+
+export interface SampleEvent {
+  id: string;
+  date: string;
+  label: string;
+  description: string;
+}
+
+export interface SampleCase {
+  id: string;
+  caseNumber: string;
+  title: string;
+  status: CaseStatus;
+  priority: CasePriority;
+  practiceArea: PracticeArea;
+  clientId: string;
+  clientName: string;
+  leadAttorney: string;
+  courtName?: string;
+  opposingParty?: string;
+  description: string;
+  openedOn: string;
+  nextHearing?: string;
+  documents: SampleDocument[];
+  hearings: SampleHearing[];
+  timeline: SampleEvent[];
+}
 
 export const currentUser: User = {
   id: 'u-001',
@@ -17,7 +74,7 @@ export const currentUser: User = {
   role: 'Advocate',
 };
 
-export const mockClients: Client[] = [
+export const mockClients: SampleClient[] = [
   {
     id: 'c-001',
     name: 'Aarav Textiles Pvt. Ltd.',
@@ -68,7 +125,7 @@ export const advocates: string[] = [
   'Vikram Sethi',
 ];
 
-export const mockCases: Case[] = [
+export const mockCases: SampleCase[] = [
   {
     id: 'case-1001',
     caseNumber: 'LF-2026-0142',

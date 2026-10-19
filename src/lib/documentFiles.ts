@@ -1,8 +1,12 @@
 /**
- * Rules for which files can be attached to a case. The file picker and
+ * Rules for which files can be attached to a case, checked in the browser for
+ * quick feedback before anything is uploaded. The file picker and
  * drag-and-drop both go through checkFiles, so they accept and reject the
  * same files. (The picker's `accept` attribute is only a hint; a user can
  * switch the dialog to "All files".)
+ *
+ * The server repeats these checks and has the final say: it also verifies each
+ * file's actual content against its extension and enforces the size limit.
  */
 
 export const ACCEPTED_EXTENSIONS = [

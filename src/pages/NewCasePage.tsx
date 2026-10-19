@@ -1,11 +1,21 @@
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, Check } from 'lucide-react';
-import { useCases } from '../context/CasesContext';
+import { AlertCircle, ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { useAdvocates, useClients, useCreateCase } from '../hooks/useCases';
+import { useAuth } from '../context/AuthContext';
+import { ApiError, errorMessage } from '../services/api/client';
 import { Card, CardBody, CardHeader } from '../components/ui/Card';
 import { Button, ButtonLink } from '../components/ui/Button';
 import { PageHeader } from '../components/ui/PageHeader';
-import type { CasePriority, CaseStatus, NewCaseInput, PracticeArea } from '../types';
+import { ErrorState, LoadingState } from '../components/ui/QueryState';
+import type {
+  Advocate,
+  CasePriority,
+  CaseStatus,
+  Client,
+  NewCaseInput,
+  PracticeArea,
+} from '../types';
 import { validateNewCase, type NewCaseErrors, type NewCaseForm } from '../lib/validateNewCase';
 import { todayIsoDate } from '../lib/format';
 
@@ -28,7 +38,7 @@ const FIELD_ORDER: (keyof NewCaseForm)[] = [
   'clientId',
   'practiceArea',
   'description',
-  'leadAttorney',
+  'leadAdvocateId',
   'opposingParty',
   'courtName',
   'nextHearing',
@@ -36,9 +46,66 @@ const FIELD_ORDER: (keyof NewCaseForm)[] = [
   'priority',
 ];
 
+function isFormField(name: string): name is keyof NewCaseForm {
+  return (FIELD_ORDER as string[]).includes(name);
+}
+
+function BackLink() {
+  return (
+    <Link
+      to="/app/cases"
+      className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-800"
+    >
+      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+      Back to Cases
+    </Link>
+  );
+}
+
 export function NewCasePage() {
-  const { addCase, clients, advocates } = useCases();
+  const clients = useClients();
+  const advocates = useAdvocates();
+
+  let body: ReactNode;
+  if (clients.isPending || advocates.isPending) {
+    body = (
+      <Card>
+        <LoadingState label="Loading clients and advocates…" />
+      </Card>
+    );
+  } else if (clients.isError || advocates.isError) {
+    body = (
+      <Card>
+        <ErrorState
+          title="Couldn't load the form"
+          error={clients.error ?? advocates.error}
+          onRetry={() => {
+            void clients.refetch();
+            void advocates.refetch();
+          }}
+        />
+      </Card>
+    );
+  } else {
+    body = <NewCaseFormView clients={clients.data} advocates={advocates.data} />;
+  }
+
+  return (
+    <>
+      <BackLink />
+      <PageHeader
+        title="Add New Case"
+        description="Open a new matter and add it to your case list."
+      />
+      {body}
+    </>
+  );
+}
+
+function NewCaseFormView({ clients, advocates }: { clients: Client[]; advocates: Advocate[] }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const createCase = useCreateCase();
   const uid = useId();
 
   const [form, setForm] = useState<NewCaseForm>(() => ({
@@ -47,13 +114,15 @@ export function NewCasePage() {
     practiceArea: 'Civil',
     status: 'Open',
     priority: 'Medium',
-    leadAttorney: advocates[0] ?? '',
+    // The signed-in (demo) user, if they are one of the advocates.
+    leadAdvocateId: (advocates.find((a) => a.name === user?.name) ?? advocates[0])?.id ?? '',
     courtName: '',
     opposingParty: '',
     nextHearing: '',
     description: '',
   }));
   const [errors, setErrors] = useState<NewCaseErrors>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const idFor = (key: keyof NewCaseForm) => `${uid}-${key}`;
   const errorIdFor = (key: keyof NewCaseForm) => `${uid}-${key}-error`;
@@ -70,16 +139,23 @@ export function NewCasePage() {
     setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
+  const showErrors = (found: NewCaseErrors): boolean => {
+    setErrors(found);
+    const firstInvalid = FIELD_ORDER.find((key) => found[key]);
+    if (firstInvalid) document.getElementById(idFor(firstInvalid))?.focus();
+    return firstInvalid !== undefined;
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const found = validateNewCase(form, clients, advocates);
-    setErrors(found);
-
-    const firstInvalid = FIELD_ORDER.find((key) => found[key]);
-    if (firstInvalid) {
-      document.getElementById(idFor(firstInvalid))?.focus();
-      return;
-    }
+    if (createCase.isPending) return;
+    setSaveError(null);
+    const found = validateNewCase(
+      form,
+      clients.map((c) => c.id),
+      advocates.map((a) => a.id),
+    );
+    if (showErrors(found)) return;
 
     const input: NewCaseInput = {
       title: form.title,
@@ -87,48 +163,60 @@ export function NewCasePage() {
       practiceArea: form.practiceArea,
       status: form.status,
       priority: form.priority,
-      leadAttorney: form.leadAttorney,
-      courtName: form.courtName,
-      opposingParty: form.opposingParty,
+      leadAdvocateId: form.leadAdvocateId,
+      courtName: form.courtName || null,
+      opposingParty: form.opposingParty || null,
       description: form.description,
-      nextHearing: form.nextHearing || undefined,
+      nextHearing: form.nextHearing || null,
     };
 
-    const created = addCase(input);
-    // Next step in the workflow: attach the case papers.
-    navigate(`/app/cases/${created.id}?tab=documents`);
+    createCase.mutate(input, {
+      // Next step in the workflow: attach the case papers.
+      onSuccess: (created) => navigate(`/app/cases/${created.id}?tab=documents`),
+      onError: (error) => {
+        // Server validation: show each message beside its field. The entered
+        // values stay in the form either way.
+        if (error instanceof ApiError && Object.keys(error.fieldErrors).length > 0) {
+          const fromServer: NewCaseErrors = {};
+          const other: string[] = [];
+          for (const [field, message] of Object.entries(error.fieldErrors)) {
+            if (isFormField(field)) fromServer[field] = message;
+            else other.push(message);
+          }
+          showErrors(fromServer);
+          if (other.length > 0) setSaveError(other.join(' '));
+        } else {
+          setSaveError(`The case was not created. ${errorMessage(error)}`);
+        }
+      },
+    });
   };
 
   const errorCount = Object.values(errors).filter(Boolean).length;
+  const saving = createCase.isPending;
 
   return (
     <>
-      <Link
-        to="/app/cases"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-800"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Cases
-      </Link>
-
-      <PageHeader
-        title="Add New Case"
-        description="Open a new matter and add it to your case list."
-      />
-
-      {errorCount > 0 && (
-        <p
+      {(errorCount > 0 || saveError) && (
+        <div
           role="alert"
-          className="mb-4 flex items-center gap-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-600/20"
+          className="mb-4 flex items-start gap-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-600/20"
         >
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          {errorCount === 1
-            ? 'One field needs attention before the case can be created.'
-            : `${errorCount} fields need attention before the case can be created.`}
-        </p>
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <div>
+            {errorCount > 0 && (
+              <p>
+                {errorCount === 1
+                  ? 'One field needs attention before the case can be created.'
+                  : `${errorCount} fields need attention before the case can be created.`}
+              </p>
+            )}
+            {saveError && <p>{saveError}</p>}
+          </div>
+        </div>
       )}
 
-      <form onSubmit={handleSubmit} noValidate aria-label="New case">
+      <form onSubmit={handleSubmit} noValidate aria-label="New case" aria-busy={saving}>
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
             <Card>
@@ -170,12 +258,18 @@ export function NewCasePage() {
                       {clients.map((client) => (
                         <option key={client.id} value={client.id}>
                           {client.name}
+                          {client.isSample ? ' (sample)' : ''}
                         </option>
                       ))}
                     </select>
                   </Field>
 
-                  <Field label="Practice Area" htmlFor={idFor('practiceArea')}>
+                  <Field
+                    label="Practice Area"
+                    htmlFor={idFor('practiceArea')}
+                    error={errors.practiceArea}
+                    errorId={errorIdFor('practiceArea')}
+                  >
                     <select
                       {...controlProps('practiceArea')}
                       className="input-field"
@@ -213,23 +307,31 @@ export function NewCasePage() {
               <CardBody className="grid gap-4 sm:grid-cols-2">
                 <Field
                   label="Lead Advocate"
-                  htmlFor={idFor('leadAttorney')}
-                  error={errors.leadAttorney}
-                  errorId={errorIdFor('leadAttorney')}
+                  htmlFor={idFor('leadAdvocateId')}
+                  error={errors.leadAdvocateId}
+                  errorId={errorIdFor('leadAdvocateId')}
                 >
                   <select
-                    {...controlProps('leadAttorney')}
+                    {...controlProps('leadAdvocateId')}
                     className="input-field"
-                    value={form.leadAttorney}
-                    onChange={(e) => update('leadAttorney', e.target.value)}
+                    value={form.leadAdvocateId}
+                    onChange={(e) => update('leadAdvocateId', e.target.value)}
                   >
-                    {advocates.map((name) => (
-                      <option key={name}>{name}</option>
+                    {advocates.length === 0 && <option value="">No advocates available</option>}
+                    {advocates.map((advocate) => (
+                      <option key={advocate.id} value={advocate.id}>
+                        {advocate.name}
+                      </option>
                     ))}
                   </select>
                 </Field>
 
-                <Field label="Opposing Party" htmlFor={idFor('opposingParty')}>
+                <Field
+                  label="Opposing Party"
+                  htmlFor={idFor('opposingParty')}
+                  error={errors.opposingParty}
+                  errorId={errorIdFor('opposingParty')}
+                >
                   <input
                     {...controlProps('opposingParty')}
                     className="input-field"
@@ -239,7 +341,12 @@ export function NewCasePage() {
                   />
                 </Field>
 
-                <Field label="Court / Forum" htmlFor={idFor('courtName')}>
+                <Field
+                  label="Court / Forum"
+                  htmlFor={idFor('courtName')}
+                  error={errors.courtName}
+                  errorId={errorIdFor('courtName')}
+                >
                   <input
                     {...controlProps('courtName')}
                     className="input-field"
@@ -272,7 +379,12 @@ export function NewCasePage() {
             <Card>
               <CardHeader title="Classification" />
               <CardBody className="space-y-4">
-                <Field label="Status" htmlFor={idFor('status')}>
+                <Field
+                  label="Status"
+                  htmlFor={idFor('status')}
+                  error={errors.status}
+                  errorId={errorIdFor('status')}
+                >
                   <select
                     {...controlProps('status')}
                     className="input-field"
@@ -285,7 +397,12 @@ export function NewCasePage() {
                   </select>
                 </Field>
 
-                <Field label="Priority" htmlFor={idFor('priority')}>
+                <Field
+                  label="Priority"
+                  htmlFor={idFor('priority')}
+                  error={errors.priority}
+                  errorId={errorIdFor('priority')}
+                >
                   <select
                     {...controlProps('priority')}
                     className="input-field"
@@ -301,9 +418,13 @@ export function NewCasePage() {
             </Card>
 
             <div className="flex flex-col gap-2">
-              <Button type="submit" className="w-full">
-                <Check className="h-4 w-4" />
-                Create Case
+              <Button type="submit" className="w-full" disabled={saving}>
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Check className="h-4 w-4" aria-hidden="true" />
+                )}
+                {saving ? 'Creating case…' : 'Create Case'}
               </Button>
               <ButtonLink to="/app/cases" variant="secondary" className="w-full">
                 Cancel

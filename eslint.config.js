@@ -6,7 +6,21 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  { ignores: ['dist', 'coverage', 'node_modules'] },
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'node_modules',
+      // Python backend: its virtual environment and local upload store.
+      'server/.venv',
+      'server/var',
+      'playwright-report',
+      'test-results',
+      'e2e/.state',
+      // Generated from the API's OpenAPI document; checked by `npm run api:check`.
+      'src/services/api/schema.gen.ts',
+    ],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, tseslint.configs.recommended],

@@ -5,7 +5,7 @@ import { useAiAssistant } from './useAiAssistant';
 import { AiNotConnectedError } from '../services/ai/aiService';
 import { AnalysisTab } from '../components/workspace/AnalysisTab';
 import { ResearchTab } from '../components/workspace/ResearchTab';
-import { mockCases } from '../data/mockData';
+import { sampleApiCase } from '../test/mockApi';
 import type { Case } from '../types';
 import type { CaseAnalysis, Precedent } from '../types/ai';
 
@@ -25,7 +25,7 @@ vi.mock('../services/ai/aiService', async (importOriginal) => {
   return { ...actual, aiService: service };
 });
 
-const legalCase = mockCases.find((c) => c.id === 'case-1005') as Case;
+const legalCase: Case = sampleApiCase('case-1005');
 
 function deferred<T>() {
   let resolve!: (value: T) => void;

@@ -40,7 +40,7 @@ const OUTPUT_SECTIONS = [
 export function AnalysisTab({ legalCase: c, ai }: { legalCase: Case; ai: AiAssistant }) {
   const { status, result, error } = ai.analysis;
   const unavailableId = useId();
-  const uploaded = c.documents.filter((d) => d.url).length;
+  const stored = c.documents.filter((d) => d.hasFile).length;
   const inputs = [
     {
       label: 'Case summary',
@@ -50,7 +50,7 @@ export function AnalysisTab({ legalCase: c, ai }: { legalCase: Case; ai: AiAssis
     {
       label: 'Documents',
       ready: c.documents.length > 0,
-      note: `${c.documents.length} on file, ${uploaded} uploaded this session`,
+      note: `${c.documents.length} on file, ${stored} with a stored file`,
     },
     {
       label: 'Matter timeline',

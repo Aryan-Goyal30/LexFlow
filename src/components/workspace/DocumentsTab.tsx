@@ -1,7 +1,9 @@
 import { useRef, useState, type DragEvent } from 'react';
-import { ExternalLink, FileText, Trash2, UploadCloud } from 'lucide-react';
-import type { Case } from '../../types';
-import { useCases } from '../../context/CasesContext';
+import { ExternalLink, FileText, Loader2, Trash2, UploadCloud } from 'lucide-react';
+import type { Case, CaseDocument } from '../../types';
+import { useDeleteDocument, useUploadDocument } from '../../hooks/useCases';
+import { ApiError, errorMessage } from '../../services/api/client';
+import { documentDownloadUrl } from '../../services/api/lexflow';
 import { Card, CardBody, CardHeader } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { formatDate } from '../../lib/format';
@@ -10,36 +12,124 @@ import {
   ACCEPTED_TYPES_LABEL,
   REJECTION_MESSAGES,
   checkFiles,
-  type FileRejection,
 } from '../../lib/documentFiles';
+
+interface Rejection {
+  name: string;
+  message: string;
+}
 
 interface UploadFeedback {
   added: string[];
-  rejected: FileRejection[];
+  rejected: Rejection[];
+}
+
+interface Progress {
+  current: string;
+  index: number;
+  total: number;
+}
+
+/**
+ * A failure message that says which file it is about. Some server messages
+ * name the file ("X is empty."), others don't ("This file is larger than the
+ * 25 MB upload limit.", "Can't reach the LexFlow server…").
+ */
+function withFileName(name: string, error: unknown): string {
+  const message = errorMessage(error);
+  return message.includes(name) ? message : `${name}: ${message}`;
 }
 
 export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
-  const { addDocuments, removeDocument } = useCases();
+  const upload = useUploadDocument(c.id);
+  const remove = useDeleteDocument(c.id);
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [progress, setProgress] = useState<Progress | null>(null);
   const [feedback, setFeedback] = useState<UploadFeedback | null>(null);
+  const [removing, setRemoving] = useState<ReadonlySet<string>>(new Set());
+  // Why each failed removal failed, by document id.
+  const [removeErrors, setRemoveErrors] = useState<ReadonlyMap<string, string>>(new Map());
+  const [busyNotice, setBusyNotice] = useState<string | null>(null);
+
+  const busy = progress !== null;
 
   // Picker and drag-and-drop both end here, so they follow the same rules.
-  const attach = (fileList: FileList | null) => {
+  const attach = async (fileList: FileList | null) => {
     const files = fileList ? Array.from(fileList) : [];
     if (files.length === 0) return; // cancelled picker, or a drag with no files
+    if (busy) {
+      // Only drops can arrive now (the button is disabled); say so rather
+      // than dropping the files silently.
+      const what = files.length === 1 ? files[0].name : `these ${files.length} files`;
+      setBusyNotice(`${what} not added: wait for the current upload to finish, then add again.`);
+      return;
+    }
+    setBusyNotice(null);
+
+    // Quick checks in the browser first; the server checks everything again.
     const { accepted, rejected } = checkFiles(
       files,
       c.documents.map((d) => d.name),
     );
-    if (accepted.length > 0) addDocuments(c.id, accepted);
-    setFeedback({ added: accepted.map((f) => f.name), rejected });
+    const result: UploadFeedback = {
+      added: [],
+      rejected: rejected.map((r) => ({
+        name: r.name,
+        message: `${r.name} ${REJECTION_MESSAGES[r.reason]}`,
+      })),
+    };
+    setFeedback(null);
+
+    // One request per file, so one rejected file never blocks the others.
+    for (const [index, file] of accepted.entries()) {
+      setProgress({ current: file.name, index: index + 1, total: accepted.length });
+      try {
+        await upload.mutateAsync(file);
+        result.added.push(file.name);
+      } catch (error) {
+        result.rejected.push({ name: file.name, message: withFileName(file.name, error) });
+      }
+    }
+    setProgress(null);
+    setFeedback(result);
+  };
+
+  const setRemoveError = (id: string, message: string | null) =>
+    setRemoveErrors((prev) => {
+      const next = new Map(prev);
+      if (message === null) next.delete(id);
+      else next.set(id, message);
+      return next;
+    });
+
+  // Each removal settles through its own promise. (Callbacks passed to
+  // `mutate()` only fire for the latest call, so two removals in flight at
+  // once would lose the first one's outcome.)
+  const removeDocument = async (doc: CaseDocument) => {
+    setRemoveError(doc.id, null);
+    setRemoving((prev) => new Set(prev).add(doc.id));
+    try {
+      await remove.mutateAsync(doc.id);
+    } catch (error) {
+      // Already removed elsewhere (another tab, say): the goal is met.
+      const alreadyGone = error instanceof ApiError && error.code === 'document-not-found';
+      if (!alreadyGone) {
+        setRemoveError(doc.id, `${doc.name} was not removed. ${errorMessage(error)}`);
+      }
+    } finally {
+      setRemoving((prev) => {
+        const next = new Set(prev);
+        next.delete(doc.id);
+        return next;
+      });
+    }
   };
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragging(false);
-    attach(e.dataTransfer.files);
+    void attach(e.dataTransfer.files);
   };
 
   const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
@@ -53,11 +143,15 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
       <div
         data-testid="document-drop-zone"
         onDragOver={(e) => {
+          // Accept drops even while uploading (no dropEffect 'none', which
+          // would make the browser skip the drop event): attach() then says
+          // why the files were not added instead of ignoring them silently.
           e.preventDefault();
           setDragging(true);
         }}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        aria-busy={busy}
         className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition ${
           dragging ? 'border-brand-500 bg-brand-50' : 'border-brand-200 bg-white'
         }`}
@@ -71,6 +165,7 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
           variant="secondary"
           size="sm"
           className="mt-4"
+          disabled={busy}
           onClick={() => inputRef.current?.click()}
         >
           Choose files
@@ -83,19 +178,42 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
           className="hidden"
           aria-label="Choose files to attach"
           onChange={(e) => {
-            attach(e.target.files);
+            void attach(e.target.files);
             e.target.value = '';
           }}
         />
-        <p className="mt-4 text-xs text-brand-400">
-          Files stay in this browser tab only. They are not uploaded anywhere and are lost when the
-          page is refreshed.
+        <p className="mt-4 max-w-md text-xs text-brand-400">
+          Files are stored by the LexFlow server on this computer and stay available after a
+          refresh. Each file&apos;s contents are checked against its type before it is saved.
         </p>
       </div>
 
       <div role="status" aria-live="polite">
+        {progress && (
+          <p className="flex items-center gap-2 text-sm text-brand-600">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Uploading {progress.current}
+            {progress.total > 1 && ` (${progress.index} of ${progress.total})`}…
+          </p>
+        )}
+        {busyNotice && (
+          <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-inset ring-amber-600/20">
+            {busyNotice}
+          </p>
+        )}
         {feedback && <UploadSummary feedback={feedback} />}
       </div>
+
+      {removeErrors.size > 0 && (
+        <div
+          role="alert"
+          className="space-y-1 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-600/20"
+        >
+          {[...removeErrors].map(([id, message]) => (
+            <p key={id}>{message}</p>
+          ))}
+        </div>
+      )}
 
       <Card>
         <CardHeader title={`Case Documents (${c.documents.length})`} />
@@ -106,41 +224,49 @@ export function DocumentsTab({ legalCase: c }: { legalCase: Case }) {
             </p>
           ) : (
             <ul className="divide-y divide-brand-100">
-              {c.documents.map((doc) => (
-                <li key={doc.id} className="flex items-center gap-3 px-5 py-3">
-                  <span className="rounded-md bg-brand-50 p-2 text-brand-500">
-                    <FileText className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-brand-900">{doc.name}</p>
-                    <p className="text-xs text-brand-500">
-                      {doc.type} · {doc.size} · {formatDate(doc.uploadedOn)}
-                      {!doc.url && ' · sample record, no file attached'}
-                    </p>
-                  </div>
-                  {doc.url && (
-                    <a
-                      href={doc.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-md p-2 text-brand-500 hover:bg-brand-50 hover:text-brand-800"
-                      aria-label={`Open ${doc.name}`}
-                      title="Open"
+              {c.documents.map((doc) => {
+                const isRemoving = removing.has(doc.id);
+                return (
+                  <li key={doc.id} className="flex items-center gap-3 px-5 py-3">
+                    <span className="rounded-md bg-brand-50 p-2 text-brand-500">
+                      <FileText className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-brand-900">{doc.name}</p>
+                      <p className="text-xs text-brand-500">
+                        {doc.type} · {doc.size} · {formatDate(doc.uploadedOn)}
+                        {!doc.hasFile && ' · sample record, no file attached'}
+                      </p>
+                    </div>
+                    {doc.hasFile && (
+                      <a
+                        href={documentDownloadUrl(doc.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-md p-2 text-brand-500 hover:bg-brand-50 hover:text-brand-800"
+                        aria-label={`Open ${doc.name}`}
+                        title="Open"
+                      >
+                        <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void removeDocument(doc)}
+                      disabled={isRemoving}
+                      className="rounded-md p-2 text-brand-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-60"
+                      aria-label={isRemoving ? `Removing ${doc.name}` : `Remove ${doc.name}`}
+                      title={isRemoving ? 'Removing…' : 'Remove'}
                     >
-                      <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                    </a>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeDocument(c.id, doc.id)}
-                    className="rounded-md p-2 text-brand-400 hover:bg-red-50 hover:text-red-600"
-                    aria-label={`Remove ${doc.name}`}
-                    title="Remove"
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                </li>
-              ))}
+                      {isRemoving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </CardBody>
@@ -167,9 +293,7 @@ function UploadSummary({ feedback }: { feedback: UploadFeedback }) {
           </p>
           <ul className="mt-1 list-disc space-y-0.5 pl-5">
             {rejected.map((r, i) => (
-              <li key={`${i}-${r.name}`}>
-                {r.name} {REJECTION_MESSAGES[r.reason]}
-              </li>
+              <li key={`${i}-${r.name}`}>{r.message}</li>
             ))}
           </ul>
         </div>

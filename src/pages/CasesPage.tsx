@@ -1,13 +1,14 @@
 import { useId, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, FolderOpen } from 'lucide-react';
-import { useCases } from '../context/CasesContext';
+import { useCaseList } from '../hooks/useCases';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Card } from '../components/ui/Card';
 import { ButtonLink } from '../components/ui/Button';
-import { StatusBadge, PriorityBadge } from '../components/ui/Badge';
+import { StatusBadge, PriorityBadge, SampleBadge } from '../components/ui/Badge';
+import { ErrorState, LoadingState, StaleDataNotice } from '../components/ui/QueryState';
 import { formatDate, isPastDate } from '../lib/format';
-import type { CaseStatus } from '../types';
+import type { CaseStatus, CaseSummary } from '../types';
 
 const STATUS_FILTERS: Array<CaseStatus | 'All'> = [
   'All',
@@ -18,7 +19,59 @@ const STATUS_FILTERS: Array<CaseStatus | 'All'> = [
 ];
 
 export function CasesPage() {
-  const { cases } = useCases();
+  const { data: cases, isPending, isError, error, refetch } = useCaseList();
+
+  let description = 'Loading…';
+  if (cases) {
+    description = `${cases.length} matter${cases.length === 1 ? '' : 's'} on file.`;
+    if (cases.some((c) => c.isSample)) {
+      description += ' Cases marked Sample are fictional, and their dates are fixed.';
+    }
+  }
+
+  return (
+    <>
+      <PageHeader
+        title="Cases"
+        description={cases || isPending ? description : undefined}
+        actions={
+          <ButtonLink to="/app/cases/new">
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            New Case
+          </ButtonLink>
+        }
+      />
+
+      {/* A failed refresh keeps the list on screen, with a notice. */}
+      {isError && cases && (
+        <StaleDataNotice error={error} onRetry={() => refetch()} className="mb-4" />
+      )}
+
+      {isPending ? (
+        <Card>
+          <LoadingState label="Loading cases…" />
+        </Card>
+      ) : !cases ? (
+        <Card>
+          <ErrorState title="Couldn't load the cases" error={error} onRetry={() => refetch()} />
+        </Card>
+      ) : cases.length === 0 ? (
+        <Card className="flex flex-col items-center justify-center px-6 py-16 text-center">
+          <FolderOpen className="h-10 w-10 text-brand-300" strokeWidth={1.5} aria-hidden="true" />
+          <p className="mt-3 text-sm font-medium text-brand-700">No cases yet</p>
+          <p className="mt-1 text-sm text-brand-500">Create the first case to get started.</p>
+          <ButtonLink to="/app/cases/new" variant="secondary" className="mt-4">
+            New Case
+          </ButtonLink>
+        </Card>
+      ) : (
+        <CaseTable cases={cases} />
+      )}
+    </>
+  );
+}
+
+function CaseTable({ cases }: { cases: CaseSummary[] }) {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<CaseStatus | 'All'>('All');
   const searchId = useId();
@@ -39,17 +92,6 @@ export function CasesPage() {
 
   return (
     <>
-      <PageHeader
-        title="Cases"
-        description={`${cases.length} matter${cases.length === 1 ? '' : 's'} on file. Sample cases are fictional and their dates are fixed.`}
-        actions={
-          <ButtonLink to="/app/cases/new">
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            New Case
-          </ButtonLink>
-        }
-      />
-
       <Card className="mb-4 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-xs">
@@ -121,7 +163,10 @@ export function CasesPage() {
                         <span className="font-medium text-brand-900 group-hover:text-brand-700">
                           {c.title}
                         </span>
-                        <span className="mt-0.5 block text-xs text-brand-500">{c.caseNumber}</span>
+                        <span className="mt-0.5 flex items-center gap-2 text-xs text-brand-500">
+                          {c.caseNumber}
+                          {c.isSample && <SampleBadge />}
+                        </span>
                       </Link>
                     </td>
                     <td className="px-5 py-3.5 text-brand-700">{c.clientName}</td>
@@ -145,7 +190,7 @@ export function CasesPage() {
                       )}
                     </td>
                     <td className="px-5 py-3.5 text-right tabular-nums text-brand-600">
-                      {c.documents.length}
+                      {c.documentCount}
                     </td>
                   </tr>
                 ))}

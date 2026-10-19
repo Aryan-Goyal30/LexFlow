@@ -38,17 +38,3 @@ export function todayIsoDate(now: Date = new Date()): string {
 export function isPastDate(iso: string, now: Date = new Date()): boolean {
   return iso.slice(0, 10) < todayIsoDate(now);
 }
-
-/**
- * Next case number for the current year: one above the highest existing
- * LF-<year>-NNNN number, so a new number never repeats an existing one.
- */
-export function nextCaseNumber(existing: readonly string[], now: Date = new Date()): string {
-  const prefix = `LF-${now.getFullYear()}-`;
-  const highest = existing.reduce((max, caseNumber) => {
-    if (!caseNumber.startsWith(prefix)) return max;
-    const seq = Number(caseNumber.slice(prefix.length));
-    return Number.isInteger(seq) && seq > max ? seq : max;
-  }, 0);
-  return `${prefix}${String(highest + 1).padStart(4, '0')}`;
-}

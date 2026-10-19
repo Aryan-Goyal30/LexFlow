@@ -63,7 +63,7 @@ export function OverviewTab({ legalCase: c }: { legalCase: Case }) {
                     <p className="text-sm font-medium text-brand-900">{h.purpose}</p>
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-brand-500">
                       <Clock className="h-3.5 w-3.5" />
-                      {formatDate(h.date)} · {h.time} · {h.court}
+                      {formatDate(h.date)} · {h.time ?? 'time to be confirmed'} · {h.court}
                     </p>
                   </li>
                 ))}

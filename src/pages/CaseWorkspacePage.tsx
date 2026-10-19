@@ -2,10 +2,12 @@ import { useCallback, useEffect, useId } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, BookOpenText, FileText, LayoutList, Scale, Sparkles } from 'lucide-react';
 import type { Case } from '../types';
-import { useCases } from '../context/CasesContext';
+import { useCase } from '../hooks/useCases';
 import { useAiAssistant } from '../hooks/useAiAssistant';
+import { ApiError } from '../services/api/client';
 import { Card } from '../components/ui/Card';
-import { StatusBadge, PriorityBadge } from '../components/ui/Badge';
+import { StatusBadge, PriorityBadge, SampleBadge } from '../components/ui/Badge';
+import { ErrorState, LoadingState, StaleDataNotice } from '../components/ui/QueryState';
 import { ButtonLink } from '../components/ui/Button';
 import { Tabs, type TabItem } from '../components/ui/Tabs';
 import { tabId, tabPanelId } from '../components/ui/tabIds';
@@ -25,28 +27,49 @@ function isWorkspaceTab(value: string | null): value is WorkspaceTab {
 }
 
 export function CaseWorkspacePage() {
-  const { caseId } = useParams<{ caseId: string }>();
-  const { getCaseById } = useCases();
-  const legalCase = caseId ? getCaseById(caseId) : undefined;
+  const { caseId = '' } = useParams<{ caseId: string }>();
+  const { data: legalCase, isPending, isError, error, refetch } = useCase(caseId);
 
-  if (!legalCase) {
+  if (isPending) {
     return (
-      <Card className="flex flex-col items-center justify-center px-6 py-16 text-center">
-        <Scale className="h-10 w-10 text-brand-300" strokeWidth={1.5} aria-hidden="true" />
-        <h1 className="mt-3 text-sm font-medium text-brand-700">Case not found</h1>
-        <p className="mt-1 max-w-md text-sm text-brand-500">
-          The link may be wrong, or the case was created in an earlier session. Cases are kept in
-          memory only, so a page refresh removes any case created since the app loaded.
-        </p>
-        <ButtonLink to={HOME_PATH} variant="secondary" className="mt-4">
-          Back to Cases
-        </ButtonLink>
+      <Card>
+        <LoadingState label="Loading the case…" />
       </Card>
     );
   }
 
-  // Keyed by case so AI state never leaks from one matter into another.
-  return <Workspace key={legalCase.id} legalCase={legalCase} />;
+  const notFound = error instanceof ApiError && error.isNotFound;
+  // A failed refresh keeps the case on screen (see below); only a case that
+  // never loaded, or no longer exists, is replaced by an error.
+  if (!legalCase || notFound) {
+    if (notFound) {
+      return (
+        <Card className="flex flex-col items-center justify-center px-6 py-16 text-center">
+          <Scale className="h-10 w-10 text-brand-300" strokeWidth={1.5} aria-hidden="true" />
+          <h1 className="mt-3 text-sm font-medium text-brand-700">Case not found</h1>
+          <p className="mt-1 max-w-md text-sm text-brand-500">
+            The link may be wrong, or the case no longer exists.
+          </p>
+          <ButtonLink to={HOME_PATH} variant="secondary" className="mt-4">
+            Back to Cases
+          </ButtonLink>
+        </Card>
+      );
+    }
+    return (
+      <Card>
+        <ErrorState title="Couldn't load the case" error={error} onRetry={() => refetch()} />
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      {isError && <StaleDataNotice error={error} onRetry={() => refetch()} className="mb-4" />}
+      {/* Keyed by case so AI state never leaks from one matter into another. */}
+      <Workspace key={legalCase.id} legalCase={legalCase} />
+    </>
+  );
 }
 
 function Workspace({ legalCase: c }: { legalCase: Case }) {
@@ -111,6 +134,7 @@ function Workspace({ legalCase: c }: { legalCase: Case }) {
           </span>
           <StatusBadge status={c.status} />
           <PriorityBadge priority={c.priority} />
+          {c.isSample && <SampleBadge />}
         </div>
         <h1 className="mt-2 text-2xl font-bold text-brand-900">{c.title}</h1>
         <p className="mt-1 text-sm text-brand-500">
@@ -135,7 +159,11 @@ function Workspace({ legalCase: c }: { legalCase: Case }) {
         tabIndex={0}
       >
         {tab === 'overview' && <OverviewTab legalCase={c} />}
-        {tab === 'documents' && <DocumentsTab legalCase={c} />}
+        {/* Kept mounted while hidden, so an upload still running when the user
+            switches tabs keeps its progress and results, and stays "busy". */}
+        <div hidden={tab !== 'documents'}>
+          <DocumentsTab legalCase={c} />
+        </div>
         {tab === 'analysis' && <AnalysisTab legalCase={c} ai={ai} />}
         {tab === 'research' && <ResearchTab legalCase={c} ai={ai} />}
       </div>

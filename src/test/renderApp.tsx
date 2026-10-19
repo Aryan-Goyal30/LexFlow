@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -9,7 +10,6 @@ import {
   type NavigateFunction,
 } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
-import { CasesProvider } from '../context/CasesContext';
 import { currentUser } from '../data/mockData';
 import { routes } from '../router';
 
@@ -50,18 +50,25 @@ export function renderApp(path: string, { signedIn = true }: { signedIn?: boolea
   // as a user can by switching the dialog to "All files".
   const user = userEvent.setup({ applyAccept: false });
 
+  // A fresh cache per test; no retries, so a failing request shows its error
+  // state straight away.
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+
   render(
-    <AuthProvider>
-      <CasesProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
         <MemoryRouter initialEntries={[path]}>
           <RouterProbe probe={probe} />
           <AppRoutes />
         </MemoryRouter>
-      </CasesProvider>
-    </AuthProvider>,
+      </AuthProvider>
+    </QueryClientProvider>,
   );
 
   return {
+    queryClient,
     user,
     url: () => (probe.location ? probe.location.pathname + probe.location.search : ''),
     go: (delta: number) =>

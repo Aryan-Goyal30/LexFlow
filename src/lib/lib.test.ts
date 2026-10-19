@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { isPastDate, nextCaseNumber, todayIsoDate } from './format';
+import { formatFileSize, isPastDate, todayIsoDate } from './format';
 import { checkFiles, isSupportedFileName } from './documentFiles';
 import { safeReturnPath, HOME_PATH } from './paths';
 import { validateNewCase, type NewCaseForm } from './validateNewCase';
-import { advocates, mockClients } from '../data/mockData';
 
 const file = (name: string, content = 'content') => new File([content], name);
 
@@ -18,24 +17,6 @@ describe('dates', () => {
     expect(isPastDate('2026-10-13', now)).toBe(true);
     expect(isPastDate('2026-10-14', now)).toBe(false);
     expect(isPastDate('2026-10-15', now)).toBe(false);
-  });
-});
-
-describe('nextCaseNumber', () => {
-  const now = new Date(2026, 0, 1);
-
-  it('continues from the highest number this year', () => {
-    expect(nextCaseNumber(['LF-2026-0142', 'LF-2026-0489', 'LF-2025-0900'], now)).toBe(
-      'LF-2026-0490',
-    );
-  });
-
-  it('starts at 0001 when the year has no cases', () => {
-    expect(nextCaseNumber(['LF-2025-0331'], now)).toBe('LF-2026-0001');
-  });
-
-  it('ignores malformed numbers', () => {
-    expect(nextCaseNumber(['LF-2026-abc', 'LF-2026-0007'], now)).toBe('LF-2026-0008');
   });
 });
 
@@ -91,13 +72,15 @@ describe('safeReturnPath', () => {
 
 describe('validateNewCase', () => {
   const today = '2026-10-14';
+  const clientIds = ['client-1', 'client-2'];
+  const advocateIds = ['advocate-1'];
   const valid: NewCaseForm = {
     title: 'Test Matter v. Other Party',
-    clientId: mockClients[0].id,
+    clientId: 'client-1',
     practiceArea: 'Civil',
     status: 'Open',
     priority: 'Medium',
-    leadAttorney: advocates[0],
+    leadAdvocateId: 'advocate-1',
     courtName: '',
     opposingParty: '',
     nextHearing: '',
@@ -105,7 +88,7 @@ describe('validateNewCase', () => {
   };
 
   it('accepts a complete form', () => {
-    expect(validateNewCase(valid, mockClients, advocates, today)).toEqual({});
+    expect(validateNewCase(valid, clientIds, advocateIds, today)).toEqual({});
   });
 
   it('flags each invalid field', () => {
@@ -114,18 +97,18 @@ describe('validateNewCase', () => {
         ...valid,
         title: '  ab  ',
         clientId: 'no-such-client',
-        leadAttorney: 'Unknown Person',
+        leadAdvocateId: 'no-such-advocate',
         description: 'short',
         nextHearing: '2026-10-13',
       },
-      mockClients,
-      advocates,
+      clientIds,
+      advocateIds,
       today,
     );
     expect(Object.keys(errors).sort()).toEqual([
       'clientId',
       'description',
-      'leadAttorney',
+      'leadAdvocateId',
       'nextHearing',
       'title',
     ]);
@@ -134,7 +117,15 @@ describe('validateNewCase', () => {
 
   it('allows a hearing today', () => {
     expect(
-      validateNewCase({ ...valid, nextHearing: today }, mockClients, advocates, today),
+      validateNewCase({ ...valid, nextHearing: today }, clientIds, advocateIds, today),
     ).toEqual({});
+  });
+});
+
+describe('formatFileSize', () => {
+  it('matches the server rule', () => {
+    expect(formatFileSize(512)).toBe('512 B');
+    expect(formatFileSize(1536)).toBe('2 KB');
+    expect(formatFileSize(3.2 * 1024 * 1024)).toBe('3.2 MB');
   });
 });
