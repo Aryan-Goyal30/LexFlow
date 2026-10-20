@@ -1,0 +1,7 @@
+SYNTHETIC TEST JUDGMENT - invented for LexFlow's automated tests. It is not a real judgment, has no legal authority and must never be cited.
+
+Divya Sharma v. Anil Sharma (SYNTHETIC)
+SYNTHETIC High Court (test fixture)
+Decided: 2019-10-28
+
+The wife applied for maintenance for herself and her child. The husband claimed he had no income. The court held that an able-bodied husband cannot avoid his duty to maintain by remaining unemployed, assessed his earning capacity from his qualifications and past employment, and fixed monthly maintenance.

@@ -31,6 +31,11 @@ APP_TABLES = {
     "document_sections",
     "document_chunks",
     "document_chunk_embeddings",
+    "judgment_sources",
+    "judgments",
+    "judgment_sections",
+    "judgment_chunks",
+    "judgment_chunk_embeddings",
 }
 
 

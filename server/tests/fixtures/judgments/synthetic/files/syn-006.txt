@@ -1,0 +1,7 @@
+SYNTHETIC TEST JUDGMENT - invented for LexFlow's automated tests. It is not a real judgment, has no legal authority and must never be cited.
+
+Leela Thomas v. Vinod Pillai (SYNTHETIC)
+SYNTHETIC High Court (test fixture)
+Decided: 2022-09-30
+
+The buyer sued for specific performance of an agreement to sell a house. The seller contended that the buyer was never ready and willing to pay the balance price. The court held that readiness and willingness must be shown throughout, from the agreement to the hearing, and found that the buyer had the funds and repeatedly offered payment. Specific performance was decreed.

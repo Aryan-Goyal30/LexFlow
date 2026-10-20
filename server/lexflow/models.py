@@ -12,9 +12,11 @@ from typing import Any
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    ARRAY,
     BigInteger,
     Boolean,
     CheckConstraint,
+    Computed,
     Date,
     DateTime,
     ForeignKey,
@@ -30,7 +32,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from lexflow.domain import (
@@ -586,6 +588,188 @@ class DocumentChunkEmbedding(Base):
     model: Mapped[str] = mapped_column(Text, primary_key=True)
     document_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
+    )
+    content_sha256: Mapped[str] = mapped_column(Text, nullable=False)
+    dimensions: Mapped[int] = mapped_column(Integer, nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(384), nullable=False)
+    created_at: Mapped[datetime] = _created_at()
+
+
+class JudgmentSource(Base):
+    """Where judgments come from, and the terms of use recorded for it (Phase 4).
+
+    Every judgment names its source. ``terms_*`` and ``permitted_use`` record
+    who read the source's terms, when, where, and what they permit; LexFlow
+    does not decide that. ``is_synthetic`` marks invented test data, which the
+    importer accepts only into test databases and the app labels everywhere.
+    """
+
+    __tablename__ = "judgment_sources"
+    __table_args__ = (
+        CheckConstraint("key ~ '^[a-z0-9][a-z0-9-]{1,62}$'", name="key_format"),
+        CheckConstraint("char_length(name) BETWEEN 1 AND 200", name="name_length"),
+        CheckConstraint("terms_url ~ '^https://'", name="terms_url_https"),
+        CheckConstraint(
+            "char_length(terms_checked_by) BETWEEN 1 AND 200", name="checked_by_length"
+        ),
+        CheckConstraint(
+            "char_length(permitted_use) BETWEEN 1 AND 2000", name="permitted_use_length"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    key: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    terms_url: Mapped[str] = mapped_column(Text, nullable=False)
+    terms_checked_on: Mapped[date] = mapped_column(Date, nullable=False)
+    terms_checked_by: Mapped[str] = mapped_column(Text, nullable=False)
+    permitted_use: Mapped[str] = mapped_column(Text, nullable=False)
+    is_synthetic: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    created_at: Mapped[datetime] = _created_at()
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class Judgment(Base):
+    """A judgment in the collection: metadata as supplied, text as extracted.
+
+    The id is derived from the source and the source's own identifier, so
+    importing the same judgment again finds the same row. Optional metadata
+    (citation, date, bench) is stored only when the import supplied it.
+    """
+
+    __tablename__ = "judgments"
+    __table_args__ = (
+        UniqueConstraint("source_id", "source_document_id"),
+        CheckConstraint(
+            "char_length(source_document_id) BETWEEN 1 AND 200", name="source_document_id_length"
+        ),
+        CheckConstraint("source_url ~ '^https://'", name="source_url_https"),
+        CheckConstraint("char_length(title) BETWEEN 1 AND 500", name="title_length"),
+        CheckConstraint("char_length(court) BETWEEN 1 AND 200", name="court_length"),
+        CheckConstraint(
+            "citation IS NULL OR char_length(citation) BETWEEN 1 AND 200", name="citation_length"
+        ),
+        CheckConstraint("year IS NULL OR year BETWEEN 1800 AND 2100", name="year_range"),
+        CheckConstraint(
+            "decision_date IS NULL OR year = EXTRACT(YEAR FROM decision_date)",
+            name="year_matches_date",
+        ),
+        CheckConstraint("content_sha256 ~ '^[0-9a-f]{64}$'", name="content_sha256_format"),
+        CheckConstraint(_in_list("index_status", INDEX_STATUSES), name="index_status_valid"),
+        Index("ix_judgments_court_year", "court", "year"),
+        Index(
+            "uq_judgments_citation",
+            func.lower(text("citation")),
+            unique=True,
+            postgresql_where=text("citation IS NOT NULL"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    source_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("judgment_sources.id", ondelete="RESTRICT"), nullable=False
+    )
+    source_document_id: Mapped[str] = mapped_column(Text, nullable=False)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    court: Mapped[str] = mapped_column(Text, nullable=False)
+    citation: Mapped[str | None] = mapped_column(Text)
+    decision_date: Mapped[date | None] = mapped_column(Date)
+    year: Mapped[int | None] = mapped_column(Integer)
+    bench: Mapped[str | None] = mapped_column(Text)
+    practice_areas: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'")
+    )
+    content_type: Mapped[str] = mapped_column(Text, nullable=False)
+    content_sha256: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    extractor: Mapped[str] = mapped_column(Text, nullable=False)
+    page_count: Mapped[int | None] = mapped_column(Integer)
+    section_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    char_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    chunk_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    imported_by: Mapped[str] = mapped_column(Text, nullable=False)
+    manifest_sha256: Mapped[str] = mapped_column(Text, nullable=False)
+    index_status: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'disabled'")
+    )
+    embedding_model: Mapped[str | None] = mapped_column(Text)
+    indexed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class JudgmentSection(Base):
+    """The extracted text of one page (PDF) or part of a judgment."""
+
+    __tablename__ = "judgment_sections"
+    __table_args__ = (
+        CheckConstraint("number >= 1", name="number_positive"),
+        CheckConstraint("page_number IS NULL OR page_number >= 1", name="page_number_positive"),
+    )
+
+    judgment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("judgments.id", ondelete="CASCADE"), primary_key=True
+    )
+    number: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
+    page_number: Mapped[int | None] = mapped_column(Integer)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class JudgmentChunk(Base):
+    """A passage of a judgment section, with a full-text vector kept by the database."""
+
+    __tablename__ = "judgment_chunks"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["judgment_id", "section_number"],
+            ["judgment_sections.judgment_id", "judgment_sections.number"],
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint("judgment_id", "number"),
+        CheckConstraint("number >= 1", name="number_positive"),
+        CheckConstraint("char_start >= 0 AND char_end > char_start", name="offsets_valid"),
+        CheckConstraint("char_length(text) = char_end - char_start", name="text_matches_offsets"),
+        CheckConstraint("content_sha256 ~ '^[0-9a-f]{64}$'", name="content_sha256_format"),
+        Index("ix_judgment_chunks_search_vector", "search_vector", postgresql_using="gin"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    judgment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("judgments.id", ondelete="CASCADE"), nullable=False
+    )
+    number: Mapped[int] = mapped_column(Integer, nullable=False)
+    section_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    page_number: Mapped[int | None] = mapped_column(Integer)
+    char_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    char_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    content_sha256: Mapped[str] = mapped_column(Text, nullable=False)
+    search_vector: Mapped[Any] = mapped_column(
+        TSVECTOR, Computed("to_tsvector('english'::regconfig, text)", persisted=True)
+    )
+
+
+class JudgmentChunkEmbedding(Base):
+    """The vector of one judgment chunk under one model (like DocumentChunkEmbedding)."""
+
+    __tablename__ = "judgment_chunk_embeddings"
+    __table_args__ = (
+        CheckConstraint("dimensions = vector_dims(embedding)", name="dimensions_match"),
+        CheckConstraint("content_sha256 ~ '^[0-9a-f]{64}$'", name="content_sha256_format"),
+        CheckConstraint("char_length(model) BETWEEN 1 AND 200", name="model_length"),
+        Index("ix_judgment_chunk_embeddings_judgment_id_model", "judgment_id", "model"),
+    )
+
+    chunk_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("judgment_chunks.id", ondelete="CASCADE"), primary_key=True
+    )
+    model: Mapped[str] = mapped_column(Text, primary_key=True)
+    judgment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("judgments.id", ondelete="CASCADE"), nullable=False
     )
     content_sha256: Mapped[str] = mapped_column(Text, nullable=False)
     dimensions: Mapped[int] = mapped_column(Integer, nullable=False)

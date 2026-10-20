@@ -1,0 +1,177 @@
+{
+  "format": "lexflow-judgments/1",
+  "source": {
+    "key": "lexflow-synthetic",
+    "name": "LexFlow synthetic test judgments",
+    "terms_url": "https://terms.lexflow.invalid/synthetic",
+    "terms_checked_on": "2026-10-20",
+    "terms_checked_by": "LexFlow developers",
+    "permitted_use": "Invented for automated tests only. Not real judgments; never cite.",
+    "synthetic": true
+  },
+  "judgments": [
+    {
+      "id": "syn-001",
+      "title": "Asha Rao v. Bharat Traders (SYNTHETIC)",
+      "court": "SYNTHETIC High Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-001",
+      "file": "files/syn-001.txt",
+      "citation": "(SYN) 2019 TEST 101",
+      "decision_date": "2019-03-14",
+      "bench": "SYNTHETIC J.",
+      "practice_areas": [
+        "Tenancy"
+      ]
+    },
+    {
+      "id": "syn-002",
+      "title": "Kiran Mehta v. Sunil Gowda (SYNTHETIC)",
+      "court": "SYNTHETIC High Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-002",
+      "file": "files/syn-002.txt",
+      "citation": "(SYN) 2020 TEST 102",
+      "decision_date": "2020-07-02",
+      "bench": "SYNTHETIC J.",
+      "practice_areas": [
+        "Tenancy"
+      ]
+    },
+    {
+      "id": "syn-003",
+      "title": "Golden Grain Foods v. Sunrise Bakers (SYNTHETIC)",
+      "court": "SYNTHETIC District Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-003",
+      "file": "files/syn-003.txt",
+      "citation": "(SYN) 2018 TEST 103",
+      "decision_date": "2018-11-20",
+      "bench": "SYNTHETIC J.",
+      "practice_areas": [
+        "Trademark"
+      ]
+    },
+    {
+      "id": "syn-004",
+      "title": "State v. Ravi Kumar (SYNTHETIC)",
+      "court": "SYNTHETIC High Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-004",
+      "file": "files/syn-004.txt",
+      "citation": "(SYN) 2021 TEST 104",
+      "decision_date": "2021-01-11",
+      "bench": "SYNTHETIC J.",
+      "practice_areas": [
+        "Criminal"
+      ]
+    },
+    {
+      "id": "syn-005",
+      "title": "Prakash Steels v. Nanda Enterprises (SYNTHETIC)",
+      "court": "SYNTHETIC High Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-005",
+      "file": "files/syn-005.txt",
+      "citation": "(SYN) 2017 TEST 105",
+      "decision_date": "2017-05-09",
+      "bench": "SYNTHETIC J.",
+      "practice_areas": [
+        "Commercial"
+      ]
+    },
+    {
+      "id": "syn-006",
+      "title": "Leela Thomas v. Vinod Pillai (SYNTHETIC)",
+      "court": "SYNTHETIC District Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-006",
+      "file": "files/syn-006.txt",
+      "citation": "(SYN) 2022 TEST 106",
+      "decision_date": "2022-09-30",
+      "bench": "SYNTHETIC J.",
+      "practice_areas": [
+        "Property"
+      ]
+    },
+    {
+      "id": "syn-007",
+      "title": "Arjun Nair v. Coastal Logistics Ltd. (SYNTHETIC)",
+      "court": "SYNTHETIC High Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-007",
+      "file": "files/syn-007.txt",
+      "citation": "(SYN) 2023 TEST 107",
+      "decision_date": "2023-02-17",
+      "bench": "SYNTHETIC J.",
+      "practice_areas": [
+        "Employment"
+      ]
+    },
+    {
+      "id": "syn-008",
+      "title": "Meena Joshi v. Highway Transport Co. (SYNTHETIC)",
+      "court": "SYNTHETIC High Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-008",
+      "file": "files/syn-008.txt",
+      "citation": "(SYN) 2016 TEST 108",
+      "decision_date": "2016-08-25",
+      "bench": "SYNTHETIC J.",
+      "practice_areas": [
+        "Motor accident"
+      ]
+    },
+    {
+      "id": "syn-009",
+      "title": "Ramesh Iyer v. QuickMart Online (SYNTHETIC)",
+      "court": "SYNTHETIC District Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-009",
+      "file": "files/syn-009.txt",
+      "citation": "(SYN) 2024 TEST 109",
+      "decision_date": "2024-04-05",
+      "bench": "SYNTHETIC J.",
+      "practice_areas": [
+        "Consumer"
+      ]
+    },
+    {
+      "id": "syn-010",
+      "title": "Farah Khan v. State (SYNTHETIC)",
+      "court": "SYNTHETIC High Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-010",
+      "file": "files/syn-010.txt",
+      "citation": "(SYN) 2021 TEST 110",
+      "decision_date": "2021-12-13",
+      "bench": "SYNTHETIC J.",
+      "practice_areas": [
+        "Criminal"
+      ]
+    },
+    {
+      "id": "syn-011",
+      "title": "Divya Sharma v. Anil Sharma (SYNTHETIC)",
+      "court": "SYNTHETIC High Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-011",
+      "file": "files/syn-011.txt",
+      "citation": "(SYN) 2019 TEST 111",
+      "decision_date": "2019-10-28",
+      "bench": "SYNTHETIC J.",
+      "practice_areas": [
+        "Family"
+      ]
+    },
+    {
+      "id": "syn-012",
+      "title": "Sanjay Patil v. The Daily Courier (SYNTHETIC)",
+      "court": "SYNTHETIC District Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-012",
+      "file": "files/syn-012.txt",
+      "citation": "(SYN) 2015 TEST 112",
+      "decision_date": "2015-06-19",
+      "bench": "SYNTHETIC J.",
+      "practice_areas": [
+        "Defamation"
+      ]
+    },
+    {
+      "id": "syn-013",
+      "title": "Undated order (SYNTHETIC)",
+      "court": "SYNTHETIC District Court (test fixture)",
+      "source_url": "https://judgments.lexflow.invalid/syn-013",
+      "file": "files/syn-013.txt"
+    }
+  ]
+}

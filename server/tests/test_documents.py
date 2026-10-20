@@ -50,18 +50,24 @@ def png_bytes() -> bytes:
     )
 
 
+def _entry(name: str) -> zipfile.ZipInfo:
+    # A fixed timestamp: otherwise each call stamps the current time and two
+    # calls a second apart give different bytes (an intermittent failure).
+    return zipfile.ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))
+
+
 def docx_bytes() -> bytes:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
-        archive.writestr("[Content_Types].xml", "<Types/>")
-        archive.writestr("word/document.xml", "<w:document/>")
+        archive.writestr(_entry("[Content_Types].xml"), "<Types/>")
+        archive.writestr(_entry("word/document.xml"), "<w:document/>")
     return buffer.getvalue()
 
 
 def plain_zip_bytes() -> bytes:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
-        archive.writestr("readme.txt", "not a word document")
+        archive.writestr(_entry("readme.txt"), "not a word document")
     return buffer.getvalue()
 
 

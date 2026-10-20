@@ -270,6 +270,7 @@ def committed_engine(engine: Engine) -> Iterator[Engine]:
         conn.execute(
             text(
                 "TRUNCATE audit_events, sessions, case_members, documents, timeline_events, "
-                "hearings, cases, clients, users, case_number_counters RESTART IDENTITY CASCADE"
+                "hearings, cases, clients, users, case_number_counters, judgments, "
+                "judgment_sources RESTART IDENTITY CASCADE"
             )
         )

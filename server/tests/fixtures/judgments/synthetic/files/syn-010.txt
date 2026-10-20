@@ -1,0 +1,7 @@
+SYNTHETIC TEST JUDGMENT - invented for LexFlow's automated tests. It is not a real judgment, has no legal authority and must never be cited.
+
+Farah Khan v. State (SYNTHETIC)
+SYNTHETIC High Court (test fixture)
+Decided: 2021-12-13
+
+The applicant sought anticipatory bail in a dispute that was essentially civil. The court held that protection from arrest may be granted where the accusation appears to have been made to humiliate the applicant and there is no likelihood of absconding, subject to cooperation with the investigation.

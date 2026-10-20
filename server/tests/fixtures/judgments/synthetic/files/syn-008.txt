@@ -1,0 +1,7 @@
+SYNTHETIC TEST JUDGMENT - invented for LexFlow's automated tests. It is not a real judgment, has no legal authority and must never be cited.
+
+Meena Joshi v. Highway Transport Co. (SYNTHETIC)
+SYNTHETIC High Court (test fixture)
+Decided: 2016-08-25
+
+The claimant was injured when a bus hit her scooter, fracturing her leg. The tribunal assessed compensation for medical expenses, loss of earnings during recovery and pain and suffering, applying the multiplier method for permanent partial disability. The insurer was directed to pay the award with interest.

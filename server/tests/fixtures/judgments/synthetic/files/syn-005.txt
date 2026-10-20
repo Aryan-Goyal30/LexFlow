@@ -1,0 +1,7 @@
+SYNTHETIC TEST JUDGMENT - invented for LexFlow's automated tests. It is not a real judgment, has no legal authority and must never be cited.
+
+Prakash Steels v. Nanda Enterprises (SYNTHETIC)
+SYNTHETIC High Court (test fixture)
+Decided: 2017-05-09
+
+A cheque issued towards a supply invoice was dishonoured for insufficient funds. The drawer argued that no legally enforceable debt existed. The court held that once the signature on the cheque is admitted a presumption arises that it was issued for a debt, and the drawer must rebut it with credible evidence. The conviction was upheld.

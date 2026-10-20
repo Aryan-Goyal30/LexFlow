@@ -1,0 +1,7 @@
+SYNTHETIC TEST JUDGMENT - invented for LexFlow's automated tests. It is not a real judgment, has no legal authority and must never be cited.
+
+Sanjay Patil v. The Daily Courier (SYNTHETIC)
+SYNTHETIC High Court (test fixture)
+Decided: 2015-06-19
+
+A newspaper published that the plaintiff, a contractor, had bribed officials. The paper could not prove the statement and did not show that it had verified it before publication. The court held the publication defamatory, rejected the plea of fair comment on facts not proved, and awarded damages.

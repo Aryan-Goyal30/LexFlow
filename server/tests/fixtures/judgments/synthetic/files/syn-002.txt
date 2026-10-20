@@ -1,0 +1,7 @@
+SYNTHETIC TEST JUDGMENT - invented for LexFlow's automated tests. It is not a real judgment, has no legal authority and must never be cited.
+
+Kiran Mehta v. Sunil Gowda (SYNTHETIC)
+SYNTHETIC High Court (test fixture)
+Decided: 2020-07-02
+
+This appeal concerned a notice to quit under the tenancy law. The tenant argued that the notice was invalid because it gave only ten days to vacate. The court held that a notice terminating a monthly tenancy must give fifteen clear days, and that a defective notice cannot support a decree for eviction. Possession was refused.

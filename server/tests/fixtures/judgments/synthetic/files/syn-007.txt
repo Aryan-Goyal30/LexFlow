@@ -1,0 +1,7 @@
+SYNTHETIC TEST JUDGMENT - invented for LexFlow's automated tests. It is not a real judgment, has no legal authority and must never be cited.
+
+Arjun Nair v. Coastal Logistics Ltd. (SYNTHETIC)
+SYNTHETIC High Court (test fixture)
+Decided: 2023-02-17
+
+An accountant was dismissed for unauthorised absence without any inquiry. The court held that dismissal for misconduct requires a charge sheet, an opportunity to reply and a fair domestic inquiry, and that absence on medical grounds supported by a certificate is not wilful misconduct. Reinstatement with back wages was ordered.

@@ -1,0 +1,7 @@
+SYNTHETIC TEST JUDGMENT - invented for LexFlow's automated tests. It is not a real judgment, has no legal authority and must never be cited.
+
+Golden Grain Foods v. Sunrise Bakers (SYNTHETIC)
+SYNTHETIC High Court (test fixture)
+Decided: 2018-11-20
+
+The plaintiff owned the registered mark GOLDCRUST for biscuits and sought an injunction against GOLDCRISP used for rusks. The court compared the marks as a whole and held them deceptively similar, phonetically close and used for allied goods sold to the same customers. An interim injunction restraining infringement and passing off was granted.

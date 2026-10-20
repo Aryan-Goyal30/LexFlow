@@ -1,0 +1,7 @@
+SYNTHETIC TEST JUDGMENT - invented for LexFlow's automated tests. It is not a real judgment, has no legal authority and must never be cited.
+
+State v. Ravi Kumar (SYNTHETIC)
+SYNTHETIC High Court (test fixture)
+Decided: 2021-01-11
+
+The accused sought regular bail after the charge sheet was filed. The court held that once investigation is complete and custodial interrogation is no longer needed, bail should ordinarily follow unless there is a real risk that the accused will flee, tamper with evidence or influence witnesses. Bail was granted with conditions.
