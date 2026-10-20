@@ -24,6 +24,7 @@ building them.
 | [0015](0015-document-processing-worker.md) | Text extraction in a separate, database-backed worker; page-aware chunks | Accepted |
 | [0016](0016-embeddings-local-and-gated.md) | Embeddings: off by default, local only, gated on a compatible pgvector image | Superseded in part by 0017 |
 | [0017](0017-pgvector-trixie-and-local-embeddings.md) | pgvector on Debian 13 (`pg17-trixie`), local `bge-small-en-v1.5`, per-case search | Accepted |
+| [0018](0018-judgment-collection-and-search.md) | Judgment collection: operator imports with provenance, synthetic data fenced off, staff-wide search | Accepted |
 
 Format: Context, Decision, Consequences. Superseding a decision means adding a
 new record and marking the old one "Superseded by NNNN", not editing history.

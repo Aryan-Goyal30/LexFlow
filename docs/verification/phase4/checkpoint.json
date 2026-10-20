@@ -2,7 +2,7 @@
   "phase": 4,
   "updated": "2026-10-20",
   "branch": "master",
-  "last_commit": "see git log (Phase 4 M6)",
+  "last_commit": "see git log (Phase 4 M7)",
   "migration_head_in_code": "0010",
   "live_lexflow_revision": "0010",
   "live_collection": "empty (no approved source; no synthetic data)",
@@ -14,11 +14,19 @@
     "M4": "done",
     "M5": "done",
     "M6": "done",
-    "M7": "pending"
+    "M7": "done"
   },
-  "next_action": "M7: SRS, architecture/UML, traceability, README/ADR updates; final full verification",
+  "next_action": "Owner: approve a judgment source and import it; lawyer relevance labels; decide on embeddings; Phase 5 not started",
   "unresolved_gates": [
     "No approved real judgment source: live collection stays empty",
     "No lawyer-labelled evaluation set: real-corpus quality unevaluated"
-  ]
+  ],
+  "status": "engineering complete; external validation pending",
+  "verification": {
+    "backend": "705 passed",
+    "frontend": "169 passed + build",
+    "e2e": "38 passed",
+    "mutation": "19/19 caught",
+    "static": "ruff/mypy clean"
+  }
 }

@@ -1,8 +1,12 @@
-# Phase 4 plan — Judgment collection and retrieval (not started)
+# Phase 4 plan — Judgment collection and retrieval
 
-Status: **plan only.** Phase 4 was not implemented, because its prerequisites
-are not met (below). This document contains no judgments, citations, source
-URLs or claims about any source's terms of use.
+Status (2026-10-20): **engineering implemented** — schema, importer, search,
+Research tab, Precedent Library and evaluation machinery, tested with
+SYNTHETIC data (`docs/PHASE4_EXECUTION_LOG.md`, ADR 0018). **External inputs
+still pending:** an approved judgment source (so the live collection is
+empty) and a lawyer-labelled evaluation set. The plan below is kept as
+written; this document contains no judgments, citations, source URLs or
+claims about any source's terms of use.
 
 ## Scope (from `docs/DEVELOPMENT_BRIEF.md`, Phase 4)
 

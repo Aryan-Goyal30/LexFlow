@@ -111,15 +111,35 @@ hearings and **only the documents an advocate shared**, with downloads. No
 internal notes, priority, team or timeline. Staff never see the portal and
 clients never reach the staff app.
 
+### Judgments: Research and the Precedent Library (Phase 4)
+
+- **Precedent Library** (`/app/precedents`) for all staff: browse the firm's
+  judgment collection newest first, filter by court and year, search, and open
+  a judgment (`/app/precedents/:id`) to read it page by page with its
+  **source and the terms-of-use record** of that source.
+- **Research tab** in each case: the same search. Results show the matching
+  passage with its page, court, date and citation, a link to the full
+  judgment and one to the source. Keyword search always works; searching by
+  meaning (semantic, hybrid) needs the optional local embeddings and is
+  otherwise shown as unavailable, with the reason.
+- **Judgments are imported only by an operator** from files and a manifest
+  that records their source and its terms of use
+  (`python -m lexflow.cli.judgments import`, preview first;
+  `server/README.md`). LexFlow never downloads judgments. **No source has
+  been approved yet, so the live collection is empty** and the screens say
+  so. Invented test judgments exist only in test databases and are labelled
+  "Synthetic test data" wherever they appear.
+- Results are ranked passages of stored judgments, not legal conclusions.
+
 ### Not connected
 
-- **AI Analysis and Research.** The `AiService` interface in
+- **AI Analysis.** The `AiService` interface in
   `src/services/ai/aiService.ts` is the integration point, but its only
   implementation reports "not connected". The app never shows generated, sample
-  or simulated analysis or precedents. LexFlow's AI is meant as **decision
-  support**; it does not replace a lawyer's judgment or a court's decision.
-- The top-bar search and notifications are placeholders; "Precedent Library"
-  and "Notifications" in the sidebar are marked "Soon".
+  or simulated analysis. LexFlow's AI is meant as **decision support**; it does
+  not replace a lawyer's judgment or a court's decision.
+- The top-bar search and notifications are placeholders; "Notifications" in
+  the sidebar is marked "Soon".
 
 ---
 
@@ -320,6 +340,8 @@ same commands have been run locally.
 | `GET /api/documents/{id}/download`, `DELETE /api/documents/{id}`, `POST .../restore`, `.../share`, `.../unshare` | Download, (soft) delete, restore, share with the client |
 | `GET /api/documents/{id}/text?section=`, `POST /api/documents/{id}/reprocess` | Extracted text, one page or part at a time (audited); extract again |
 | `GET /api/cases/{id}/search?q=&mode=keyword\|semantic\|hybrid&limit=` | Passages of the case's documents, best first (audited without the query) |
+| `GET /api/judgments`, `/api/judgments/facets`, `/api/judgments/search?q=&mode=&page=` | The judgment collection: browse, filters and available modes, search (staff; searches audited without the query) |
+| `GET /api/judgments/{id}`, `/api/judgments/{id}/text?section=` | One judgment with its source and terms; its text page by page |
 | `GET`/`POST /api/clients`, `GET`/`PATCH /api/clients/{id}`, `GET /api/clients/options` | Clients |
 | `GET /api/advocates`, `GET /api/staff` | Reference lists |
 | `/api/portal/cases`, `/api/portal/cases/{id}`, `/api/portal/documents/{id}/download` | Client portal (Client accounts only) |
@@ -339,12 +361,12 @@ src/
 ├── context/AuthContext.tsx      # Who is signed in (from /api/auth/me); sign-in and sign-out
 ├── data/mockData.ts             # Fictional sample data (source of the seed JSON)
 ├── lib/                         # paths, roles, format, fields, caseOptions, documentFiles, ...
-├── components/                  # layout/ (app and portal shells), ui/, workspace/, clients/, admin/
+├── components/                  # layout/ (app and portal shells), ui/, workspace/, research/, clients/, admin/
 ├── pages/                       # staff pages, admin/, portal/
 └── test/                        # setup, renderApp, mockApi (MSW fake API)
 server/
 ├── lexflow/                     # FastAPI app: api/, services/, auth/, cli/, seed/, extraction/, worker, authz, audit, models, schemas
-├── migrations/                  # Alembic (0001 to 0009)
+├── migrations/                  # Alembic (0001 to 0010)
 ├── tests/                       # pytest
 └── scripts/                     # export_openapi.py, e2e.py
 e2e/                             # Playwright tests and the API start/stop helpers
@@ -362,11 +384,15 @@ scripts/                         # api-types.mjs, export-sample-data.mjs
   tamper-proof.
 - Files are stored unencrypted on the local disk; there is no virus scanning,
   backup or retention policy.
-- No AI analysis, OCR, precedent search, judgment collection or outcome
-  prediction.
+- No AI analysis, OCR or outcome prediction.
+- **The judgment collection is empty** until a source whose terms of use
+  allow it is approved and imported. Judgment search quality was measured
+  only on synthetic data (`docs/verification/phase4/judgment-eval.md`); real
+  legal research quality is **unevaluated** (needs a licensed corpus and a
+  lawyer's relevance labels).
 - **Embeddings are off by default** and English-only. Semantic search was
   measured only on a small fictional corpus; its quality on real legal
-  documents is unmeasured. Search covers one case at a time and has no
+  documents is unmeasured. Case search covers one case at a time and has no
   screen in the app yet.
 - Text extraction reads only text layers: scanned PDFs, images and `.doc`
   files have no text. Word headers, footers and comments are not read, and
@@ -374,10 +400,12 @@ scripts/                         # api-types.mjs, export-sample-data.mjs
 
 ## Next phase
 
-Phase 3 (document text extraction) is done, including optional local
-embeddings on the pgvector image (`docs/PHASE3_EXECUTION_LOG.md`,
-`docs/EMBEDDINGS_EXECUTION_LOG.md`).
-According to `docs/DEVELOPMENT_BRIEF.md`, Phase 4 is the **judgment collection
-and retrieval**. It has not started: it needs a judgment source whose terms of
-use have been verified, and a lawyer's relevance judgments.
-`docs/PHASE4_PLAN.md` lists the decisions needed and the proposed milestones.
+Phases 3 (document text, optional local embeddings) and 4 (judgment
+collection, search, Research tab, Precedent Library, evaluation machinery)
+are implemented (`docs/PHASE3_EXECUTION_LOG.md`,
+`docs/EMBEDDINGS_EXECUTION_LOG.md`, `docs/PHASE4_EXECUTION_LOG.md`). Phase 4's
+real-world part waits on external inputs: an approved judgment source and a
+lawyer-labelled evaluation set (`docs/PHASE4_PLAN.md`). Next in the brief is
+Phase 5 (AI analysis), which also needs a decision on the model provider.
+Requirements, architecture/UML and traceability: `docs/SRS.md`,
+`docs/ARCHITECTURE.md`, `docs/TRACEABILITY.md`.

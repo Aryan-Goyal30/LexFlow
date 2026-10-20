@@ -68,7 +68,7 @@ Started 2026-10-20. Scope: `docs/DEVELOPMENT_BRIEF.md` §4 Phase 4 and
 | M4 | Evaluation framework and synthetic engineering run | done |
 | M5 | Security, mutation and end-to-end verification | done |
 | M6 | Gated live migration 0010 | done |
-| M7 | Software-engineering documents, final verification | pending |
+| M7 | Software-engineering documents, final verification | done |
 
 ## M1 — Schema, importer, CLI (done)
 
@@ -230,6 +230,61 @@ Started 2026-10-20. Scope: `docs/DEVELOPMENT_BRIEF.md` §4 Phase 4 and
 Recovery: `alembic downgrade 0009` (rehearsed) drops only the judgment
 tables; the dump above restores the pre-change state (owner decision).
 
+## M7 — Documents and final verification (done)
+
+- New: `docs/SRS.md` (requirements with status), `docs/ARCHITECTURE.md`
+  (overview; Mermaid UML: use cases, deployment, classes, sequences for
+  *upload document* and *search precedents*; *analyse case* is Phase 5 and
+  is stated as not built rather than drawn), `docs/TRACEABILITY.md`
+  (requirement → code → tests; every path checked to exist), ADR 0018.
+- Updated: root README (Research and Precedent Library, API rows,
+  limitations, next phase), `server/README.md` (judgment collection,
+  importer, search, evaluation, migration 0010), ADR index,
+  `docs/PHASE4_PLAN.md` status.
+
+### Final verification (on the final code; logs in `docs/verification/phase4/`)
+
+| Check | Command | Result |
+|---|---|---|
+| Back end | `pytest -q` (in `server/`; `lexflow_test` on the live cluster) | **705 passed**, 0 failed, 0 skipped (`pytest-full.log`) |
+| Front end | `npm run check` (lint, format, typecheck, API types, sample data, Vitest, build) | exit 0, **169 passed** (`npm-check.log`) |
+| End to end | `npx playwright test` (real API, worker, e2e database) | **38 passed** (`playwright.log`); no leftover processes |
+| Static | ruff, ruff format, mypy (Windows and `--platform linux`) | clean, 128 files |
+| Contract | `scripts/export_openapi.py --check`, `npm run api:check` | up to date |
+| Migrations | `alembic check` on `lexflow`; 0010 rehearsal (M6); `test_migrations.py` | clean / passed |
+| Mutation | `docs/verification/phase4/run_mutation_checks.py` | 19/19 caught (M5) |
+| Evaluation | `scripts/evaluate_judgment_search.py` | recorded (M4), synthetic |
+
+`lexflow` fingerprint after all suites: unchanged since migration 0010.
+`docs/DEVELOPMENT_BRIEF.md`: SHA-256 still `274ecaed93400f51…`.
+
+## Status against the acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| Ingestion with provenance and required metadata | Done |
+| No fabricated judgments presented as real | Done (synthetic fenced off and labelled; live collection empty) |
+| Search on the real backend | Done |
+| Required modes (keyword; semantic and hybrid) with tests | Done (semantic/hybrid need embeddings enabled) |
+| Research tab on the real API | Done |
+| Precedent Library on the real collection | Done |
+| Source attribution | Done |
+| Authorization, isolation, adversarial input tested | Done |
+| Reproducible evaluation with honest metrics | Done (machinery); **real-corpus quality: external data pending** |
+| Database changes rehearsed and documented | Done (0010 live) |
+| Full back-end and front-end verification | Done |
+| E2E/UI verification | Done (Playwright); a manual look in a browser by the owner is still recommended |
+| SE artifacts | SRS, architecture/UML, traceability, ADRs done; *analyse case* sequence waits for Phase 5 |
+| Logs and resume instructions | Done |
+| Committed locally, nothing pushed | Done |
+
+**Engineering implementation: complete. External validation: pending** (an
+approved judgment source with verified terms; a lawyer-labelled evaluation
+set).
+
 ---
 
-Checkpoint: M6 done (see `git log`). Next: M7 documents and final verification.
+Checkpoint: Phase 4 complete (engineering) — see `git log` (`Phase 4 M7`).
+Next actions are the owner's: approve a judgment source and import it
+(`python -m lexflow.cli.judgments import …`), arrange lawyer relevance labels,
+decide whether to enable embeddings; then Phase 5 (not started).

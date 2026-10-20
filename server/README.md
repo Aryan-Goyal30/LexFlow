@@ -184,6 +184,41 @@ default** (`LEXFLOW_EMBEDDINGS=disabled`). To turn them on:
   keyword search missed. That corpus says nothing about legal research
   quality.
 
+## Judgment collection (Phase 4)
+
+Judgments come only from files an operator supplies, described by a
+`manifest.json` that records **their source and its terms of use** (format
+`lexflow-judgments/1`; fields and rules in
+`lexflow/services/judgment_import.py`, example in
+`tests/fixtures/judgments/synthetic/`). LexFlow never crawls or downloads
+judgments. Read the source's terms first and record what they permit.
+
+```powershell
+.venv\Scripts\python -m lexflow.cli.judgments import D:\judgments\manifest.json             # preview
+.venv\Scripts\python -m lexflow.cli.judgments import D:\judgments\manifest.json --confirm 25
+.venv\Scripts\python -m lexflow.cli.judgments import … --update   # replace judgments whose file changed
+.venv\Scripts\python -m lexflow.cli.judgments sources             # sources, terms, counts
+.venv\Scripts\python -m lexflow.cli.judgments index               # embed (needs LEXFLOW_EMBEDDINGS=local)
+.venv\Scripts\python -m lexflow.cli.judgments remove --source KEY # e.g. licence withdrawn (preview first)
+```
+
+- **Required per judgment:** id (the source's own), title, court, `https`
+  source URL, file (`.pdf`, `.docx`, `.txt`, inside the manifest's folder).
+  Citation, decision date or year, bench and practice areas are optional and
+  never guessed. Duplicates (same file, same citation, same id with changed
+  content) are reported; `--update` replaces changed ones. Each judgment is
+  stored with its text in one transaction; failures are listed.
+- **Synthetic (test) sources** must use `.invalid` addresses and are refused
+  unless `--allow-synthetic` is given and the database name contains "test"
+  or "e2e".
+- **Search:** keyword (full text, GIN index) always; semantic and hybrid when
+  embeddings are on and judgments are indexed. Staff only; Client accounts
+  never reach it. Searches are audited without their text.
+- **Evaluation:** `.venv\Scripts\python scripts/evaluate_judgment_search.py`
+  (throwaway test database; writes `docs/verification/phase4/judgment-eval.*`).
+  The shipped evaluation set is synthetic; real quality needs a licensed corpus
+  and a lawyer's relevance labels in a new set (`lexflow-judgment-eval/1`).
+
 ## Security model
 
 See `docs/adr/0005`, `0011`, `0012` and `0014` for the reasoning.
@@ -216,7 +251,8 @@ See `docs/adr/0005`, `0011`, `0012` and `0014` for the reasoning.
 run's random password (from `LEXFLOW_E2E_PASSWORD`, never a command argument)
 and empties `var/e2e-uploads`; `scripts/e2e.py serve` runs the API against it on
 port 8001 and `scripts/e2e.py work --run-id <id>` runs the document worker
-against it. `npm run e2e` at the repository root does all of this for you.
+against it. `prepare` also imports the SYNTHETIC judgment fixtures. `npm run e2e`
+at the repository root does all of this for you.
 
 ## Checks
 
@@ -266,6 +302,9 @@ extracted again from the stored files).
 Migration 0009 creates the `vector` extension (needs the pgvector image) and
 `document_chunk_embeddings`; its downgrade drops both, and the vectors can be
 rebuilt with `queue-indexing`.
+
+Migration 0010 (Phase 4) only adds the judgment tables; its downgrade drops
+them and every imported judgment (re-import from the manifests).
 
 ### Recovery after the pgvector change (rehearsed, docs/EMBEDDINGS_EXECUTION_LOG.md)
 
