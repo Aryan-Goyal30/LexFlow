@@ -1,0 +1,311 @@
+{
+  "generated_at": "2026-10-20T04:49:48+00:00",
+  "model": "BAAI/bge-small-en-v1.5@5c38ec7c405e",
+  "corpus": "tests/fixtures/retrieval/fictional_corpus.json (FICTIONAL)",
+  "documents": 8,
+  "pages": 18,
+  "queries": {
+    "all": 26,
+    "lexical": 12,
+    "paraphrase": 14
+  },
+  "index_seconds": 0.3,
+  "metrics": {
+    "all": {
+      "keyword": {
+        "recall@1": 0.385,
+        "recall@3": 0.385,
+        "recall@5": 0.385,
+        "mrr@10": 0.385
+      },
+      "semantic": {
+        "recall@1": 0.885,
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr@10": 0.936
+      },
+      "hybrid": {
+        "recall@1": 0.885,
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr@10": 0.936
+      }
+    },
+    "lexical": {
+      "keyword": {
+        "recall@1": 0.833,
+        "recall@3": 0.833,
+        "recall@5": 0.833,
+        "mrr@10": 0.833
+      },
+      "semantic": {
+        "recall@1": 1.0,
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr@10": 1.0
+      },
+      "hybrid": {
+        "recall@1": 1.0,
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr@10": 1.0
+      }
+    },
+    "paraphrase": {
+      "keyword": {
+        "recall@1": 0.0,
+        "recall@3": 0.0,
+        "recall@5": 0.0,
+        "mrr@10": 0.0
+      },
+      "semantic": {
+        "recall@1": 0.786,
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr@10": 0.881
+      },
+      "hybrid": {
+        "recall@1": 0.786,
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr@10": 0.881
+      }
+    }
+  },
+  "per_query": [
+    {
+      "query": "arrears of rent unpaid since March",
+      "kind": "lexical",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "interest at nine per cent and costs of the suit",
+      "kind": "lexical",
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "notice to vacate within fifteen days",
+      "kind": "lexical",
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "registered post acknowledgement due",
+      "kind": "lexical",
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "roof leaked during the monsoon",
+      "kind": "lexical",
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "waterproofing cost adjusted against rent",
+      "kind": "lexical",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "SUNCRUST used for biscuits since 2009",
+      "kind": "lexical",
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "unauthorised absence from duty",
+      "kind": "lexical",
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "gratuity and leave encashment",
+      "kind": "lexical",
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "fracture of the right femur",
+      "kind": "lexical",
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "regular bail after charge sheet filed",
+      "kind": "lexical",
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "handwriting expert compared signatures",
+      "kind": "lexical",
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "the tenant stopped paying the landlord",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "how much money does the shop occupant owe",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 3,
+        "hybrid": 3
+      }
+    },
+    {
+      "query": "eviction warning given to the occupant",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "proof that the letter reached the recipient",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "landlord did not fix water damage to the premises",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "can repair expenses be deducted from what is owed",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 2,
+        "hybrid": 2
+      }
+    },
+    {
+      "query": "the lease was never properly ended so the case is too early",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "confusingly similar brand names for cookies",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "evidence of the earlier brand's market reputation",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "why was the employee dismissed",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 2,
+        "hybrid": 2
+      }
+    },
+    {
+      "query": "broken leg from a traffic collision",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "accused is not likely to flee or interfere with the trial",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "property transfer signed by a sick parent who was deceived",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "query": "forensic opinion that the signature may be forged",
+      "kind": "paraphrase",
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      }
+    }
+  ]
+}

@@ -152,8 +152,60 @@ real model and are skipped until it is downloaded). Full suite **624 passed,
 4 skipped**. ruff, format, mypy (Windows and `--platform linux`, 117 files)
 clean. `npm run check`: 158 tests, API types match, build OK.
 
+E2 commits: `35f888d` (implementation), `8eda562` (a test the first mutation
+run showed was missing: vectors of another model are never compared).
+
+## E3 — Mutation checks, model download, evaluation (done)
+
+**Mutation checks** (`docs/verification/embeddings/run_mutation_checks.py`,
+report `mutation-report.md`, raw `mutation-output.log`, redacted): 16 guards
+in search, indexing, the worker and the model CLI. First run 15/16 — S-4
+(model filter in semantic search) survived; a test was added (`8eda562`).
+Second run **16/16 caught**, all by test assertions (no import/collection
+errors), every file restored byte-for-byte.
+
+**Model download** — only through the explicit command:
+`python -m lexflow.cli.models download` (preview: 4 files, 133.8 MB, nothing
+created) then `--confirm`: each file streamed to `.part`, size and SHA-256
+checked, renamed; ~80 s. Stored in `server/var/models/BAAI/bge-small-en-v1.5/
+5c38ec7c…/` (git-ignored, never committed). Audited `model.downloaded` in
+`lexflow` (one audit row; no schema change). `verify`: loaded in 0.6 s;
+384 dimensions; unit length; related pair 0.715 vs unrelated 0.554. CPU only
+(no GPU used or claimed).
+
+**Real-model tests:** the 4 previously skipped tests pass (unit 384-d
+vectors including empty and over-long text; deterministic and
+batch-independent to 1e-4; related meaning closer; query instruction
+applied). Full back-end suite on the scratch pgvector server with the model
+present: **629 passed, 0 skipped** (`pytest-full-scratch-pgvector.log`).
+
+**Evaluation** (`server/scripts/evaluate_retrieval.py`, results
+`retrieval-eval.md`/`.json`): FICTIONAL corpus of 8 documents / 18 pages,
+26 queries each with exactly one answering page (12 lexical, 14 paraphrase),
+written by the developer — measures plumbing and gross behaviour, not legal
+research quality. Throwaway database `lexflow_eval_test` on the scratch
+server, dropped afterwards. Indexing took 0.30 s.
+
+| Queries | Mode | Recall@1 | Recall@3 | Recall@5 | MRR@10 |
+|---|---|---|---|---|---|
+| all (26) | keyword | 0.385 | 0.385 | 0.385 | 0.385 |
+| all (26) | semantic | 0.885 | 1.0 | 1.0 | 0.936 |
+| all (26) | hybrid | 0.885 | 1.0 | 1.0 | 0.936 |
+| lexical (12) | keyword | 0.833 | 0.833 | 0.833 | 0.833 |
+| lexical (12) | semantic | 1.0 | 1.0 | 1.0 | 1.0 |
+| paraphrase (14) | keyword | 0.0 | 0.0 | 0.0 | 0.0 |
+| paraphrase (14) | semantic | 0.786 | 1.0 | 1.0 | 0.881 |
+
+Reading: keyword search (`websearch_to_tsquery`) requires every term, so it
+finds nothing when the wording differs and misses 2 lexical queries with one
+absent word. Semantic search ranked the answering page in the top 3 for all
+26 queries and first for 23. Hybrid equals semantic here because keyword
+adds almost nothing on this corpus. With 26 hand-written queries these are
+indications, not benchmarks; a lawyer-reviewed relevance set on real
+(licensed) material is needed for any claim about legal research.
+
 ---
 
-Checkpoint: E2 committed (see `git log`). Next: E3 mutation checks
-(`docs/verification/embeddings/run_mutation_checks.py`), explicit model
-download and real-model tests, evaluation; then the gated live swap.
+Checkpoint: E3 committed (see `git log`). Next: E4 gated live change —
+fresh backups, physical rehearsal of 0009 and of the rollback, image swap of
+`lexflow-db-1` to `pgvector/pgvector:pg17-trixie`, migration 0009, checks.

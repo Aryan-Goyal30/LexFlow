@@ -1,0 +1,275 @@
+Embeddings mutation checks at commit 8eda562, started 2026-10-20 04:45:54 UTC
+Redacted: local home paths, database role names and row ids (see REDACTIONS).
+
+=== S-1 CAUGHT: deleted documents are never searched
+file: server/lexflow/services/retrieval.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_search.py
+exit code: 1
+    def test_deleted_documents_are_never_searched(as_: As, corpus: dict[str, uuid.UUID]) -> None:
+        assert as_("lead").delete(f"/api/documents/{corpus['brand']}").status_code == 204
+        for mode in ("keyword", "semantic", "hybrid"):
+            body = search(as_("lead"), "trademark biscuits", mode).json()
+>           assert all(r["documentId"] != str(corpus["brand"]) for r in body["results"]), mode
+E           AssertionError: keyword
+E           assert False
+E            +  where False = all(<generator object test_deleted_documents_are_never_searched.<locals>.<genexpr> at 0x00000190B13634C0>)
+tests\test_search.py:143: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_search.py::test_deleted_documents_are_never_searched - Asse...
+1 failed, 18 passed in 5.04s
+
+=== S-2 CAUGHT: a search stays inside its case
+file: server/lexflow/services/retrieval.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_search.py
+exit code: 1
+    ) -> None:
+        elsewhere = add(db, "Other lease.pdf", [RENT], provider, case_id=OTHER_CASE)
+        for mode in ("keyword", "semantic", "hybrid"):
+            body = search(as_("admin"), "tenant rent arrears", mode).json()
+>           assert all(r["documentId"] != str(elsewhere) for r in body["results"]), mode
+E           AssertionError: keyword
+E           assert False
+E            +  where False = all(<generator object test_other_cases_documents_never_appear.<locals>.<genexpr> at 0x000002AD63052EA0>)
+tests\test_search.py:157: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_search.py::test_other_cases_documents_never_appear - Assert...
+1 failed, 18 passed in 4.94s
+
+=== S-3 CAUGHT: a vector of old text is never used
+file: server/lexflow/services/retrieval.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_search.py
+exit code: 1
+        ).first()
+        assert chunk is not None
+        chunk.content_sha256 = "e" * 64  # the text changed since it was embedded
+        db.commit()
+        body = search(as_("lead"), "trademark biscuits class").json()
+>       assert all(r["chunkId"] != str(chunk.id) for r in body["results"])
+E       assert False
+E        +  where False = all(<generator object test_a_vector_of_old_text_is_not_used.<locals>.<genexpr> at 0x0000013FF9768740>)
+tests\test_search.py:199: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_search.py::test_a_vector_of_old_text_is_not_used - assert F...
+1 failed, 18 passed in 5.02s
+
+=== S-4 CAUGHT: vectors of another model are never compared
+file: server/lexflow/services/retrieval.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_search.py
+exit code: 1
+        as_: As, db: Session, people: Any, provider: WordsProvider
+    ) -> None:
+        other = WordsProvider("another-model@9")  # same arithmetic, different model name
+        document = add(db, "Indexed elsewhere.pdf", [RENT], other)
+        body = search(as_("lead"), "tenant rent arrears").json()
+>       assert all(r["documentId"] != str(document) for r in body["results"])
+E       assert False
+E        +  where False = all(<generator object test_vectors_of_another_model_are_never_compared.<locals>.<genexpr> at 0x0000022F094391C0>)
+tests\test_search.py:185: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_search.py::test_vectors_of_another_model_are_never_compared
+1 failed, 18 passed in 4.94s
+
+=== S-5 CAUGHT: semantic search refuses (409) when it cannot run
+file: server/lexflow/api/search.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_search.py
+exit code: 1
+  File "C:\Projects\Claude\Legal Case Management System\server\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1100, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Claude\Legal Case Management System\server\.venv\Lib\site-packages\fastapi\telemetry\_api.py", line 244, in _run_sync_endpoint
+    return function(**arguments)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Claude\Legal Case Management System\server\lexflow\api\search.py", line 97, in search_case
+    model = provider.model
+            ^^^^^^^^^^^^^^
+=========================== short test summary info ===========================
+FAILED tests/test_search.py::test_semantic_search_says_why_it_is_unavailable
+1 failed, 18 passed in 4.95s
+
+=== S-6 CAUGHT: each search is audited
+file: server/lexflow/api/search.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_search.py
+exit code: 1
+        onerow = self._fetchone_impl
+        row: Optional[_InterimRowType[Any]] = onerow(hard_close=True)
+        if row is None:
+            if raise_for_none:
+>               raise exc.NoResultFound(
+                    "No row was found when one was required"
+                )
+E               sqlalchemy.exc.NoResultFound: No row was found when one was required
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:799: NoResultFound
+=========================== short test summary info ===========================
+FAILED tests/test_search.py::test_each_search_is_audited_without_the_query - ...
+1 failed, 18 passed in 4.88s
+
+=== I-1 CAUGHT: current vectors are not embedded again
+file: server/lexflow/services/indexing.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_indexing.py
+exit code: 1
+        result = index(engine_with_case, again)
+>       assert isinstance(result, indexing.IndexResult) and result.embedded == 1
+E       AssertionError: assert (True and 3 == 1)
+E        +  where True = isinstance(IndexResult(document_id=UUID('<uuid>'), status='indexed', embedded=3, reused=0), <class 'lexflow.services.indexing.IndexResult'>)
+E        +    where <class 'lexflow.services.indexing.IndexResult'> = indexing.IndexResult
+E        +  and   3 = IndexResult(document_id=UUID('<uuid>'), status='indexed', embedded=3, reused=0).embedded
+tests\test_indexing.py:168: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_indexing.py::test_indexing_again_embeds_nothing_twice - Ass...
+FAILED tests/test_indexing.py::test_a_failure_keeps_finished_batches_and_a_retry_completes
+FAILED tests/test_indexing.py::test_a_changed_chunk_is_embedded_again - Asser...
+3 failed, 8 passed in 1.91s
+
+=== I-2 CAUGHT: finished batches are kept after a failure
+file: server/lexflow/services/indexing.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_indexing.py
+exit code: 1
+        assert failed.index_status == "failed"
+        assert failed.index_reason and "failed on purpose" in failed.index_reason
+>       assert vectors(engine_with_case, document) == 2  # the first batch was committed
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert 0 == 2
+E        +  where 0 = vectors(Engine(postgresql+psycopg://<user>:***@127.0.0.1:55432/lexflow_test), UUID('<uuid>'))
+tests\test_indexing.py:144: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  lexflow.worker:indexing.py:172 document <uuid>: indexing failed (RuntimeError)
+=========================== short test summary info ===========================
+FAILED tests/test_indexing.py::test_a_failure_keeps_finished_batches_and_a_retry_completes
+1 failed, 10 passed in 1.79s
+
+=== I-3 CAUGHT: a document locked by another worker is skipped
+file: server/lexflow/services/indexing.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_indexing.py
+exit code: 1
+        document = ready(engine_with_case)
+        with engine_with_case.connect() as other:
+            key = other.scalar(text(indexing.LOCK_KEY), {"id": str(document)})
+            assert other.scalar(text("SELECT pg_try_advisory_lock(:k)"), {"k": key})
+>           assert index(engine_with_case, WordsProvider()) is None
+E           AssertionError: assert IndexResult(document_id=UUID('<uuid>'), status='indexed', embedded=3, reused=0) is None
+E            +  where IndexResult(document_id=UUID('<uuid>'), status='indexed', embedded=3, reused=0) = index(Engine(postgresql+psycopg://<user>:***@127.0.0.1:55432/lexflow_test), <tests.embedding_fakes.WordsProvider object at 0x0000024A0D39FF80>)
+E            +    where <tests.embedding_fakes.WordsProvider object at 0x0000024A0D39FF80> = WordsProvider()
+tests\test_indexing.py:224: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_indexing.py::test_a_document_locked_by_another_worker_is_skipped
+1 failed, 10 passed in 1.83s
+
+=== I-4 CAUGHT: text extracted again during indexing discards the result
+file: server/lexflow/services/indexing.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_indexing.py
+exit code: 1
+                    )
+                return super().embed_passages(texts)  # type: ignore[arg-type]
+        result = index(engine_with_case, Interrupting())
+        assert isinstance(result, indexing.IndexResult) and result.status == "discarded"
+        assert job(engine_with_case, document).index_status == "disabled"
+>       assert vectors(engine_with_case, document) == 0
+E       AssertionError: assert 3 == 0
+E        +  where 3 = vectors(Engine(postgresql+psycopg://<user>:***@127.0.0.1:55432/lexflow_test), UUID('<uuid>'))
+tests\test_indexing.py:216: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_indexing.py::test_text_extracted_again_during_indexing_discards_the_result
+1 failed, 10 passed in 1.84s
+
+=== I-5 CAUGHT: without embeddings, extracted text is not queued for indexing
+file: server/lexflow/worker.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_worker.py
+exit code: 1
+            "updatedAt": None,
+        }
+E       AssertionError: assert {'status': 'r...ount': 3, ...} == {'status': 'r...ount': 3, ...}
+E         
+E         Omitting 7 identical items, use -vv to show
+E         Differing items:
+E         {'indexStatus': 'pending'} != {'indexStatus': 'disabled'}
+E         Use -v to get more diff
+tests\test_worker.py:100: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_worker.py::test_a_multi_page_pdf_yields_page_numbered_text_and_chunks
+1 failed, 11 passed in 3.85s
+
+=== M-1 CAUGHT: missing or damaged model files are refused
+file: server/lexflow/embeddings.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_embeddings.py
+exit code: 1
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Exception: The system cannot find the path specified. (os error 3)
+lexflow\embeddings.py:142: Exception
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_embeddings.py:324: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:334: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:345: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:361: the embedding model is not downloaded
+FAILED tests/test_embeddings.py::test_local_embeddings_need_the_downloaded_model
+FAILED tests/test_embeddings.py::test_the_worker_takes_no_job_when_the_model_is_missing
+FAILED tests/test_embeddings.py::test_the_worker_command_says_why_it_will_not_start
+3 failed, 12 passed, 4 skipped in 4.15s
+
+=== M-2 CAUGHT: a download that does not match its SHA-256 is refused
+file: server/lexflow/cli/models.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_embeddings.py
+exit code: 1
+>       with pytest.raises(models.CommandError, match="SHA-256 does not match"):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'SHA-256 does not match'
+E         Actual message: 'After download: tokenizer.json does not match its SHA-256'
+tests\test_embeddings.py:205: AssertionError
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_embeddings.py:324: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:334: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:345: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:361: the embedding model is not downloaded
+FAILED tests/test_embeddings.py::test_a_download_that_does_not_match_is_refused_and_removed
+1 failed, 14 passed, 4 skipped in 4.00s
+
+=== M-3 CAUGHT: download previews before fetching
+file: server/lexflow/cli/models.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_embeddings.py
+exit code: 1
+E       AssertionError: assert (0 == 0 and ['https://hug...kenizer.json'] == []
+E         
+E         Left contains 2 more items, first extra item: 'https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/5c38ec7c405ec4b44b94cc5a9bb96e735b38267a/onnx/model.onnx'
+E         Use -v to get more diff)
+tests\test_embeddings.py:171: AssertionError
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_embeddings.py:324: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:334: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:345: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:361: the embedding model is not downloaded
+FAILED tests/test_embeddings.py::test_download_previews_first_and_fetches_nothing
+1 failed, 14 passed, 4 skipped in 3.97s
+
+=== M-4 CAUGHT: queue-indexing leaves current vectors alone
+file: server/lexflow/cli/models.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_embeddings.py
+exit code: 1
+            session.commit()
+        code, out = queue_indexing(committed_engine)
+>       assert code == 0 and "Preview only" in out and "--confirm 2" in out
+E       AssertionError: assert (0 == 0 and 'Preview only' in 'CASE           NOW       ID                                    NAME\nLF-2026-0361   indexed   0610f746-4a03-46fb-af26...Preview only: nothing was changed. To queue these 3 document(s) for indexing, run the same command with --confirm 3.\n' and '--confirm 2' in 'CASE           NOW       ID                                    NAME\nLF-2026-0361   indexed   0610f746-4a03-46fb-af26...Preview only: nothing was changed. To queue these 3 document(s) for indexing, run the same command with --confirm 3.\n')
+tests\test_embeddings.py:289: AssertionError
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_embeddings.py:324: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:334: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:345: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:361: the embedding model is not downloaded
+FAILED tests/test_embeddings.py::test_queue_indexing_previews_then_queues_what_lacks_current_vectors
+1 failed, 14 passed, 4 skipped in 3.94s
+
+=== M-5 CAUGHT: queue-indexing previews before changing anything
+file: server/lexflow/cli/models.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_embeddings.py
+exit code: 1
+                f"--confirm {args.confirm} does not match the {len(rows)} document(s) listed; "
+                "nothing was queued. Check the preview again."
+            )
+E           lexflow.cli.models.CommandError: --confirm None does not match the 2 document(s) listed; nothing was queued. Check the preview again.
+lexflow\cli\models.py:309: CommandError
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_embeddings.py:324: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:334: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:345: the embedding model is not downloaded
+SKIPPED [1] tests\test_embeddings.py:361: the embedding model is not downloaded
+FAILED tests/test_embeddings.py::test_queue_indexing_previews_then_queues_what_lacks_current_vectors
+1 failed, 14 passed, 4 skipped in 3.94s
+
