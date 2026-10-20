@@ -8,6 +8,9 @@ package-lock.json
 # Generated files: written by scripts, checked for drift in CI, never hand-formatted.
 server/lexflow/seed/sample_data.json
 server/openapi.json
+# Test fixtures are data whose exact bytes matter (hashes, offsets).
+server/tests/fixtures
+docs/verification
 src/services/api/schema.gen.ts
 # Local environments, uploads and test output: not source files.
 server/.venv

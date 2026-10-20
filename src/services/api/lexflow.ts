@@ -10,6 +10,12 @@ import type {
   CaseChanges,
   DeletedDocument,
   DocumentText,
+  JudgmentDetail,
+  JudgmentFacets,
+  JudgmentPage,
+  JudgmentSearchMode,
+  JudgmentSearchResult,
+  JudgmentText,
   HearingChanges,
   HearingInput,
   HearingRange,
@@ -39,6 +45,29 @@ const json = (body: unknown): RequestInit => ({
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(body),
 });
+
+/** Filters of the judgment collection (all optional). */
+export interface JudgmentFilters {
+  court?: string;
+  yearFrom?: number;
+  yearTo?: number;
+}
+
+/** One judgment search: what, how, which page, within which filters. */
+export interface JudgmentQuery extends JudgmentFilters {
+  q: string;
+  mode: JudgmentSearchMode;
+  page: number;
+  pageSize?: number;
+}
+
+function judgmentParams(filters: JudgmentFilters, extra: Record<string, string>) {
+  const params = new URLSearchParams(extra);
+  if (filters.court) params.set('court', filters.court);
+  if (filters.yearFrom !== undefined) params.set('yearFrom', String(filters.yearFrom));
+  if (filters.yearTo !== undefined) params.set('yearTo', String(filters.yearTo));
+  return params;
+}
 
 export const lexflowApi = {
   me: () => apiFetch<CurrentUser>('/auth/me'),
@@ -76,6 +105,23 @@ export const lexflowApi = {
 
   documentText: (documentId: string, section: number) =>
     apiFetch<DocumentText>(`/documents/${id(documentId)}/text?section=${section}`),
+
+  judgmentFacets: () => apiFetch<JudgmentFacets>('/judgments/facets'),
+
+  listJudgments: (filters: JudgmentFilters, page: number, pageSize = 20) =>
+    apiFetch<JudgmentPage>(
+      `/judgments?${judgmentParams(filters, { page: String(page), pageSize: String(pageSize) })}`,
+    ),
+
+  searchJudgments: ({ q, mode, page, pageSize = 10, ...filters }: JudgmentQuery) =>
+    apiFetch<JudgmentSearchResult>(
+      `/judgments/search?${judgmentParams(filters, { q, mode, page: String(page), pageSize: String(pageSize) })}`,
+    ),
+
+  judgment: (judgmentId: string) => apiFetch<JudgmentDetail>(`/judgments/${id(judgmentId)}`),
+
+  judgmentText: (judgmentId: string, section: number) =>
+    apiFetch<JudgmentText>(`/judgments/${id(judgmentId)}/text?section=${section}`),
 
   reprocessDocument: (documentId: string) =>
     apiFetch<CaseDocument>(`/documents/${id(documentId)}/reprocess`, { method: 'POST' }),

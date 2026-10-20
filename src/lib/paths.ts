@@ -11,6 +11,12 @@ export const documentTextPath = (caseId: string, documentId: string, section = 1
   `${casePath(caseId)}/documents/${encodeURIComponent(documentId)}/text` +
   (section > 1 ? `?section=${section}` : '');
 
+/** The Precedent Library (the judgment collection) and one judgment's page. */
+export const PRECEDENTS_PATH = '/app/precedents';
+export const judgmentPath = (judgmentId: string, section = 1) =>
+  `${PRECEDENTS_PATH}/${encodeURIComponent(judgmentId)}` +
+  (section > 1 ? `?section=${section}` : '');
+
 /** Clients: the list, adding one, one client, and opening a case for them. */
 export const CLIENTS_PATH = '/app/clients';
 export const NEW_CLIENT_PATH = '/app/clients/new';

@@ -25,7 +25,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: '/app/cases', label: 'Cases', icon: FolderKanban, enabled: true },
   { to: '/app/dashboard', label: 'Practice Overview', icon: LayoutDashboard, enabled: true },
-  { to: '/app/research', label: 'Precedent Library', icon: BookOpenText, enabled: false },
+  { to: '/app/precedents', label: 'Precedent Library', icon: BookOpenText, enabled: true },
   { to: '/app/hearings', label: 'Hearings', icon: CalendarClock, enabled: true },
   { to: '/app/clients', label: 'Clients', icon: Users, enabled: true },
   { to: '/app/notifications', label: 'Notifications', icon: Bell, enabled: false },

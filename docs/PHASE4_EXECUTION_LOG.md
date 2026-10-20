@@ -63,8 +63,8 @@ Started 2026-10-20. Scope: `docs/DEVELOPMENT_BRIEF.md` §4 Phase 4 and
 | # | Milestone | Status |
 |---|---|---|
 | M1 | Schema (migration 0010), source-aware importer, CLI | done |
-| M2 | Search service and API (keyword, semantic, hybrid), library endpoints | pending |
-| M3 | Research tab and Precedent Library UI | pending |
+| M2 | Search service and API (keyword, semantic, hybrid), library endpoints | done |
+| M3 | Research tab and Precedent Library UI | done |
 | M4 | Evaluation framework and synthetic engineering run | pending |
 | M5 | Security, mutation and end-to-end verification | pending |
 | M6 | Gated live migration 0010 | pending |
@@ -97,6 +97,53 @@ Started 2026-10-20. Scope: `docs/DEVELOPMENT_BRIEF.md` §4 Phase 4 and
 - Full back-end suite: 661 passed, 1 failed (that flake); after the fix the
   affected files pass (107).
 
+## M2 — Search service and API (done)
+
+- `lexflow/api/judgments.py` (staff router; Client 403, anonymous 401):
+  `GET /api/judgments/facets` (totals, synthetic count, courts, years, which
+  modes work and why not), `GET /api/judgments` (browse: newest decision
+  first, undated last, then title and id; `court`, `yearFrom`, `yearTo`,
+  `page`, `pageSize` ≤ 50), `GET /api/judgments/search` (`q` ≤ 300 chars,
+  `mode` keyword|semantic|hybrid, filters, `page` ≤ 10, `pageSize` ≤ 20; at
+  most 100 judgments ranked; audited `judgment.searched` with mode, page and
+  result count, never the query), `GET /api/judgments/{id}` (metadata, source
+  and its terms-of-use record), `GET /api/judgments/{id}/text?section=`.
+- Ranking: one result per judgment (its best chunk via `DISTINCT ON`), ties
+  broken by judgment id then chunk number; semantic needs the current model
+  and the chunk's current hash; hybrid = reciprocal-rank fusion (k 60) of the
+  two bounded lists; 409 `semantic-search-unavailable` with the reason when
+  embeddings cannot run (keyword always works). Search text goes only into
+  `websearch_to_tsquery` bind parameters; nothing is interpolated into SQL.
+- Tests `tests/test_judgments_api.py`: **33 passed** (every staff role,
+  Client/anonymous refused on all five routes, ordering and paging, filters,
+  exact passage offsets, determinism, no-result and hostile inputs (SQL-like,
+  HTML, tsquery operators, stopwords, Devanagari, 300 chars) with the table
+  intact, semantic/hybrid with fake vectors, stale and foreign-model vectors
+  ignored, source and terms in the detail, private case documents never in
+  judgment results, audit without the query).
+- Full back-end suite: **695 passed**.
+
+## M3 — Research tab and Precedent Library (done)
+
+- Shared components `src/components/research/Judgments.tsx` (search form with
+  validation and mode choice, results keyed by the submitted query — no
+  placeholder data, so stale results are never shown for a new query —,
+  result cards with passage, page, citation, synthetic badge, `https`-only
+  source links opened with `noopener noreferrer`, pager, empty collection).
+- Research tab (`ResearchTab.tsx`) now searches the collection; the AI
+  service's `searchPrecedents` and the hook's research state were removed
+  (precedent search is real search, not AI; AI Analysis is unchanged and
+  still says "not connected").
+- Precedent Library `/app/precedents` (state in the URL: query, mode,
+  filters, page) and judgment page `/app/precedents/:id` (source, terms of
+  use, synthetic warning, text page by page). Sidebar entry enabled.
+- Fake API `src/test/mockJudgments.ts`; tests `src/pages/research.test.tsx`
+  (15) and updated workspace/AI hook tests.
+- `.prettierignore` now excludes `server/tests/fixtures` and
+  `docs/verification` (byte-exact data; `fictional_corpus.json` from the
+  embeddings work had slipped past `npm run check`).
+- `npm run check`: exit 0, **169 tests**, API types match, build OK.
+
 ---
 
-Checkpoint: M1 committed (see `git log`). Next: M2 search API.
+Checkpoint: M3 committed (see `git log`). Next: M4 evaluation framework.

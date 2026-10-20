@@ -13,6 +13,7 @@ import { setupServer } from 'msw/node';
 import { advocates as sampleAdvocates, mockCases, mockClients } from '../data/mockData';
 import { formatFileSize, todayIsoDate } from '../lib/format';
 import { ACCEPTED_TYPES_LABEL } from '../lib/documentFiles';
+import { judgmentHandlers, resetMockJudgments } from './mockJudgments';
 import type {
   AdminUser,
   AdminUserChanges,
@@ -558,6 +559,7 @@ let state: State = initialState();
 /** Called before each test (see setup.ts). */
 export function resetMockApi(): void {
   state = initialState();
+  resetMockJudgments();
 }
 
 /** Read the fake server's current data in a test. */
@@ -663,6 +665,10 @@ export const handlers = [
     if (!passwordRoutes && portal !== (user.role === 'Client')) return forbidden();
     return undefined;
   }),
+
+  // The judgment collection (src/test/mockJudgments.ts); the gate above already
+  // refuses Client accounts, like the server's staff router.
+  ...judgmentHandlers(() => undefined),
 
   http.get('*/api/auth/me', () => {
     const user = currentMockUser();

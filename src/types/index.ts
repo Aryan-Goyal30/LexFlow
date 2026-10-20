@@ -16,6 +16,15 @@ export type CaseSummary = Schemas['CaseSummary'];
 /** A case with its documents, hearings and timeline (the workspace). */
 export type Case = Schemas['CaseDetail'];
 export type CaseDocument = Schemas['DocumentOut'];
+/** The judgment collection (Phase 4): firm-wide reference material for staff. */
+export type JudgmentSummary = Schemas['JudgmentSummaryOut'];
+export type JudgmentDetail = Schemas['JudgmentDetailOut'];
+export type JudgmentPage = Schemas['JudgmentPageOut'];
+export type JudgmentHit = Schemas['JudgmentHitOut'];
+export type JudgmentSearchResult = Schemas['JudgmentSearchOut'];
+export type JudgmentFacets = Schemas['JudgmentFacetsOut'];
+export type JudgmentText = Schemas['JudgmentTextOut'];
+export type JudgmentSearchMode = JudgmentSearchResult['mode'];
 export type Hearing = Schemas['HearingOut'];
 export type UpcomingHearing = Schemas['UpcomingHearingOut'];
 export type ScheduledHearing = Schemas['ScheduledHearingOut'];

@@ -116,7 +116,7 @@ function Workspace({ legalCase: c }: { legalCase: Case }) {
     { key: 'overview', label: 'Overview', icon: LayoutList },
     { key: 'documents', label: 'Documents', icon: FileText, meta: c.documents.length },
     { key: 'analysis', label: 'AI Analysis', icon: Sparkles, meta: notConnected },
-    { key: 'research', label: 'Research', icon: BookOpenText, meta: notConnected },
+    { key: 'research', label: 'Research', icon: BookOpenText },
   ];
 
   return (
@@ -178,7 +178,7 @@ function Workspace({ legalCase: c }: { legalCase: Case }) {
           <DocumentsTab legalCase={c} />
         </div>
         {tab === 'analysis' && <AnalysisTab legalCase={c} ai={ai} />}
-        {tab === 'research' && <ResearchTab legalCase={c} ai={ai} />}
+        {tab === 'research' && <ResearchTab legalCase={c} />}
       </div>
     </>
   );

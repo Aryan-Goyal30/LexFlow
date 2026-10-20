@@ -1,106 +1,82 @@
-import { useId, useState, type FormEvent } from 'react';
-import { BookOpenText, Loader2, Search } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { BookOpenText } from 'lucide-react';
 import type { Case } from '../../types';
-import type { AiAssistant } from '../../hooks/useAiAssistant';
+import type { JudgmentQuery } from '../../services/api/lexflow';
+import { useJudgmentFacets } from '../../hooks/useJudgments';
+import { PRECEDENTS_PATH } from '../../lib/paths';
 import { Card, CardBody, CardHeader } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { AiStatusPill, DecisionSupportNote, NotConnectedNotice } from './AiNotices';
-import { PrecedentCard } from './PrecedentCard';
+import { ErrorState, LoadingState } from '../ui/QueryState';
+import { EmptyCollection, JudgmentResults, JudgmentSearchForm } from '../research/Judgments';
 
-export function ResearchTab({ legalCase: c, ai }: { legalCase: Case; ai: AiAssistant }) {
-  const [query, setQuery] = useState('');
-  const inputId = useId();
-  const { status, query: searchedQuery, results, error } = ai.research;
-  const running = status === 'running';
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) void ai.searchPrecedents(query);
-  };
+/**
+ * Precedent research for a case: a search of the firm's judgment collection
+ * (the same search as the Precedent Library). Results are passages of stored
+ * judgments ranked against the words typed, not against this case's facts,
+ * and nothing is generated: comparing precedents with the case is the
+ * lawyer's work (AI analysis comes in a later phase).
+ */
+export function ResearchTab({ legalCase: c }: { legalCase: Case }) {
+  const facets = useJudgmentFacets();
+  const [query, setQuery] = useState<JudgmentQuery | null>(null);
 
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader title="Precedent Research" action={<AiStatusPill status={status} />} />
+        <CardHeader title="Precedent Research" />
         <CardBody className="space-y-4">
           <p className="text-sm leading-relaxed text-brand-700">
-            Once a collection of past judgments and a search service are connected, you will be able
-            to search for precedents relevant to this {c.practiceArea.toLowerCase()} matter. Results
-            will be ranked against this case's facts, with points of similarity and difference set
-            out for each.
+            Search the firm's judgment collection for precedents relevant to this{' '}
+            {c.practiceArea.toLowerCase()} matter. Each result shows the passage that matched, with
+            its court, date and citation, and links to the full judgment and its source. Read the
+            judgment before relying on it.
           </p>
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row" role="search">
-            <div className="relative flex-1">
-              <label htmlFor={inputId} className="sr-only">
-                Search precedents
-              </label>
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400"
-                aria-hidden="true"
+          {facets.isPending ? (
+            <LoadingState label="Loading the collection…" />
+          ) : facets.isError ? (
+            <ErrorState
+              title="Couldn't load the collection"
+              error={facets.error}
+              onRetry={() => void facets.refetch()}
+            />
+          ) : facets.data.total === 0 ? (
+            <EmptyCollection />
+          ) : (
+            <>
+              <JudgmentSearchForm
+                submitted={query ? { q: query.q, mode: query.mode } : null}
+                facets={facets.data}
+                onSubmit={(q, mode) => setQuery({ q, mode, page: 1 })}
+                label="Search precedents"
               />
-              <input
-                id={inputId}
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="e.g. interim injunction, deceptively similar trade mark"
-                className="input-field pl-9"
-                disabled={!ai.connected}
-              />
-            </div>
-            <Button type="submit" disabled={!ai.connected || !query.trim() || running}>
-              {running && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-              {running ? 'Searching…' : 'Search precedents'}
-            </Button>
-          </form>
-
-          {!ai.connected && (
-            <NotConnectedNotice feature="Precedent research">
-              Searching needs a collection of past judgments and a search service. Neither is
-              connected in this version of LexFlow, so no precedents are shown.
-            </NotConnectedNotice>
+              <p className="text-xs text-brand-500">
+                {facets.data.total} judgment{facets.data.total === 1 ? '' : 's'} in the collection
+                {facets.data.synthetic > 0 &&
+                  ` (${facets.data.synthetic} synthetic test record${facets.data.synthetic === 1 ? '' : 's'}, not real judgments)`}
+                . Browse them in the{' '}
+                <Link to={PRECEDENTS_PATH} className="font-medium text-brand-700 hover:underline">
+                  Precedent Library
+                </Link>
+                .
+              </p>
+            </>
           )}
-          <DecisionSupportNote />
         </CardBody>
       </Card>
 
-      <div aria-live="polite">
-        {running && <p className="text-sm text-brand-600">Searching for “{searchedQuery}”…</p>}
-
-        {status === 'error' && error && (
-          <p
-            role="alert"
-            className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-600/20"
-          >
-            {error} No results are shown.
-          </p>
-        )}
-
-        {status === 'ready' && results && (
-          <Card>
-            <CardHeader title={`Results for “${searchedQuery}” (${results.length})`} />
-            <CardBody className="space-y-3">
-              {results.length === 0 ? (
-                <p className="text-sm text-brand-500">No precedents matched this search.</p>
-              ) : (
-                results.map((p) => <PrecedentCard key={p.id} precedent={p} />)
-              )}
-            </CardBody>
-          </Card>
-        )}
-      </div>
-
-      {!running && status !== 'ready' && status !== 'error' && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-brand-100 bg-white px-6 py-12 text-center">
-          <BookOpenText className="h-9 w-9 text-brand-300" strokeWidth={1.5} aria-hidden="true" />
-          <p className="mt-3 text-sm font-medium text-brand-700">No research yet</p>
-          <p className="mt-1 max-w-sm text-sm text-brand-500">
-            {ai.connected
-              ? 'Search above to find precedents for this case.'
-              : 'Precedent search becomes available once research is connected.'}
-          </p>
-        </div>
+      {query ? (
+        <JudgmentResults query={query} onPage={(page) => setQuery({ ...query, page })} />
+      ) : (
+        facets.data &&
+        facets.data.total > 0 && (
+          <div className="flex flex-col items-center justify-center rounded-lg border border-brand-100 bg-white px-6 py-12 text-center">
+            <BookOpenText className="h-9 w-9 text-brand-300" strokeWidth={1.5} aria-hidden="true" />
+            <p className="mt-3 text-sm font-medium text-brand-700">No search yet</p>
+            <p className="mt-1 max-w-sm text-sm text-brand-500">
+              Search above to find judgments for this case.
+            </p>
+          </div>
+        )
       )}
     </div>
   );

@@ -132,11 +132,11 @@ describe('Workspace tabs and the URL', () => {
   });
 });
 
-describe('AI Analysis and Research while no service is connected', () => {
-  it('marks both tabs as not connected', async () => {
+describe('AI Analysis while no service is connected; Research on the judgment collection', () => {
+  it('marks only AI Analysis as not connected', async () => {
     await openCase();
     expect(tab(/AI Analysis/)).toHaveTextContent('Not connected');
-    expect(tab(/Research/)).toHaveTextContent('Not connected');
+    expect(tab(/Research/)).not.toHaveTextContent('Not connected');
   });
 
   it('shows the unavailable state on AI Analysis and no results', async () => {
@@ -152,13 +152,12 @@ describe('AI Analysis and Research while no service is connected', () => {
     expect(screen.getByText('4 on file, 0 with a stored file')).toBeInTheDocument();
   });
 
-  it('shows the unavailable state on Research and no results', async () => {
+  it('says plainly when the judgment collection is empty, with no results', async () => {
     await openCase(`${CASE_URL}?tab=research`);
 
-    expect(screen.getByText('Precedent research is not connected yet')).toBeInTheDocument();
-    expect(screen.getByRole('searchbox', { name: 'Search precedents' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Search precedents' })).toBeDisabled();
-    expect(screen.queryByText(/Results for/)).not.toBeInTheDocument();
+    expect(await screen.findByText('The judgment collection is empty')).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('article')).not.toBeInTheDocument();
   });
 });
 

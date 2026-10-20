@@ -1,5 +1,5 @@
 import type { Case } from '../../types';
-import type { CaseAnalysis, Precedent } from '../../types/ai';
+import type { CaseAnalysis } from '../../types/ai';
 
 /**
  * The integration seam for the AI / RAG pipeline.
@@ -10,14 +10,15 @@ import type { CaseAnalysis, Precedent } from '../../types/ai';
  * means writing a new implementation of `AiService` (calling a backend that
  * does retrieval over the legal knowledge base + model inference) and
  * exporting it below. No page or component changes.
+ *
+ * Precedent search is not part of this seam: it is a real search of the
+ * judgment collection (Phase 4; src/hooks/useJudgments.ts), with no AI.
  */
 export interface AiService {
   /** False until a real backend is configured. */
   readonly connected: boolean;
   /** Extract facts and issues, retrieve precedents, flag contradictions. */
   analyzeCase(legalCase: Case): Promise<CaseAnalysis>;
-  /** Free-text precedent search, scoped to a case for relevance ranking. */
-  searchPrecedents(legalCase: Case, query: string): Promise<Precedent[]>;
 }
 
 export class AiNotConnectedError extends Error {
@@ -30,7 +31,6 @@ export class AiNotConnectedError extends Error {
 const notConnectedService: AiService = {
   connected: false,
   analyzeCase: () => Promise.reject(new AiNotConnectedError()),
-  searchPrecedents: () => Promise.reject(new AiNotConnectedError()),
 };
 
 export const aiService: AiService = notConnectedService;

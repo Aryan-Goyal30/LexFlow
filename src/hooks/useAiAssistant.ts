@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Case } from '../types';
-import type { AiStatus, CaseAnalysis, Precedent } from '../types/ai';
+import type { AiStatus, CaseAnalysis } from '../types/ai';
 import { aiService, AiNotConnectedError } from '../services/ai/aiService';
 
 /**
@@ -21,14 +21,6 @@ export interface AnalysisState {
   error: string | null;
 }
 
-export interface ResearchState {
-  status: AiStatus;
-  /** The query the current results (or error) belong to. */
-  query: string | null;
-  results: Precedent[] | null;
-  error: string | null;
-}
-
 function failure(err: unknown, action: string): { status: AiStatus; error: string | null } {
   if (err instanceof AiNotConnectedError) return { status: 'not_connected', error: null };
   const detail = err instanceof Error && err.message ? ` ${err.message}` : '';
@@ -44,15 +36,8 @@ export function useAiAssistant(legalCase: Case) {
     result: null,
     error: null,
   });
-  const [research, setResearch] = useState<ResearchState>({
-    status: initialStatus,
-    query: null,
-    results: null,
-    error: null,
-  });
 
   const analysisRequest = useRef(0);
-  const researchRequest = useRef(0);
   const analysisInFlight = useRef(false);
   const mounted = useRef(true);
 
@@ -89,31 +74,7 @@ export function useAiAssistant(legalCase: Case) {
     }
   }, [legalCase]);
 
-  const searchPrecedents = useCallback(
-    async (rawQuery: string) => {
-      const query = rawQuery.trim();
-      if (!query) return;
-      if (!aiService.connected) {
-        setResearch({ status: 'not_connected', query: null, results: null, error: null });
-        return;
-      }
-      // A new search supersedes any search still in flight.
-      const request = ++researchRequest.current;
-      setResearch({ status: 'running', query, results: null, error: null });
-
-      try {
-        const results = await aiService.searchPrecedents(legalCase, query);
-        if (!mounted.current || request !== researchRequest.current) return;
-        setResearch({ status: 'ready', query, results, error: null });
-      } catch (err) {
-        if (!mounted.current || request !== researchRequest.current) return;
-        setResearch({ query, results: null, ...failure(err, 'Search') });
-      }
-    },
-    [legalCase],
-  );
-
-  return { connected, analysis, research, runAnalysis, searchPrecedents };
+  return { connected, analysis, runAnalysis };
 }
 
 export type AiAssistant = ReturnType<typeof useAiAssistant>;

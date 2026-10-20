@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAiAssistant } from './useAiAssistant';
 import { AiNotConnectedError } from '../services/ai/aiService';
 import { AnalysisTab } from '../components/workspace/AnalysisTab';
-import { ResearchTab } from '../components/workspace/ResearchTab';
 import { sampleApiCase } from '../test/mockApi';
 import type { Case } from '../types';
 import type { CaseAnalysis, Precedent } from '../types/ai';
@@ -17,7 +16,6 @@ import type { CaseAnalysis, Precedent } from '../types/ai';
 const service = vi.hoisted(() => ({
   connected: true,
   analyzeCase: vi.fn(),
-  searchPrecedents: vi.fn(),
 }));
 
 vi.mock('../services/ai/aiService', async (importOriginal) => {
@@ -71,7 +69,6 @@ function Harness() {
   return (
     <>
       <AnalysisTab legalCase={legalCase} ai={ai} />
-      <ResearchTab legalCase={legalCase} ai={ai} />
     </>
   );
 }
@@ -87,12 +84,9 @@ describe('useAiAssistant with a service that is not connected', () => {
 
     expect(result.current.analysis.status).toBe('not_connected');
     await act(() => result.current.runAnalysis());
-    await act(() => result.current.searchPrecedents('anything'));
 
     expect(service.analyzeCase).not.toHaveBeenCalled();
-    expect(service.searchPrecedents).not.toHaveBeenCalled();
     expect(result.current.analysis).toEqual({ status: 'not_connected', result: null, error: null });
-    expect(result.current.research.results).toBeNull();
   });
 
   it('treats AiNotConnectedError from the service as not connected, not as a result', async () => {
@@ -126,50 +120,9 @@ describe('useAiAssistant error handling', () => {
     expect(result.current.analysis.result).toBeNull();
     expect(result.current.analysis.error).toMatch(/different case/);
   });
-
-  it('turns a failed search into an error with no results', async () => {
-    service.searchPrecedents.mockRejectedValue(new Error('Timed out.'));
-    const { result } = renderHook(() => useAiAssistant(legalCase));
-
-    await act(() => result.current.searchPrecedents('injunction'));
-    expect(result.current.research).toEqual({
-      status: 'error',
-      query: 'injunction',
-      results: null,
-      error: 'Search failed. Timed out.',
-    });
-  });
 });
 
 describe('useAiAssistant stale and repeated requests', () => {
-  it('shows only the latest search when an older one finishes last', async () => {
-    const first = deferred<Precedent[]>();
-    const second = deferred<Precedent[]>();
-    service.searchPrecedents.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
-    const { result } = renderHook(() => useAiAssistant(legalCase));
-
-    let firstSearch!: Promise<void>;
-    let secondSearch!: Promise<void>;
-    act(() => {
-      firstSearch = result.current.searchPrecedents('first query');
-    });
-    act(() => {
-      secondSearch = result.current.searchPrecedents('second query');
-    });
-
-    await act(async () => {
-      second.resolve([testPrecedent('p2', 'Second Result')]);
-      await secondSearch;
-    });
-    await act(async () => {
-      first.resolve([testPrecedent('p1', 'First Result')]);
-      await firstSearch;
-    });
-
-    expect(result.current.research.query).toBe('second query');
-    expect(result.current.research.results?.map((p) => p.title)).toEqual(['Second Result']);
-  });
-
   it('ignores a second analysis request while one is running', async () => {
     const pending = deferred<CaseAnalysis>();
     service.analyzeCase.mockReturnValue(pending.promise);
@@ -236,29 +189,5 @@ describe('AI tabs with a connected service', () => {
     expect(screen.getByText('No source document cited. Verify manually.')).toBeInTheDocument();
     expect(screen.getByText('Test Precedent One')).toBeInTheDocument();
     expect(screen.queryByText(/TEST OUTCOME THAT MUST NOT BE SHOWN/)).not.toBeInTheDocument();
-  });
-
-  it('shows an error and no precedents when a search fails', async () => {
-    service.searchPrecedents.mockRejectedValue(new Error('Timed out.'));
-    const user = userEvent.setup();
-    render(<Harness />);
-
-    await user.type(screen.getByRole('searchbox', { name: 'Search precedents' }), 'injunction');
-    await user.click(screen.getByRole('button', { name: 'Search precedents' }));
-
-    expect(await screen.findByText(/Search failed\. Timed out\./)).toBeInTheDocument();
-    expect(screen.queryByText(/Results for/)).not.toBeInTheDocument();
-  });
-
-  it('says so when a search finds nothing', async () => {
-    service.searchPrecedents.mockResolvedValue([]);
-    const user = userEvent.setup();
-    render(<Harness />);
-
-    await user.type(screen.getByRole('searchbox', { name: 'Search precedents' }), 'injunction');
-    await user.click(screen.getByRole('button', { name: 'Search precedents' }));
-
-    expect(await screen.findByText('Results for “injunction” (0)')).toBeInTheDocument();
-    expect(screen.getByText('No precedents matched this search.')).toBeInTheDocument();
   });
 });
