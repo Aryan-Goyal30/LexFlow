@@ -845,13 +845,14 @@ class AnalysisRun(Base):
     model: Mapped[str] = mapped_column(Text, nullable=False)
     prompt_version: Mapped[str] = mapped_column(Text, nullable=False)
     # The request: selected document ids and the limits in force.
-    selection: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    selection: Mapped[dict[str, Any]] = mapped_column(JSONB(none_as_null=True), nullable=False)
     # The evidence sent (ids -> references and content hashes), once assembled.
-    evidence: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
-    result: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
-    removed: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
-    # Token counts reported by the provider, if any.
-    usage: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    evidence: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
+    result: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
+    removed: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
+    # Token counts reported by the provider, if any. (``none_as_null``: Python
+    # None is stored as SQL NULL, not as JSON null, so the checks above hold.)
+    usage: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

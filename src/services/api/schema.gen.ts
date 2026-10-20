@@ -610,6 +610,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/analysis/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Analysis Setup
+         * @description What an analysis of this case would use, and whether it can start now.
+         */
+        get: operations["analysis_setup_api_cases__case_id__analysis_setup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/analysis-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Analyses
+         * @description The case's analysis runs, newest first (at most 50), without results.
+         */
+        get: operations["list_analyses_api_cases__case_id__analysis_runs_get"];
+        put?: never;
+        /**
+         * Start Analysis
+         * @description Queue an analysis of the selected documents. The worker sends their text
+         *     (and any matching judgment passages) to the configured provider.
+         */
+        post: operations["start_analysis_api_cases__case_id__analysis_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/analysis-runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Analysis
+         * @description One run of this case, with its validated result when it is ready.
+         */
+        get: operations["get_analysis_api_cases__case_id__analysis_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/judgments/facets": {
         parameters: {
             query?: never;
@@ -1112,6 +1177,397 @@ export interface components {
             email: string | null;
             /** Issample */
             isSample: boolean;
+        };
+        /** AnalysisContradictionOut */
+        AnalysisContradictionOut: {
+            /** Id */
+            id: string;
+            /** Description */
+            description: string;
+            /**
+             * Sources
+             * @description At least two verified sources.
+             */
+            sources: components["schemas"]["AnalysisSourceOut"][];
+        };
+        /** AnalysisDocumentOut */
+        AnalysisDocumentOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Eligible
+             * @description Its text is ready, so it can be analysed.
+             */
+            eligible: boolean;
+            /** Sectioncount */
+            sectionCount: number | null;
+            /** Pagecount */
+            pageCount: number | null;
+        };
+        /** AnalysisEvidenceSummaryOut */
+        AnalysisEvidenceSummaryOut: {
+            /**
+             * Documents
+             * @description Documents whose passages were sent.
+             */
+            documents: number;
+            /** Passages */
+            passages: number;
+            /** Judgmentpassages */
+            judgmentPassages: number;
+            /**
+             * Characters
+             * @description Characters of case and judgment text sent.
+             */
+            characters: number;
+            /**
+             * Truncated
+             * @description True when limits left some passages out.
+             */
+            truncated: boolean;
+        };
+        /** AnalysisFactOut */
+        AnalysisFactOut: {
+            /** Id */
+            id: string;
+            /**
+             * Statement
+             * @description The model's wording; supported by the quoted source.
+             */
+            statement: string;
+            source: components["schemas"]["AnalysisSourceOut"];
+        };
+        /** AnalysisIssueOut */
+        AnalysisIssueOut: {
+            /** Id */
+            id: string;
+            /** Question */
+            question: string;
+            /**
+             * Factids
+             * @description Facts of this result the issue rests on.
+             */
+            factIds: string[];
+        };
+        /** AnalysisLimitsOut */
+        AnalysisLimitsOut: {
+            /** Maxdocuments */
+            maxDocuments: number;
+            /** Maxinputchars */
+            maxInputChars: number;
+            /** Maxprecedents */
+            maxPrecedents: number;
+            /** Runsperhour */
+            runsPerHour: number;
+        };
+        /** AnalysisPassageRefOut */
+        AnalysisPassageRefOut: {
+            /**
+             * Chunkid
+             * Format: uuid
+             */
+            chunkId: string;
+            /** Sectionnumber */
+            sectionNumber: number;
+            /** Pagenumber */
+            pageNumber: number | null;
+        };
+        /**
+         * AnalysisPrecedentOut
+         * @description A comparison with a judgment passage that was retrieved for this run.
+         */
+        AnalysisPrecedentOut: {
+            /** Id */
+            id: string;
+            /**
+             * Evidenceid
+             * @description e.g. 'J1'.
+             */
+            evidenceId: string;
+            /**
+             * Judgmentid
+             * Format: uuid
+             */
+            judgmentId: string;
+            /** Title */
+            title: string;
+            /** Court */
+            court: string;
+            /** Citation */
+            citation: string | null;
+            /** Year */
+            year: number | null;
+            /**
+             * Synthetic
+             * @description Invented test judgment: never to be cited.
+             */
+            synthetic: boolean;
+            /**
+             * Retrievalrank
+             * @description Its rank in the keyword retrieval (1 = first).
+             */
+            retrievalRank: number;
+            passage: components["schemas"]["AnalysisPassageRefOut"];
+            /**
+             * Summary
+             * @description What the judgment passage says (the model's summary).
+             */
+            summary: string;
+            /** Similarities */
+            similarities: string[];
+            /** Differences */
+            differences: string[];
+        };
+        /**
+         * AnalysisRemovedOut
+         * @description What validation removed from the model's answer, and why.
+         */
+        AnalysisRemovedOut: {
+            /** Count */
+            count: number;
+            /** Reasons */
+            reasons: components["schemas"]["AnalysisRemovedReasonOut"][];
+        };
+        /** AnalysisRemovedReasonOut */
+        AnalysisRemovedReasonOut: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Count */
+            count: number;
+        };
+        /** AnalysisResultOut */
+        AnalysisResultOut: {
+            /** Facts */
+            facts: components["schemas"]["AnalysisFactOut"][];
+            /** Issues */
+            issues: components["schemas"]["AnalysisIssueOut"][];
+            /** Precedents */
+            precedents: components["schemas"]["AnalysisPrecedentOut"][];
+            /** Contradictions */
+            contradictions: components["schemas"]["AnalysisContradictionOut"][];
+            /**
+             * Insufficientevidence
+             * @description True when the evidence did not support a useful analysis.
+             */
+            insufficientEvidence: boolean;
+            /** Insufficientreason */
+            insufficientReason: string | null;
+            /**
+             * Precedentsavailable
+             * @description False when no judgment passage was available to compare with.
+             */
+            precedentsAvailable: boolean;
+            removed: components["schemas"]["AnalysisRemovedOut"];
+        };
+        /** AnalysisRunIn */
+        AnalysisRunIn: {
+            /**
+             * Documentids
+             * @description Documents of this case to analyse.
+             */
+            documentIds: string[];
+            /**
+             * Confirmtransmission
+             * @description Must be true: the user confirms the selected text is sent to the provider.
+             */
+            confirmTransmission: boolean;
+        };
+        /** AnalysisRunListOut */
+        AnalysisRunListOut: {
+            /** Items */
+            items: components["schemas"]["AnalysisRunSummaryOut"][];
+        };
+        /** AnalysisRunOut */
+        AnalysisRunOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Caseid
+             * Format: uuid
+             */
+            caseId: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "ready" | "failed";
+            /** Reasoncode */
+            reasonCode: string | null;
+            /** Reason */
+            reason: string | null;
+            /**
+             * Provider
+             * @description 'gemini' (Google Gemini API) or 'scripted' (test double).
+             */
+            provider: string;
+            /** Model */
+            model: string;
+            /** Promptversion */
+            promptVersion: string;
+            requestedBy: components["schemas"]["ActorOut"] | null;
+            /**
+             * Documentcount
+             * @description Documents selected for the run.
+             */
+            documentCount: number;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Startedat */
+            startedAt: string | null;
+            /** Finishedat */
+            finishedAt: string | null;
+            evidence: components["schemas"]["AnalysisEvidenceSummaryOut"] | null;
+            /** @description Only for status 'ready'. */
+            result: components["schemas"]["AnalysisResultOut"] | null;
+        };
+        /** AnalysisRunSummaryOut */
+        AnalysisRunSummaryOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Caseid
+             * Format: uuid
+             */
+            caseId: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "ready" | "failed";
+            /** Reasoncode */
+            reasonCode: string | null;
+            /** Reason */
+            reason: string | null;
+            /**
+             * Provider
+             * @description 'gemini' (Google Gemini API) or 'scripted' (test double).
+             */
+            provider: string;
+            /** Model */
+            model: string;
+            /** Promptversion */
+            promptVersion: string;
+            requestedBy: components["schemas"]["ActorOut"] | null;
+            /**
+             * Documentcount
+             * @description Documents selected for the run.
+             */
+            documentCount: number;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Startedat */
+            startedAt: string | null;
+            /** Finishedat */
+            finishedAt: string | null;
+        };
+        /**
+         * AnalysisSetupOut
+         * @description Whether this case can be analysed now, and what would be sent where.
+         */
+        AnalysisSetupOut: {
+            /**
+             * Available
+             * @description Analysis is configured on this server.
+             */
+            available: boolean;
+            /** Unavailablereason */
+            unavailableReason: string | null;
+            /**
+             * Provider
+             * @description Null when analysis is not configured.
+             */
+            provider: string | null;
+            /**
+             * Providerlabel
+             * @description e.g. 'Google Gemini API'.
+             */
+            providerLabel: string | null;
+            /** Model */
+            model: string | null;
+            /** Promptversion */
+            promptVersion: string;
+            /**
+             * Canrun
+             * @description This user may start an analysis on this case now.
+             */
+            canRun: boolean;
+            /** Cannotrunreason */
+            cannotRunReason: string | null;
+            /**
+             * Sampleonly
+             * @description Only sample (fictional) cases may be analysed on this server.
+             */
+            sampleOnly: boolean;
+            /** Caseissample */
+            caseIsSample: boolean;
+            /** Documents */
+            documents: components["schemas"]["AnalysisDocumentOut"][];
+            /**
+             * Judgmentsavailable
+             * @description Judgments in the collection (0 = none).
+             */
+            judgmentsAvailable: number;
+            limits: components["schemas"]["AnalysisLimitsOut"];
+            /** Activerunid */
+            activeRunId: string | null;
+        };
+        /**
+         * AnalysisSourceOut
+         * @description A passage of one of the case's documents that supports an item, with the
+         *     verified quote.
+         */
+        AnalysisSourceOut: {
+            /**
+             * Evidenceid
+             * @description The passage's id in this run's evidence, e.g. 'D3'.
+             */
+            evidenceId: string;
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
+            /** Documentname */
+            documentName: string;
+            /**
+             * Chunkid
+             * Format: uuid
+             */
+            chunkId: string;
+            /**
+             * Sectionnumber
+             * @description The page (PDF) or part; links to the document text.
+             */
+            sectionNumber: number;
+            /**
+             * Pagenumber
+             * @description The PDF page; null for documents without pages.
+             */
+            pageNumber: number | null;
+            /**
+             * Quote
+             * @description Occurs verbatim in the passage (whitespace normalised).
+             */
+            quote: string;
         };
         /**
          * AuditEventOut
@@ -3787,6 +4243,181 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    analysis_setup_api_cases__case_id__analysis_setup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisSetupOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_analyses_api_cases__case_id__analysis_runs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisRunListOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    start_analysis_api_cases__case_id__analysis_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisRunIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisRunOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_analysis_api_cases__case_id__analysis_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisRunOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

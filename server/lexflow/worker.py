@@ -10,8 +10,14 @@ process that is stopped at the time limit, splits it into page-aware chunks
 and stores the outcome. Failures are stored with their reason; nothing is ever
 made up. Several workers may run at once: each job goes to one of them.
 
-The worker never downloads models and never sends document text anywhere.
-Its log names documents by id and outcome only, never their text.
+When nothing is waiting to be extracted or indexed, the worker also runs
+queued AI case analyses (Phase 5, ``lexflow.analysis.runs``) if analysis is
+configured and migration 0011 is applied; otherwise it leaves them alone.
+
+The worker never downloads models. Document text leaves this computer only
+for an AI analysis that a permitted user started with the provider
+configured (``LEXFLOW_AI_PROVIDER``). Its log names documents and runs by id
+and outcome only, never their text, and never the provider key.
 """
 
 from __future__ import annotations
@@ -32,6 +38,9 @@ from sqlalchemy import Engine, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, sessionmaker
 
+from lexflow.analysis import runs as analysis_runs
+from lexflow.analysis.provider import AnalysisProvider, Unavailable
+from lexflow.analysis.provider import provider_for as analysis_provider_for
 from lexflow.config import Settings, get_settings
 from lexflow.db import engine_for
 from lexflow.embeddings import (
@@ -178,6 +187,49 @@ def release(sessions: Sessions, document_id: uuid.UUID, worker_id: str) -> None:
         session.commit()
 
 
+def analysis_provider(settings: Settings, sessions: Sessions) -> AnalysisProvider | None:
+    """The configured analysis provider, or None (with the reason logged) when
+    analysis is off, not configured, or the database lacks migration 0011."""
+    provider = analysis_provider_for(settings)
+    if isinstance(provider, Unavailable):
+        if provider.code != "analysis-disabled":
+            logger.warning("AI analysis runs are skipped: %s", provider.reason)
+        return None
+    with sessions() as session:
+        if not analysis_runs.table_exists(session):
+            logger.warning(
+                "AI analysis runs are skipped: migration 0011 is not applied to this database."
+            )
+            return None
+    return provider
+
+
+def run_next_analysis(
+    sessions: Sessions,
+    provider: AnalysisProvider,
+    settings: Settings,
+    worker_id: str,
+    now: Callable[[], datetime],
+) -> bool:
+    """Claim and run one due analysis; False when none is waiting."""
+    with sessions() as session:
+        run_id = analysis_runs.claim(
+            session,
+            worker_id=worker_id,
+            now=now(),
+            lease_seconds=settings.ai_lease_seconds,
+            max_attempts=settings.ai_max_attempts,
+        )
+    if run_id is None:
+        return False
+    try:
+        analysis_runs.process(sessions, provider, settings, run_id, worker_id, now=now)
+    except BaseException:
+        analysis_runs.release(sessions, run_id, worker_id)
+        raise
+    return True
+
+
 def run(
     sessions: Sessions,
     storage: Storage,
@@ -190,6 +242,7 @@ def run(
     sleep: Callable[[float], None] = time.sleep,
     engine: Engine | None = None,
     provider: EmbeddingProvider | object | None = FROM_SETTINGS,
+    analysis: AnalysisProvider | object | None = FROM_SETTINGS,
 ) -> int:
     """Claim and process jobs. With ``once``, stop when nothing is waiting.
     Returns how many jobs were processed (text extractions and indexings).
@@ -197,7 +250,12 @@ def run(
     Raises ``EmbeddingsUnavailableError`` before claiming anything when the
     configured embeddings cannot be produced or stored. With embeddings on,
     extracted chunks are queued for indexing, and documents waiting for
-    indexing are embedded whenever no text is waiting to be extracted."""
+    indexing are embedded whenever no text is waiting to be extracted. AI
+    analyses run when neither text nor indexing is waiting."""
+    if analysis is FROM_SETTINGS:
+        analysis = analysis_provider(settings, sessions)
+    if analysis is not None and not isinstance(analysis, AnalysisProvider):
+        raise TypeError("analysis must be an AnalysisProvider")
     if provider is FROM_SETTINGS:
         provider = provider_for(settings)  # loads local files only; never downloads
     if provider is not None and not isinstance(provider, EmbeddingProvider):
@@ -225,6 +283,11 @@ def run(
                 if indexed is not None:
                     processed += 1
                     continue
+            if analysis is not None and run_next_analysis(
+                sessions, analysis, settings, worker_id, now
+            ):
+                processed += 1
+                continue
             if once:
                 return processed
             sleep(settings.worker_poll_seconds)
@@ -257,9 +320,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     storage = LocalDiskStorage(settings.upload_dir)
     worker_id = new_worker_id()
     logger.info(
-        "worker %s started (embeddings: %s, timeout %ss)",
+        "worker %s started (embeddings: %s, AI analysis: %s, timeout %ss)",
         worker_id,
         settings.embeddings,
+        settings.ai_provider,
         settings.extraction_timeout_seconds,
     )
     try:

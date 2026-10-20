@@ -7,6 +7,7 @@
                                     (the harness adds --run-id HEX32 to mark its process)
     python scripts/e2e.py work --run-id HEX32
                                     run the document worker against the same database
+                                    (AI analysis uses the scripted test double, never Gemini)
 
 The e2e database is the server named by ``DATABASE_URL`` with the database name
 replaced by ``lexflow_e2e`` (override with ``LEXFLOW_E2E_DATABASE``; the name must
@@ -168,8 +169,18 @@ def _create_accounts(session: Session, password: str | None) -> int:
     return len(E2E_ACCOUNTS)
 
 
+def _scripted_analysis() -> None:
+    """AI analysis in the e2e app uses the scripted test double (not AI): the
+    tests never contact Google, whatever server/.env says."""
+    os.environ["LEXFLOW_AI_PROVIDER"] = "scripted"
+    os.environ["GEMINI_API_KEY"] = ""
+    os.environ["GEMINI_MODEL"] = ""
+    os.environ["LEXFLOW_AI_ALLOW_CLIENT_DATA"] = "false"
+
+
 def serve() -> int:
     url = e2e_database_url()
+    _scripted_analysis()
     os.environ["DATABASE_URL"] = url.render_as_string(hide_password=False)
     os.environ["LEXFLOW_UPLOAD_DIR"] = str(UPLOAD_DIR)
     os.environ["LEXFLOW_API_HOST"] = "127.0.0.1"
@@ -190,6 +201,7 @@ def serve() -> int:
 def work() -> int:
     """The document worker against the e2e database and upload folder."""
     url = e2e_database_url()
+    _scripted_analysis()
     os.environ["DATABASE_URL"] = url.render_as_string(hide_password=False)
     os.environ["LEXFLOW_UPLOAD_DIR"] = str(UPLOAD_DIR)
     os.environ["LEXFLOW_ENV"] = "development"

@@ -52,8 +52,8 @@ structured-output support and pricing before the first real run.
 | M1 | Contract, settings, migration 0011 (scratch only), output schema | done (`d681326`) |
 | M2 | Evidence assembly + prompt v1 | done (`392f3b4`) |
 | M3 | Provider layer | done (`5128eb7`) |
-| M4 | Validation | done |
-| M5 | Runs: API, worker, audit, authorisation | pending |
+| M4 | Validation | done (`219945e`) |
+| M5 | Runs: API, worker, audit, authorisation | done |
 | M6 | User interface | pending |
 | M7 | Verification and documents | pending |
 | M8 | Live migration 0011 + manual smoke | **owner-gated: not done in this run** (applying 0011 to live was explicitly not authorised) |
@@ -213,4 +213,64 @@ model's own claims about its sources are never trusted.
   discarded; malformed counted; the three insufficient-evidence paths; a
   document instructing the model to cite `J99`.
 
-Checkpoint: M4 committed; next M5 (runs: API, worker, audit, authorisation).
+## M5 — Runs: API, worker, audit, authorisation (done)
+
+- **API** (`lexflow/api/analysis.py`, staff router):
+  - `GET /api/cases/{id}/analysis/setup` — configured or not (with the
+    reason), provider label and model, whether this user may start a run and
+    why not, sample-only gate, the case's documents with "text ready",
+    judgment collection size, limits, active run.
+  - `POST /api/cases/{id}/analysis-runs` → 202 `queued`. Checks in order:
+    `run-analysis` on the case (outsiders 404 exactly like a missing case;
+    paralegals 403; archived 409 `case-archived`), migration 0011 and
+    provider configured (503 `analysis-unavailable` with the reason),
+    `confirmTransmission` true (422), sample case unless client data is
+    allowed (403 `client-data-not-allowed`), ≤ 20 documents, every id a
+    ready, live document **of this case** (422 `document-not-eligible`),
+    hourly per-person limit (429 `rate-limited`), no waiting/running run of
+    the case (409 `analysis-running`, also enforced by the partial unique
+    index). Unknown request fields are refused (422).
+  - `GET …/analysis-runs` (newest 50, no results) and
+    `GET …/analysis-runs/{runId}` (the run must belong to the case, else
+    404). Both need `view`.
+  - Audit: `analysis.requested` (documents, provider, model, prompt version)
+    and `analysis.viewed` (ready results only); never text or keys.
+- **Worker** (`lexflow/worker.py`, `lexflow/analysis/runs.py`): when no
+  extraction or indexing is waiting, claims a due run (`SKIP LOCKED`, lease
+  = 2 × timeout + 60 s), re-checks the case (exists, not archived, sample
+  unless allowed), assembles evidence, calls the provider **outside** any
+  database transaction, retries an unreadable or cut-off answer once, then
+  validates and stores the result only if it still holds the run.
+  Busy/unreachable provider → back to the queue after 30 s × attempts, at
+  most `LEXFLOW_AI_MAX_ATTEMPTS` (3) tries; abandoned runs fail
+  `interrupted`. `analysis.completed` / `analysis.failed` audit events are
+  written in the same transaction as the outcome (counts, model, prompt
+  version, whether the provider was called).
+- **Safe on a database without 0011** (the live database today): the
+  worker logs "migration 0011 is not applied" and skips analysis; the API
+  answers setup "unavailable", start 503, list empty, run 404. With
+  analysis disabled (the default) nothing changes for the running system.
+- **e2e harness** (`scripts/e2e.py`): `serve` and `work` set
+  `LEXFLOW_AI_PROVIDER=scripted` and blank Gemini settings, so the browser
+  tests never contact Google whatever `server/.env` holds.
+- **Fix during M5:** SQLAlchemy stores Python `None` in a JSONB column as
+  JSON `null`, which broke the "result only when ready" check;
+  `analysis_runs` JSONB columns now use `none_as_null=True` (no schema
+  change; `alembic check` on scratch still clean).
+- **Tests** (`test_analysis_runs.py`, 29): setup off/on, permissions per
+  role, outsiders get identical 404s for setup/list/run/start, Clients 403,
+  anonymous 401, paralegal read-only, archived refused but readable,
+  configuration missing, confirmation and input validation, document
+  eligibility (other case, deleted, unknown), document limit, client-data
+  gate in API and worker, queueing/audit/one-at-a-time, per-person hourly
+  limit, cross-case run ids, a full scripted run with verified sources and
+  the `D999` removal, polling not audited as a view, busy provider retried
+  then failed, refused request fails at once, unreadable answer retried,
+  truncated answer fails `invalid-output`, unknown judgment removed, no text
+  → no provider call, lost lease → discarded, abandoned run, worker skips
+  when unavailable or without 0011, key absent from responses, audit and
+  OpenAPI, API without 0011, CSRF header required.
+- Full backend suite: **807 passed**; ruff, format, mypy (Windows and
+  Linux) clean; `export_openapi.py` regenerated; TS types regenerated.
+
+Checkpoint: M5 committed; next M6 (user interface).

@@ -67,6 +67,32 @@ def clean_details(details: dict[str, DetailValue] | None) -> dict[str, Any]:
     return cleaned
 
 
+def build_event(
+    action: str,
+    *,
+    actor: Actor | User | None,
+    outcome: str = "success",
+    target_type: str | None = None,
+    target_id: uuid.UUID | None = None,
+    case_id: uuid.UUID | None = None,
+    details: dict[str, DetailValue] | None = None,
+) -> AuditEvent:
+    """An event row, for callers that write it in their own transaction (the
+    worker records an analysis outcome together with the outcome itself)."""
+    who = actor if isinstance(actor, Actor) else Actor.of(actor)
+    return AuditEvent(
+        actor_id=who.id,
+        actor_name=who.name,
+        actor_role=who.role,
+        action=action,
+        outcome=outcome,
+        target_type=target_type,
+        target_id=target_id,
+        case_id=case_id,
+        details=clean_details(details),
+    )
+
+
 class AuditLog:
     def __init__(self, sessions: IndependentSessions) -> None:
         self._sessions = sessions
@@ -88,17 +114,14 @@ class AuditLog:
         (or failed) and the caller's answer must not change because of the log.
         Details with a secret-looking key raise ``ValueError`` (a programming error).
         """
-        who = actor if isinstance(actor, Actor) else Actor.of(actor)
-        event = AuditEvent(
-            actor_id=who.id,
-            actor_name=who.name,
-            actor_role=who.role,
-            action=action,
+        event = build_event(
+            action,
+            actor=actor,
             outcome=outcome,
             target_type=target_type,
             target_id=target_id,
             case_id=case_id,
-            details=clean_details(details),
+            details=details,
         )
         try:
             with self._sessions() as session:

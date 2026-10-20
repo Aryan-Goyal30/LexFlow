@@ -150,3 +150,24 @@ class Factory:
 
 def today() -> date:
     return date(2026, 10, 20)
+
+
+@dataclass
+class ScriptedAnswers:
+    """A provider that returns (or raises) prepared answers in order."""
+
+    answers: list[Any]
+    name: str = "gemini"
+    model: str = "fake-model-for-tests"
+    requests: list[Any] = field(default_factory=list)
+
+    def generate(self, request: Any) -> Any:
+        from lexflow.analysis.provider import Response
+
+        self.requests.append(request)
+        item = self.answers.pop(0)
+        if isinstance(item, BaseException):
+            raise item
+        if isinstance(item, Response):
+            return item
+        return Response(text=item, usage={"totalTokens": 10})

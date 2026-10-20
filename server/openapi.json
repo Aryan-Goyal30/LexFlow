@@ -1732,6 +1732,246 @@
         }
       }
     },
+    "/api/cases/{case_id}/analysis/setup": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Analysis Setup",
+        "description": "What an analysis of this case would use, and whether it can start now.",
+        "operationId": "analysis_setup_api_cases__case_id__analysis_setup_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisSetupOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/analysis-runs": {
+      "post": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Start Analysis",
+        "description": "Queue an analysis of the selected documents. The worker sends their text\n(and any matching judgment passages) to the configured provider.",
+        "operationId": "start_analysis_api_cases__case_id__analysis_runs_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisRunIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisRunOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "List Analyses",
+        "description": "The case's analysis runs, newest first (at most 50), without results.",
+        "operationId": "list_analyses_api_cases__case_id__analysis_runs_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisRunListOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/analysis-runs/{run_id}": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Get Analysis",
+        "description": "One run of this case, with its validated result when it is ready.",
+        "operationId": "get_analysis_api_cases__case_id__analysis_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisRunOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/judgments/facets": {
       "get": {
         "tags": [
@@ -3338,6 +3578,931 @@
           "isSample"
         ],
         "title": "AdvocateOut"
+      },
+      "AnalysisContradictionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisSourceOut"
+            },
+            "type": "array",
+            "title": "Sources",
+            "description": "At least two verified sources."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "sources"
+        ],
+        "title": "AnalysisContradictionOut"
+      },
+      "AnalysisDocumentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible",
+            "description": "Its text is ready, so it can be analysed."
+          },
+          "sectionCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sectioncount"
+          },
+          "pageCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagecount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "eligible",
+          "sectionCount",
+          "pageCount"
+        ],
+        "title": "AnalysisDocumentOut"
+      },
+      "AnalysisEvidenceSummaryOut": {
+        "properties": {
+          "documents": {
+            "type": "integer",
+            "title": "Documents",
+            "description": "Documents whose passages were sent."
+          },
+          "passages": {
+            "type": "integer",
+            "title": "Passages"
+          },
+          "judgmentPassages": {
+            "type": "integer",
+            "title": "Judgmentpassages"
+          },
+          "characters": {
+            "type": "integer",
+            "title": "Characters",
+            "description": "Characters of case and judgment text sent."
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "description": "True when limits left some passages out."
+          }
+        },
+        "type": "object",
+        "required": [
+          "documents",
+          "passages",
+          "judgmentPassages",
+          "characters",
+          "truncated"
+        ],
+        "title": "AnalysisEvidenceSummaryOut"
+      },
+      "AnalysisFactOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "statement": {
+            "type": "string",
+            "title": "Statement",
+            "description": "The model's wording; supported by the quoted source."
+          },
+          "source": {
+            "$ref": "#/components/schemas/AnalysisSourceOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "statement",
+          "source"
+        ],
+        "title": "AnalysisFactOut"
+      },
+      "AnalysisIssueOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "factIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Factids",
+            "description": "Facts of this result the issue rests on."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "question",
+          "factIds"
+        ],
+        "title": "AnalysisIssueOut"
+      },
+      "AnalysisLimitsOut": {
+        "properties": {
+          "maxDocuments": {
+            "type": "integer",
+            "title": "Maxdocuments"
+          },
+          "maxInputChars": {
+            "type": "integer",
+            "title": "Maxinputchars"
+          },
+          "maxPrecedents": {
+            "type": "integer",
+            "title": "Maxprecedents"
+          },
+          "runsPerHour": {
+            "type": "integer",
+            "title": "Runsperhour"
+          }
+        },
+        "type": "object",
+        "required": [
+          "maxDocuments",
+          "maxInputChars",
+          "maxPrecedents",
+          "runsPerHour"
+        ],
+        "title": "AnalysisLimitsOut"
+      },
+      "AnalysisPassageRefOut": {
+        "properties": {
+          "chunkId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Chunkid"
+          },
+          "sectionNumber": {
+            "type": "integer",
+            "title": "Sectionnumber"
+          },
+          "pageNumber": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagenumber"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chunkId",
+          "sectionNumber",
+          "pageNumber"
+        ],
+        "title": "AnalysisPassageRefOut"
+      },
+      "AnalysisPrecedentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "evidenceId": {
+            "type": "string",
+            "title": "Evidenceid",
+            "description": "e.g. 'J1'."
+          },
+          "judgmentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Judgmentid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "court": {
+            "type": "string",
+            "title": "Court"
+          },
+          "citation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic",
+            "description": "Invented test judgment: never to be cited."
+          },
+          "retrievalRank": {
+            "type": "integer",
+            "title": "Retrievalrank",
+            "description": "Its rank in the keyword retrieval (1 = first)."
+          },
+          "passage": {
+            "$ref": "#/components/schemas/AnalysisPassageRefOut"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "description": "What the judgment passage says (the model's summary)."
+          },
+          "similarities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Similarities"
+          },
+          "differences": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Differences"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "evidenceId",
+          "judgmentId",
+          "title",
+          "court",
+          "citation",
+          "year",
+          "synthetic",
+          "retrievalRank",
+          "passage",
+          "summary",
+          "similarities",
+          "differences"
+        ],
+        "title": "AnalysisPrecedentOut",
+        "description": "A comparison with a judgment passage that was retrieved for this run."
+      },
+      "AnalysisRemovedOut": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisRemovedReasonOut"
+            },
+            "type": "array",
+            "title": "Reasons"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count",
+          "reasons"
+        ],
+        "title": "AnalysisRemovedOut",
+        "description": "What validation removed from the model's answer, and why."
+      },
+      "AnalysisRemovedReasonOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "count"
+        ],
+        "title": "AnalysisRemovedReasonOut"
+      },
+      "AnalysisResultOut": {
+        "properties": {
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisFactOut"
+            },
+            "type": "array",
+            "title": "Facts"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisIssueOut"
+            },
+            "type": "array",
+            "title": "Issues"
+          },
+          "precedents": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisPrecedentOut"
+            },
+            "type": "array",
+            "title": "Precedents"
+          },
+          "contradictions": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisContradictionOut"
+            },
+            "type": "array",
+            "title": "Contradictions"
+          },
+          "insufficientEvidence": {
+            "type": "boolean",
+            "title": "Insufficientevidence",
+            "description": "True when the evidence did not support a useful analysis."
+          },
+          "insufficientReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Insufficientreason"
+          },
+          "precedentsAvailable": {
+            "type": "boolean",
+            "title": "Precedentsavailable",
+            "description": "False when no judgment passage was available to compare with."
+          },
+          "removed": {
+            "$ref": "#/components/schemas/AnalysisRemovedOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "facts",
+          "issues",
+          "precedents",
+          "contradictions",
+          "insufficientEvidence",
+          "insufficientReason",
+          "precedentsAvailable",
+          "removed"
+        ],
+        "title": "AnalysisResultOut"
+      },
+      "AnalysisRunIn": {
+        "properties": {
+          "documentIds": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Documentids",
+            "description": "Documents of this case to analyse."
+          },
+          "confirmTransmission": {
+            "type": "boolean",
+            "title": "Confirmtransmission",
+            "description": "Must be true: the user confirms the selected text is sent to the provider."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "documentIds",
+          "confirmTransmission"
+        ],
+        "title": "AnalysisRunIn"
+      },
+      "AnalysisRunListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisRunSummaryOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "AnalysisRunListOut"
+      },
+      "AnalysisRunOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "caseId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Caseid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "ready",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "reasonCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoncode"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "description": "'gemini' (Google Gemini API) or 'scripted' (test double)."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "promptVersion": {
+            "type": "string",
+            "title": "Promptversion"
+          },
+          "requestedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "documentCount": {
+            "type": "integer",
+            "title": "Documentcount",
+            "description": "Documents selected for the run."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startedat"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finishedat"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisEvidenceSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisResultOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only for status 'ready'."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "caseId",
+          "status",
+          "reasonCode",
+          "reason",
+          "provider",
+          "model",
+          "promptVersion",
+          "requestedBy",
+          "documentCount",
+          "createdAt",
+          "startedAt",
+          "finishedAt",
+          "evidence",
+          "result"
+        ],
+        "title": "AnalysisRunOut"
+      },
+      "AnalysisRunSummaryOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "caseId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Caseid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "ready",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "reasonCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoncode"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "description": "'gemini' (Google Gemini API) or 'scripted' (test double)."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "promptVersion": {
+            "type": "string",
+            "title": "Promptversion"
+          },
+          "requestedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "documentCount": {
+            "type": "integer",
+            "title": "Documentcount",
+            "description": "Documents selected for the run."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startedat"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finishedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "caseId",
+          "status",
+          "reasonCode",
+          "reason",
+          "provider",
+          "model",
+          "promptVersion",
+          "requestedBy",
+          "documentCount",
+          "createdAt",
+          "startedAt",
+          "finishedAt"
+        ],
+        "title": "AnalysisRunSummaryOut"
+      },
+      "AnalysisSetupOut": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "description": "Analysis is configured on this server."
+          },
+          "unavailableReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailablereason"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider",
+            "description": "Null when analysis is not configured."
+          },
+          "providerLabel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerlabel",
+            "description": "e.g. 'Google Gemini API'."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "promptVersion": {
+            "type": "string",
+            "title": "Promptversion"
+          },
+          "canRun": {
+            "type": "boolean",
+            "title": "Canrun",
+            "description": "This user may start an analysis on this case now."
+          },
+          "cannotRunReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cannotrunreason"
+          },
+          "sampleOnly": {
+            "type": "boolean",
+            "title": "Sampleonly",
+            "description": "Only sample (fictional) cases may be analysed on this server."
+          },
+          "caseIsSample": {
+            "type": "boolean",
+            "title": "Caseissample"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisDocumentOut"
+            },
+            "type": "array",
+            "title": "Documents"
+          },
+          "judgmentsAvailable": {
+            "type": "integer",
+            "title": "Judgmentsavailable",
+            "description": "Judgments in the collection (0 = none)."
+          },
+          "limits": {
+            "$ref": "#/components/schemas/AnalysisLimitsOut"
+          },
+          "activeRunId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activerunid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available",
+          "unavailableReason",
+          "provider",
+          "providerLabel",
+          "model",
+          "promptVersion",
+          "canRun",
+          "cannotRunReason",
+          "sampleOnly",
+          "caseIsSample",
+          "documents",
+          "judgmentsAvailable",
+          "limits",
+          "activeRunId"
+        ],
+        "title": "AnalysisSetupOut",
+        "description": "Whether this case can be analysed now, and what would be sent where."
+      },
+      "AnalysisSourceOut": {
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "title": "Evidenceid",
+            "description": "The passage's id in this run's evidence, e.g. 'D3'."
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Documentid"
+          },
+          "documentName": {
+            "type": "string",
+            "title": "Documentname"
+          },
+          "chunkId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Chunkid"
+          },
+          "sectionNumber": {
+            "type": "integer",
+            "title": "Sectionnumber",
+            "description": "The page (PDF) or part; links to the document text."
+          },
+          "pageNumber": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagenumber",
+            "description": "The PDF page; null for documents without pages."
+          },
+          "quote": {
+            "type": "string",
+            "title": "Quote",
+            "description": "Occurs verbatim in the passage (whitespace normalised)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "evidenceId",
+          "documentId",
+          "documentName",
+          "chunkId",
+          "sectionNumber",
+          "pageNumber",
+          "quote"
+        ],
+        "title": "AnalysisSourceOut",
+        "description": "A passage of one of the case's documents that supports an item, with the\nverified quote."
       },
       "AuditEventOut": {
         "properties": {
