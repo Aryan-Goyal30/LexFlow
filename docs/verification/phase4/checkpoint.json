@@ -2,21 +2,23 @@
   "phase": 4,
   "updated": "2026-10-20",
   "branch": "master",
-  "last_commit": "see git log (Phase 4 M1)",
+  "last_commit": "see git log (Phase 4 M6)",
   "migration_head_in_code": "0010",
-  "live_lexflow_revision": "0009",
+  "live_lexflow_revision": "0010",
+  "live_collection": "empty (no approved source; no synthetic data)",
+  "embeddings": "disabled (unchanged)",
   "milestones": {
     "M1": "done",
-    "M2": "pending",
-    "M3": "pending",
-    "M4": "pending",
-    "M5": "pending",
-    "M6": "pending",
+    "M2": "done",
+    "M3": "done",
+    "M4": "done",
+    "M5": "done",
+    "M6": "done",
     "M7": "pending"
   },
-  "next_action": "M2: judgment search API (keyword/semantic/hybrid), library and detail endpoints",
+  "next_action": "M7: SRS, architecture/UML, traceability, README/ADR updates; final full verification",
   "unresolved_gates": [
     "No approved real judgment source: live collection stays empty",
-    "No lawyer-labelled evaluation set"
+    "No lawyer-labelled evaluation set: real-corpus quality unevaluated"
   ]
 }

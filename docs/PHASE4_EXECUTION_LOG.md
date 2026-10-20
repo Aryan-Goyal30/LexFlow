@@ -67,7 +67,7 @@ Started 2026-10-20. Scope: `docs/DEVELOPMENT_BRIEF.md` §4 Phase 4 and
 | M3 | Research tab and Precedent Library UI | done |
 | M4 | Evaluation framework and synthetic engineering run | done |
 | M5 | Security, mutation and end-to-end verification | done |
-| M6 | Gated live migration 0010 | pending |
+| M6 | Gated live migration 0010 | done |
 | M7 | Software-engineering documents, final verification | pending |
 
 ## M1 — Schema, importer, CLI (done)
@@ -206,6 +206,30 @@ Started 2026-10-20. Scope: `docs/DEVELOPMENT_BRIEF.md` §4 Phase 4 and
   unavailable modes, search audit, query and page limits, model and stale
   vector filters, https-only links, disabled modes, stale results.
 
+## M6 — Gated live migration 0010 (done)
+
+1. Target: `server/.env` → 127.0.0.1:5432 `lexflow`, container `lexflow-db-1`
+   (`pgvector/pgvector:pg17-trixie`), volume `lexflow_pgdata`, revision 0009;
+   no client connections (the dev API and worker were stopped).
+2. Backup `server/var/backups/lexflow-20261020-pre-0010.dump` (git-ignored),
+   SHA-256 `fc5e00ee5f436b875940ccadccb9925dbebed216ffc556c59d87e6639ee05855`
+   (same inside and outside the container).
+3. Restored into a new scratch database `lexflow_p4_restore` on the scratch
+   server: fingerprint (every table: count + md5 of every row) identical to
+   live (15 tables).
+4. Rehearsal on the copy only: upgrade 0010 → existing 14 tables identical,
+   5 new tables empty; downgrade 0009 → whole database identical (`vector`
+   kept, as 0009 owns it); upgrade 0010 again → identical. PASSED.
+5. Re-checked live unchanged since the backup; `alembic upgrade head` →
+   **0010 (head)**; existing 14 tables identical; new tables empty;
+   `alembic check` clean.
+6. API and worker restarted: health ok; the five judgment routes served;
+   anonymous 401; `lexflow.cli.judgments sources`: "No judgment sources
+   recorded; the collection is empty" — **no synthetic data in `lexflow`**.
+
+Recovery: `alembic downgrade 0009` (rehearsed) drops only the judgment
+tables; the dump above restores the pre-change state (owner decision).
+
 ---
 
-Checkpoint: M5 committed (see `git log`). Next: M6 gated live migration 0010.
+Checkpoint: M6 done (see `git log`). Next: M7 documents and final verification.
