@@ -3,7 +3,7 @@
   "updated": "2026-10-20",
   "branch": "master",
   "base_commit": "cb40bcc",
-  "status": "in progress: M1-M6 done",
+  "status": "M1-M7 done; M8 prepared and rehearsed, awaiting the owner (live migration not authorised)",
   "plan": "docs/PHASE5_PLAN.md",
   "log": "docs/PHASE5_EXECUTION_LOG.md",
   "decisions": {
@@ -14,7 +14,10 @@
     "D5": "approved: works with no judgments and says so"
   },
   "migration_head_in_code": "0011",
-  "migration_0011_rehearsed_on": "scratch database lexflow_autogen_p5_test (127.0.0.1:55432): upgrade, check, downgrade, upgrade, check",
+  "migration_0011_rehearsed_on": [
+    "scratch database lexflow_autogen_p5_test (127.0.0.1:55432): upgrade, check, downgrade, upgrade, check",
+    "scratch restore lexflow_p5_restore of a fresh live dump: identical to live; upgrade/downgrade/upgrade identical; alembic check clean; live unchanged"
+  ],
   "live_lexflow_revision": "0010",
   "gemini_calls_made": 0,
   "real_client_data_sent": false,
@@ -28,11 +31,18 @@
     "M3": "done (5128eb7)",
     "M4": "done (219945e)",
     "M5": "done (8e6430a)",
-    "M6": "done",
-    "M7": "pending",
-    "M8": "owner-gated (live migration not authorised in this run)"
+    "M6": "done (e57aebc)",
+    "M7": "done",
+    "M8": "prepared and rehearsed; not applied (owner-gated)"
   },
-  "next_action": "M7: mutation checks, secret scan, ADR 0019, SRS/architecture/traceability, final verification",
-  "backend_tests": "807 passed (M5)",
-  "frontend_tests": "176 Vitest, 41 Playwright (M6)"
+  "next_action": "Owner: approve M8 (fresh dump, alembic upgrade head on lexflow, restart API and worker); optionally configure GEMINI_API_KEY and GEMINI_MODEL privately and smoke-test one sample case with synthetic documents",
+  "backend_tests": "807 passed (final)",
+  "frontend_tests": "176 Vitest passed; 41 Playwright passed (final)",
+  "rehearsal_dump": {
+    "path": "server/var/backups/lexflow-20261020-phase5-rehearsal.dump (git-ignored)",
+    "sha256": "d608fed3ff66db2ecc51613e18f2e25e26314cac8040449e6c343da61bf8cd43"
+  },
+  "mutation_checks": "40 of 40 caught",
+  "secret_scan": "clean",
+  "brief_sha256": "274ecaed93400f51dd47c42337fbd6e101aa6be366b80d977d1522359b34c2ec (unchanged)"
 }

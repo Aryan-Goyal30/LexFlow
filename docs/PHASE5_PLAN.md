@@ -1,7 +1,9 @@
 # Phase 5 plan — AI case analysis with Google Gemini
 
-Status (2026-10-20): **decisions approved (§9); implementation recorded in
-`docs/PHASE5_EXECUTION_LOG.md`.** Planned at `e122d11` (Phase 4 complete).
+Status (2026-10-20): **M1–M7 implemented; M8 (live migration 0011) prepared
+and rehearsed, awaiting the owner.** Decisions approved (§9); implementation
+recorded in `docs/PHASE5_EXECUTION_LOG.md`. Planned at `e122d11` (Phase 4
+complete).
 Scope from `docs/DEVELOPMENT_BRIEF.md` §4 Phase 5. Machine-readable state:
 `docs/verification/phase5/checkpoint.json`.
 

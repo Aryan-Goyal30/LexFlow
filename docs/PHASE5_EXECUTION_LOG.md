@@ -54,9 +54,9 @@ structured-output support and pricing before the first real run.
 | M3 | Provider layer | done (`5128eb7`) |
 | M4 | Validation | done (`219945e`) |
 | M5 | Runs: API, worker, audit, authorisation | done (`8e6430a`) |
-| M6 | User interface | done |
-| M7 | Verification and documents | pending |
-| M8 | Live migration 0011 + manual smoke | **owner-gated: not done in this run** (applying 0011 to live was explicitly not authorised) |
+| M6 | User interface | done (`e57aebc`) |
+| M7 | Verification and documents | done |
+| M8 | Live migration 0011 + manual smoke | **prepared and rehearsed; not applied** (owner-gated: applying 0011 to live was explicitly not authorised) |
 
 ## M1 — Contract, settings, migration 0011, output schema (done)
 
@@ -317,4 +317,96 @@ model's own claims about its sources are never trusted.
 - Results: `npm run check` green (176 Vitest tests, lint, format, types,
   API drift, build); Playwright **41 passed** (port 5174 checked free first).
 
-Checkpoint: M6 committed; next M7 (verification, mutation checks, documents).
+## M7 — Verification and documents (done)
+
+- **Mutation checks** (`docs/verification/phase5/run_mutation_checks.py`,
+  with a `--dry-run` that only checks each snippet occurs once): 40 guards
+  broken one at a time — validation (10), answer parsing (2), provider (5),
+  configuration (3), evidence (2), runs/API/worker (12), UI (6). **40 of 40
+  caught**; every file restored byte-for-byte; logs redacted.
+- **Secret scan:** no tracked `.env` file; `server/.env` git-ignored and
+  without a `GEMINI_API_KEY` line; no Google-key-shaped string in the Phase 5
+  commits, the working tree or the built bundle; `GEMINI_API_KEY` appears in
+  the bundle 0 times; the only `GEMINI_API_KEY=` values in the history are
+  test fakes and blanks.
+- **Documents:** ADR 0019 (`docs/adr/0019-ai-case-analysis.md`); SRS
+  (FR-18 done, FR-18a, NFR-2/5/6 updated, out-of-scope list); architecture
+  (worker and provider, use cases, deployment edge to Google, data model,
+  the *analyse a case* sequence, AI output as untrusted input);
+  traceability (FR-18, FR-18a, NFR-2, NFR-6); verification README.
+- **Final verification on the final code** (logs in
+  `docs/verification/phase5/`): ruff, format, mypy (Windows and Linux)
+  clean; `export_openapi.py --check` up to date; **pytest 807 passed**;
+  `npm run check` green with **176 Vitest tests** and the build;
+  **Playwright 41 passed** (ports 5174 and 8001 checked free first).
+- `docs/DEVELOPMENT_BRIEF.md` SHA-256 unchanged:
+  `274ecaed93400f51dd47c42337fbd6e101aa6be366b80d977d1522359b34c2ec`.
+
+## M8 — Live migration 0011 (prepared and rehearsed; NOT applied)
+
+Applying 0011 to the live database was explicitly not authorised in this
+run, so M8 stops at the rehearsal:
+
+1. Live `lexflow` (127.0.0.1:5432, container `lexflow-db-1`) confirmed at
+   revision **0010**.
+2. Read-only dump `server/var/backups/lexflow-20261020-phase5-rehearsal.dump`
+   (git-ignored; 71,414 bytes; SHA-256
+   `d608fed3ff66db2ecc51613e18f2e25e26314cac8040449e6c343da61bf8cd43`).
+3. Restored into a **new** scratch database `lexflow_p5_restore` on the
+   scratch server (127.0.0.1:55432); fingerprint (count + md5 of every row,
+   every table) **identical to live** (20 tables).
+4. On the copy only: upgrade 0011 → the 19 existing tables identical,
+   `analysis_runs` empty; downgrade 0010 → whole database identical;
+   upgrade 0011 again → identical; `alembic check` clean. Live fingerprint
+   re-read afterwards: **unchanged**, still 0010. **REHEARSAL PASSED.**
+
+What the owner does to finish M8 (when they decide to):
+
+1. Stop the API and worker; take a fresh dump of `lexflow` and record its
+   SHA-256 (the rehearsal dump above will be out of date).
+2. From `server/`: `.venv\Scripts\alembic upgrade head`, then
+   `.venv\Scripts\alembic check`. Recovery: `alembic downgrade 0010`
+   (rehearsed; drops only `analysis_runs`) or restore the dump.
+3. Restart the API and worker on the new code. With
+   `LEXFLOW_AI_PROVIDER=disabled` (the default) nothing else changes.
+4. Only for the optional manual smoke: put `GEMINI_API_KEY` and a
+   `GEMINI_MODEL` chosen from Google's current model list into
+   `server/.env` privately, set `LEXFLOW_AI_PROVIDER=gemini`, restart, and
+   analyse **one sample case containing only synthetic documents** (D1).
+   Check Google's current terms, structured-output support and pricing for
+   the chosen model first.
+
+Until then the running API and worker (still the Phase 4 processes) are
+unaffected; restarted on the Phase 5 code without 0011 they report analysis
+as unavailable ("migration 0011 is not applied") and keep working.
+
+## Status against the acceptance criteria
+
+| Brief / plan | Status |
+|---|---|
+| `AiService` is a client of a backend endpoint | Done (`src/services/ai/aiService.ts` → `/api/cases/{id}/analysis-runs`) |
+| Retrieve chunks and candidate precedents; structured JSON | Done (evidence ids, JSON schema, defensive parser) |
+| Validate before showing; reject unknown judgments; drop unsupported facts; say when evidence is insufficient | Done (`validation.py`; `test_an_output_citing_an_unknown_judgment_is_rejected`) |
+| Store each run (model, prompt version, inputs, timestamp) | Done (`analysis_runs`: provider, model, prompt version, selection, evidence references, timestamps, usage) |
+| Every fact links to its document and page | Done (UI links checked in Vitest and Playwright) |
+| Decision-support note with every result | Done |
+| Done when: every displayed claim has a working source link | Met for facts, contradictions and precedents (issues refer to linked facts) |
+| Live database at 0011 | **Not done** — owner-gated (M8) |
+| A real Gemini run | **Not done** — no key configured; no Gemini call was made |
+
+## Limitations
+
+- No Gemini call was made: real model behaviour (adherence to the schema,
+  quote accuracy, latency, cost) is unmeasured. The model name,
+  structured-output support and prices were not verified against Google's
+  documentation in this run; the owner chooses and checks them.
+- Validation proves provenance (the quote is in the cited passage, the
+  judgment was retrieved), not legal correctness.
+- The live judgment collection is empty, so live results will say that no
+  precedents were available.
+- Only sample cases may be analysed (D1) until a privacy, confidentiality
+  and provider-terms review allows client material.
+- The live database is at 0010; analysis cannot run there before M8.
+
+Checkpoint: Phase 5 M1–M7 done and committed; M8 prepared and rehearsed,
+**awaiting the owner** (live migration and optional manual smoke).

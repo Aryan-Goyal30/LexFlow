@@ -1,6 +1,6 @@
 # LexFlow — Architecture and UML
 
-As built through Phase 4 (2026-10-20). Requirements: `docs/SRS.md`. Decisions
+As built through Phase 5 (2026-10-20). Requirements: `docs/SRS.md`. Decisions
 and their reasons: `docs/adr/`. Diagrams are Mermaid (they render on GitHub
 and in most Markdown viewers).
 
@@ -12,8 +12,12 @@ and in most Markdown viewers).
 - **API:** FastAPI (Python 3.12) on `127.0.0.1:8000`; SQLAlchemy 2 and Alembic;
   RFC 9457 errors; session cookies; access rules in `lexflow/authz.py`.
 - **Worker:** `python -m lexflow.worker`, a separate process that extracts
-  document text in a child process (time-limited) and, if embeddings are on,
-  embeds chunks.
+  document text in a child process (time-limited), embeds chunks if
+  embeddings are on, and runs queued AI case analyses if analysis is
+  configured.
+- **AI provider (optional, Phase 5):** Google's Gemini API through the
+  official `google-genai` SDK, called only by the worker; key in
+  `server/.env`; off by default.
 - **Database:** PostgreSQL 17 with pgvector (`pgvector/pgvector:pg17-trixie`),
   also used as the job queue (`FOR UPDATE SKIP LOCKED`, leases).
 - **Storage:** uploaded files on local disk behind a `Storage` interface.
@@ -43,15 +47,17 @@ flowchart LR
     uc9[Import, index or remove judgments]
     uc10[Download the embedding model]
     uc11[Purge deleted documents]
+    uc12[Start an AI case analysis]
+    uc13[Read AI analysis results]
   end
-  admin --> uc1 & uc2 & uc3 & uc4 & uc5 & uc6 & uc7
-  adv --> uc2 & uc3 & uc4 & uc5 & uc6 & uc7
-  para --> uc3 & uc4 & uc5 & uc6 & uc7
+  admin --> uc1 & uc2 & uc3 & uc4 & uc5 & uc6 & uc7 & uc12 & uc13
+  adv --> uc2 & uc3 & uc4 & uc5 & uc6 & uc7 & uc12 & uc13
+  para --> uc3 & uc4 & uc5 & uc6 & uc7 & uc13
   client --> uc8
   op --> uc9 & uc10 & uc11
 ```
 
-AI case analysis, review of AI findings and outcome assessment are later
+Review of AI findings (Phase 6) and outcome assessment (Phase 7) are later
 phases and are not shown.
 
 ## 3. Deployment
@@ -64,6 +70,7 @@ flowchart TB
     api["FastAPI API<br/>127.0.0.1:8000"]
     worker["Worker process<br/>(+ extraction child process)"]
     cli["Command line (operator)"]
+    gemini["Google Gemini API<br/>(external, optional)"]
     disk[("Uploaded files<br/>server/var/uploads")]
     models[("Model files<br/>server/var/models")]
     subgraph Docker
@@ -80,10 +87,14 @@ flowchart TB
   cli --> db
   cli --> disk
   cli -. "download --confirm (huggingface.co)" .-> models
+  worker -. "selected case text, if analysis is configured (HTTPS)" .-> gemini
 ```
 
-The API binds to `127.0.0.1` only and refuses other host names. No document
-text is sent to any external service.
+The API binds to `127.0.0.1` only and refuses other host names. Document
+text leaves the computer in one case only: an AI analysis that a permitted
+user started and confirmed, with `LEXFLOW_AI_PROVIDER=gemini` configured; the
+worker then sends the selected passages to Google. Analysis is off by
+default and limited to sample cases unless the owner allows client data.
 
 ## 4. Data model (main classes)
 
@@ -107,6 +118,7 @@ classDiagram
   class JudgmentSection { number; page_number?; text }
   class JudgmentChunk { number; char offsets; text; search_vector }
   class JudgmentChunkEmbedding { model; embedding vector(384) }
+  class AnalysisRun { status; provider; model; prompt_version; selection; evidence; result; removed; usage }
 
   Client "1" --> "*" Case
   User "1" --> "*" Case : leads
@@ -125,6 +137,8 @@ classDiagram
   Judgment "1" --> "*" JudgmentSection
   JudgmentSection "1" --> "*" JudgmentChunk
   JudgmentChunk "1" --> "*" JudgmentChunkEmbedding
+  Case "1" --> "*" AnalysisRun
+  User "0..1" <-- "*" AnalysisRun : requested by
 ```
 
 Case documents and judgments are separate collections: no query joins them,
@@ -189,16 +203,45 @@ sequenceDiagram
 
 ## 7. Sequence: analyse a case
 
-Required by the brief but **not built**: AI case analysis is Phase 5. The
-front end's `AiService` seam (`src/services/ai/aiService.ts`) reports "not
-connected" and no analysis is ever simulated. This diagram will be added with
-the Phase 5 implementation.
+```mermaid
+sequenceDiagram
+  actor Lawyer
+  participant UI as AI Analysis tab
+  participant API as FastAPI
+  participant DB as PostgreSQL
+  participant W as Worker
+  participant G as Google Gemini API
+  Lawyer->>UI: choose documents, confirm what is sent, Analyse case
+  UI->>API: POST /api/cases/{id}/analysis-runs {documentIds, confirmTransmission}
+  API->>API: run-analysis on the case (else 404/403), configured, sample case,<br/>ready documents of this case, hourly limit, no active run
+  API->>DB: analysis_runs row queued + audit analysis.requested (counts only)
+  API-->>UI: 202 queued
+  loop every 2 s while queued or running
+    UI->>API: GET /api/cases/{id}/analysis-runs/{runId}
+  end
+  W->>DB: claim run (SKIP LOCKED, lease)
+  W->>DB: re-check the case, assemble evidence D1.., J1.. (references + hashes stored)
+  W->>G: prompt case-analysis-v1 + JSON schema (outside any DB transaction)
+  G-->>W: JSON answer (untrusted)
+  W->>W: parse, validate every item against the evidence, count removals
+  W->>DB: validated result + audit analysis.completed, if still holding the run
+  UI->>API: GET /api/cases/{id}/analysis-runs/{runId}
+  API-->>UI: facts with quote and document page, issues, precedents with judgment passage, removed counts
+  Lawyer->>UI: open a source link (document text page or judgment passage)
+```
+
+With no ready passage the run ends with insufficient evidence and no
+provider call; a busy provider puts the run back in the queue with a pause;
+an unreadable answer is asked for once more, then the run fails. Decision:
+`docs/adr/0019-ai-case-analysis.md`.
 
 ## 8. Cross-cutting rules
 
 - **Access control on the server**; the UI only hides what is not allowed.
 - **One contract**: Pydantic models → `server/openapi.json` →
   `src/services/api/schema.gen.ts`; drift fails `npm run api:check`.
+- **AI output is untrusted input**: only items verified against the run's
+  evidence are stored and shown, always with the decision-support note.
 - **Nothing destroyed in the app**; purges and judgment removals are guarded
   commands that preview first.
 - **Database changes are rehearsed** on a restored copy before reaching the

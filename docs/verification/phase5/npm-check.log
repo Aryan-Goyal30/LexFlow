@@ -1,0 +1,216 @@
+
+> lexflow@0.2.0 check
+> npm run lint && npm run format:check && npm run typecheck && npm run api:check && npm run sample-data:check && npm run test && npm run build
+
+
+> lexflow@0.2.0 lint
+> eslint . --max-warnings=0
+
+
+> lexflow@0.2.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> lexflow@0.2.0 typecheck
+> tsc --noEmit
+
+
+> lexflow@0.2.0 api:check
+> node scripts/api-types.mjs --check
+
+schema.gen.ts matches server/openapi.json
+
+> lexflow@0.2.0 sample-data:check
+> node scripts/export-sample-data.mjs --check
+
+sample_data.json matches src/data/mockData.ts
+
+> lexflow@0.2.0 test
+> vitest run
+
+
+ RUN  v3.2.7 C:/Projects/Claude/Legal Case Management System
+
+ ✓ src/lib/lib.test.ts (12 tests) 13ms
+stderr | src/pages/portal/portal.test.tsx > the client portal > lists only the client's own cases
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/roles.test.tsx > a Paralegal on the Sattvik case team > sees only that case, and no way to open new ones
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/analysis.test.tsx > Starting an analysis > says what is sent where, and needs explicit confirmation
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/documentProcessing.test.tsx > text extraction status > shows a new upload waiting, then follows it to ready without a reload
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/research.test.tsx > Research tab > says so when the collection is empty
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/clients.test.tsx > clients > lets an Administrator find a client and change one detail
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/documentText.test.tsx > the extracted text > opens from the Documents tab and moves page by page
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/admin/admin.test.tsx > account administration > is not offered to other roles
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/router.test.tsx > route guard and sign-in > sends a signed-out visitor to sign-in, then to the case list
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/hearings.test.tsx > hearings > lets a paralegal on the team schedule one, which becomes the next hearing
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/CaseWorkspacePage.test.tsx > Loading the case > shows a loading state, then the case from the API
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/documentLifecycle.test.tsx > deleted documents > lets the lead restore a removed document
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/CasesPage.test.tsx > Case list > shows a loading state, then the cases from the API
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/NewCasePage.test.tsx > New case form > loads clients and advocates from the API
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/caseChanges.test.tsx > editing a case > lets the lead change the status and title, sending only what changed
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/hearingsPage.test.tsx > the Hearings page > lists the coming hearings by day, with the case and its lead
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/pages/roles.test.tsx (6 tests) 1832ms
+   ✓ a Paralegal on the Sattvik case team > sees only that case, and no way to open new ones  387ms
+   ✓ an Advocate > sees the cases they lead and opens new ones only as lead  301ms
+   ✓ an Administrator > sees every case, removes documents and picks any lead  591ms
+ ✓ src/pages/hearingsPage.test.tsx (5 tests) 1836ms
+   ✓ the Hearings page > lists the coming hearings by day, with the case and its lead  618ms
+   ✓ the Hearings page > looks back with the "Past 30 days" period  309ms
+   ✓ the Hearings page > says when the end date is before the start, and asks the server nothing  420ms
+ ✓ src/pages/portal/portal.test.tsx (7 tests) 2053ms
+   ✓ sharing documents with the client > lets the lead share an uploaded document and stop sharing it  898ms
+   ✓ sharing documents with the client > offers no sharing to a paralegal, even for a file they uploaded  327ms
+ ✓ src/pages/CasesPage.test.tsx (13 tests) 2587ms
+   ✓ Case list > shows a loading state, then the cases from the API  304ms
+   ✓ Case list > shows an error with a working retry  310ms
+   ✓ Case list > searches and filters the loaded cases  670ms
+ ✓ src/pages/documentLifecycle.test.tsx (4 tests) 2615ms
+   ✓ deleted documents > lets the lead restore a removed document  1182ms
+   ✓ deleted documents > explains why a document cannot be restored while its name is taken  1018ms
+ ✓ src/pages/clients.test.tsx (6 tests) 3795ms
+   ✓ clients > lets an Administrator find a client and change one detail  1399ms
+   ✓ clients > lets an Advocate add a client and open a case for them  1220ms
+   ✓ clients > checks the details before sending them  1020ms
+ ✓ src/pages/hearings.test.tsx (6 tests) 4512ms
+   ✓ hearings > lets a paralegal on the team schedule one, which becomes the next hearing  1923ms
+   ✓ hearings > checks the form before sending it and focuses the first problem  596ms
+   ✓ hearings > shows the server reason beside the field  761ms
+   ✓ hearings > changes a hearing, sending only what changed  523ms
+   ✓ hearings > cancels a hearing with a reason and keeps it listed  630ms
+ ✓ src/pages/admin/admin.test.tsx (8 tests) 4593ms
+   ✓ account administration > creates an account with a temporary password the person must replace  2084ms
+   ✓ account administration > checks a new account before sending it  934ms
+   ✓ account administration > sets a temporary password for someone else  661ms
+   ✓ the audit log > filters by outcome and loads older entries on request  362ms
+ ✓ src/pages/caseChanges.test.tsx (12 tests) 5080ms
+   ✓ editing a case > lets the lead change the status and title, sending only what changed  1980ms
+   ✓ editing a case > clears an optional field when it is emptied  381ms
+   ✓ editing a case > offers a Paralegal only the court and the opposing party  563ms
+   ✓ archiving a case > asks the Administrator to confirm, then makes the case read-only  764ms
+   ✓ the case team > lets the lead add a paralegal and take them off again  389ms
+ ✓ src/pages/research.test.tsx (15 tests) 6053ms
+   ✓ Research tab > says so when the collection is empty  645ms
+   ✓ Research tab > finds judgments and shows each with its passage, source and synthetic label  702ms
+   ✓ Research tab > reports no matches, and refuses an empty search  858ms
+   ✓ Research tab > uses semantic search when available  551ms
+   ✓ Research tab > shows a recoverable error when the search fails  440ms
+   ✓ Research tab > never shows the results of an earlier search as those of a new one  1061ms
+   ✓ Research tab > pages through many results  388ms
+   ✓ Precedent Library > filters by court and searches through the address  525ms
+ ✓ src/pages/CaseWorkspacePage.test.tsx (29 tests) 7001ms
+   ✓ Loading the case > shows a loading state, then the case from the API  590ms
+   ✓ Loading the case > offers a retry when the server fails  340ms
+   ✓ Loading the case > keeps the case on screen when a later refresh fails  530ms
+   ✓ Workspace tabs and the URL > puts the selected tab in the query string  380ms
+   ✓ Workspace tabs and the URL > lets Back and Forward step through tabs without duplicate entries  468ms
+   ✓ Documents tab > shows progress while uploading  527ms
+   ✓ Documents tab > removes a document on the server  303ms
+   ✓ Documents tab > keeps upload progress and results when the user switches tabs  365ms
+ ✓ src/pages/analysis.test.tsx (15 tests) 8243ms
+   ✓ Starting an analysis > says what is sent where, and needs explicit confirmation  883ms
+   ✓ Starting an analysis > sends only the chosen documents with the confirmation, then follows the run  924ms
+   ✓ Starting an analysis > offers a document as soon as its text becomes ready  465ms
+   ✓ Starting an analysis > shows the server’s refusal and starts nothing  336ms
+   ✓ A finished analysis > links every fact to its document page and shows the verified quote  461ms
+   ✓ A finished analysis > links each precedent to the judgment passage, labelled synthetic, with no score  372ms
+   ✓ A finished analysis > counts what was removed, with the reasons, and always shows the disclaimer  395ms
+   ✓ A finished analysis > says plainly when no precedents were available  401ms
+   ✓ A finished analysis > states insufficient evidence instead of a guess  314ms
+   ✓ Runs that fail or do not match > shows a failed run’s reason and no result  316ms
+   ✓ Runs that fail or do not match > rejects a run that belongs to another case  2229ms
+   ✓ Runs that fail or do not match > lists earlier runs and opens the one chosen  565ms
+ ✓ src/pages/documentText.test.tsx (7 tests) 8736ms
+   ✓ the extracted text > opens from the Documents tab and moves page by page  4105ms
+   ✓ the extracted text > says plainly when a page has no text  324ms
+   ✓ retrying a failed extraction > queues the document again  3251ms
+   ✓ retrying a failed extraction > offers to extract files stored before extraction existed  342ms
+ ✓ src/pages/NewCasePage.test.tsx (8 tests) 8872ms
+   ✓ New case form > loads clients and advocates from the API  430ms
+   ✓ New case form > shows an error with a retry when the form data cannot load  403ms
+   ✓ New case form > rejects a next hearing date in the past  1762ms
+   ✓ New case form > creates the case on the server, opens its Documents tab, and lists it first  1572ms
+   ✓ New case form > shows the submitting state and ignores repeat clicks  1634ms
+   ✓ New case form > puts server validation errors beside their fields and keeps the input  1405ms
+   ✓ New case form > keeps the form and explains when the server cannot be reached  1405ms
+ ✓ src/pages/documentProcessing.test.tsx (5 tests) 10334ms
+   ✓ text extraction status > shows a new upload waiting, then follows it to ready without a reload  3739ms
+   ✓ text extraction status > counts parts, not pages, for documents without pages  3229ms
+   ✓ text extraction status > shows why extraction failed  3178ms
+ ✓ src/router.test.tsx (18 tests) 11799ms
+   ✓ route guard and sign-in > sends a signed-out visitor to sign-in, then to the case list  1332ms
+   ✓ route guard and sign-in > returns to the originally requested page after sign-in  1130ms
+   ✓ route guard and sign-in > gives the same answer for a wrong password and an unknown account  1806ms
+   ✓ route guard and sign-in > sends a Client to the portal, never into the staff app  953ms
+   ✓ signing out and switching accounts > never shows the previous person's cases to the next person on the same browser  1370ms
+   ✓ signing out and switching accounts > goes back to sign-in, and then to the same page, when the session ends  1060ms
+   ✓ temporary passwords > sends the user to change it first, then on to the app  1266ms
+   ✓ temporary passwords > shows the server reason beside the field when the current password is wrong  1118ms
+   ✓ temporary passwords > checks that the two new passwords match before sending them  1370ms
+
+ Test Files  17 passed (17)
+      Tests  176 passed (176)
+   Start at  18:36:48
+   Duration  34.96s (transform 2.39s, setup 117.54s, collect 60.59s, tests 89.95s, environment 188.75s, prepare 12.45s)
+
+
+> lexflow@0.2.0 build
+> tsc && vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 1681 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.57 kB │ gzip:   0.35 kB
+dist/assets/index-DODm4OQ5.css   28.52 kB │ gzip:   5.73 kB
+dist/assets/index-DdcWhck3.js   436.59 kB │ gzip: 124.79 kB
+✓ built in 7.00s
