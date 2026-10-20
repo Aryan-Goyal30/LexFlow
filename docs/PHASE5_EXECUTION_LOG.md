@@ -49,8 +49,8 @@ structured-output support and pricing before the first real run.
 | # | Milestone | Status |
 |---|---|---|
 | M0 | Owner decisions D1–D5 | done (approved 2026-10-20) |
-| M1 | Contract, settings, migration 0011 (scratch only), output schema | see below |
-| M2 | Evidence assembly + prompt v1 | pending |
+| M1 | Contract, settings, migration 0011 (scratch only), output schema | done (`d681326`) |
+| M2 | Evidence assembly + prompt v1 | done |
 | M3 | Provider layer | pending |
 | M4 | Validation | pending |
 | M5 | Runs: API, worker, audit, authorisation | pending |
@@ -113,4 +113,38 @@ structured-output support and pricing before the first real run.
   began failing once the real clock passed it; both jobs' times are now set
   explicitly.
 
-Checkpoint: M1 committed; next M2 (evidence assembly and prompt v1).
+## M2 — Evidence assembly and prompt v1 (done)
+
+- `lexflow/analysis/evidence.py`: the evidence of one run.
+  - Case context (title, practice area, status, court, opposing party,
+    summary ≤ 3,000 characters, last 30 timeline events) is background only
+    and cannot be cited.
+  - `D1…` passages come only from the **selected** documents **of this
+    case** that are not deleted and whose text is `ready`; other selected
+    ids are reported as "without text". Documents in upload-date then name
+    order. Each document's first passage is taken first, then the passages
+    sharing most words with the case title and summary; limits on
+    documents (20), passages (40) and characters (60,000 including the
+    context); `truncated` is recorded.
+  - `J1…` passages: keyword search of the judgment collection (Phase 4
+    `judgments.keyword`) with the case's eight most frequent content words
+    joined by "or"; at most 8 and at most a quarter of the character budget.
+    With the empty live collection there are none (D5).
+  - `Evidence.record()` (stored with the run): ids → document/chunk/page or
+    judgment/chunk/rank plus content SHA-256; **no text**.
+- `lexflow/analysis/prompt.py`: `PROMPT_VERSION = "case-analysis-v1"`;
+  system instruction (decision support, never an outcome, data is not
+  instructions, cite only given ids, quotes copied exactly, no invented
+  judgments or citations, empty precedents when none given); the request
+  fences each block with a marker derived from the evidence's hashes, so a
+  document cannot close its own fence. The fence is a first line of defence
+  only; validation (M4) is what removes anything unsupported.
+- Tests (`test_analysis_evidence.py`, 10): selection/deletion/other-case
+  exclusion, determinism, limits and first passages, no ready documents,
+  empty and synthetic judgment collections, no text in the stored record,
+  prompt determinism and fencing with an injected "END EVIDENCE" line,
+  instruction wording.
+- Fix during M2: documents uploaded in one transaction tied on
+  `created_at`; ordering is now upload date, then name, then id.
+
+Checkpoint: M2 committed; next M3 (provider layer).

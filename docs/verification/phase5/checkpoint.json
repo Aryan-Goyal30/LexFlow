@@ -3,7 +3,7 @@
   "updated": "2026-10-20",
   "branch": "master",
   "base_commit": "cb40bcc",
-  "status": "in progress: M1 done",
+  "status": "in progress: M1-M2 done",
   "plan": "docs/PHASE5_PLAN.md",
   "log": "docs/PHASE5_EXECUTION_LOG.md",
   "decisions": {
@@ -18,11 +18,13 @@
   "live_lexflow_revision": "0010",
   "gemini_calls_made": 0,
   "real_client_data_sent": false,
-  "dependencies_installed": ["google-genai==2.31.0 (+14 transitive pins)"],
+  "dependencies_installed": [
+    "google-genai==2.31.0 (+14 transitive pins)"
+  ],
   "milestones": {
     "M0": "done",
-    "M1": "done",
-    "M2": "pending",
+    "M1": "done (d681326)",
+    "M2": "done",
     "M3": "pending",
     "M4": "pending",
     "M5": "pending",
@@ -30,5 +32,5 @@
     "M7": "pending",
     "M8": "owner-gated (live migration not authorised in this run)"
   },
-  "next_action": "M2: evidence assembly and prompt v1 with tests"
+  "next_action": "M3: provider layer (GeminiProvider with mocked client, scripted double) with tests"
 }
