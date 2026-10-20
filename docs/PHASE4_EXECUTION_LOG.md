@@ -66,7 +66,7 @@ Started 2026-10-20. Scope: `docs/DEVELOPMENT_BRIEF.md` §4 Phase 4 and
 | M2 | Search service and API (keyword, semantic, hybrid), library endpoints | done |
 | M3 | Research tab and Precedent Library UI | done |
 | M4 | Evaluation framework and synthetic engineering run | done |
-| M5 | Security, mutation and end-to-end verification | pending |
+| M5 | Security, mutation and end-to-end verification | done |
 | M6 | Gated live migration 0010 | pending |
 | M7 | Software-engineering documents, final verification | pending |
 
@@ -176,6 +176,36 @@ Started 2026-10-20. Scope: `docs/DEVELOPMENT_BRIEF.md` §4 Phase 4 and
   **Real-corpus quality: unevaluated** (needs a licensed corpus and a
   lawyer-labelled set: `PHASE4_PLAN.md`). The brief defines no thresholds.
 
+## M5 — Security, mutation and end-to-end verification (done)
+
+- Access (server tests, M2): every staff role may use the collection; Client
+  accounts get 403 and anonymous callers 401 on all five routes; private case
+  documents never appear in judgment results and judgments never in case
+  search; hostile and odd queries are harmless and leave the tables intact;
+  limits: query ≤ 300 characters, page ≤ 10 × 20 results, at most 100 ranked
+  judgments, browse page ≤ 50. Source and terms links render only for
+  `https://` addresses, opened with `noopener noreferrer`; all text is
+  rendered as text (no HTML from the server). Searches audited without the
+  query; imports, indexing and removals audited from the command line.
+  No cache is shared between users (each request queries the database;
+  front-end query caches are per browser session).
+- `scripts/e2e.py prepare` now imports the SYNTHETIC judgments into
+  `lexflow_e2e` through the real importer (13 imported).
+- `e2e/research.spec.ts` (real API, real worker, e2e database): **6 passed** —
+  research from a case (keyboard search, attribution, safe source link,
+  judgment page with source/terms/synthetic warning, keyword-only modes
+  shown as such); empty query, no-result query, API failure + retry (route
+  interception); library browse, court filter, URL state, paging; phone width
+  (375 px) without sideways scrolling; Client 403 and anonymous 401; a private
+  case document (found by case search) never appears in judgment search.
+- Mutation checks `docs/verification/phase4/run_mutation_checks.py`
+  (report `mutation-report.md`, raw `mutation-output.log`): **19/19 caught**
+  by test assertions (0 import/collection errors): synthetic gates, path
+  traversal, https, reserved addresses, duplicate file/citation, source
+  real/synthetic switch, preview-before-change, staff-only router, 409 for
+  unavailable modes, search audit, query and page limits, model and stale
+  vector filters, https-only links, disabled modes, stale results.
+
 ---
 
-Checkpoint: M4 committed (see `git log`). Next: M5 security, mutation, e2e.
+Checkpoint: M5 committed (see `git log`). Next: M6 gated live migration 0010.

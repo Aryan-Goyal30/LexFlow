@@ -1,0 +1,326 @@
+Phase 4 mutation checks at commit 5448ec0, started 2026-10-20 08:03:08 UTC
+Redacted: local home paths, database role names and row ids (see REDACTIONS).
+
+=== I-1 CAUGHT: synthetic sources need --allow-synthetic
+file: server/lexflow/cli/judgments.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgment_import.py
+exit code: 1
+.........................F.......                                        [100%]
+================================== FAILURES ===================================
+________________ test_synthetic_sources_need_the_explicit_flag ________________
+committed_engine = Engine(postgresql+psycopg://<user>:***@127.0.0.1:5432/lexflow_test)
+corpus = WindowsPath('<home>/AppData/Local/Temp/pytest-of-<user>/pytest-211/test_synthetic_sources_need_th0/corpus/manifest.json')
+    def test_synthetic_sources_need_the_explicit_flag(committed_engine: Engine, corpus: Path) -> None:
+>       with pytest.raises(cli.CommandError, match="only imported into test databases"):
+E       Failed: DID NOT RAISE CommandError
+tests\test_judgment_import.py:337: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_judgment_import.py::test_synthetic_sources_need_the_explicit_flag
+1 failed, 32 passed in 5.31s
+
+=== I-2 CAUGHT: synthetic data never enters a non-test database
+file: server/lexflow/cli/judgments.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgment_import.py
+exit code: 1
+    def test_synthetic_sources_are_refused_outside_test_databases(
+        committed_engine: Engine, corpus: Path
+    ) -> None:
+        live_like = get_settings().model_copy(
+            update={"database_url": "postgresql+psycopg://<user>:***@127.0.0.1:1/lexflow"}
+        )
+>       with pytest.raises(cli.CommandError, match="never imported into this database"):
+E       Failed: DID NOT RAISE CommandError
+tests\test_judgment_import.py:348: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_judgment_import.py::test_synthetic_sources_are_refused_outside_test_databases
+1 failed, 32 passed in 4.64s
+
+=== I-3 CAUGHT: files cannot leave the manifest's folder
+file: server/lexflow/services/judgment_import.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgment_import.py
+exit code: 1
+        (corpus.parent / "files" / "empty.txt").write_text("", "utf-8")
+        (corpus.parent / "files" / "syn-001.exe").write_bytes(b"MZ")
+        (corpus.parent.parent / "secret.txt").write_text("outside", "utf-8")
+        data = manifest_of(corpus)
+        data["judgments"] = [dict(data["judgments"][0], file=file)]
+        code, out = run(committed_engine, "import", str(write(corpus, data)), "--allow-synthetic")
+>       assert code == 0 and "invalid" in out and reason in out and "Nothing to import" in out
+E       assert (0 == 0 and 'invalid' in 'Source: LexFlow synthetic test judgments (lexflow-synthetic) [SYNTHETIC TEST DATA]\nTerms: https://terms.lexflow.inva... not exist\n0 new, 0 changed (left alone without --update), 0 unchanged, 0 duplicate, 1 invalid.\nNothing to import.\n' and "leaves the manifest's folder" in 'Source: LexFlow synthetic test judgments (lexflow-synthetic) [SYNTHETIC TEST DATA]\nTerms: https://terms.lexflow.inva... not exist\n0 new, 0 changed (left alone without --update), 0 unchanged, 0 duplicate, 1 invalid.\nNothing to import.\n')
+tests\test_judgment_import.py:235: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_judgment_import.py::test_bad_files_are_invalid[../../secret.txt-leaves the manifest's folder]
+1 failed, 32 passed in 4.98s
+
+=== I-4 CAUGHT: addresses must be https
+file: server/lexflow/services/judgment_import.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgment_import.py
+exit code: 1
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           sqlalchemy.exc.IntegrityError: (psycopg.errors.CheckViolation) new row for relation "judgment_sources" violates check constraint "ck_judgment_sources_terms_url_https"
+E           DETAIL:  Failing row contains (<uuid>, lexflow-synthetic, LexFlow synthetic test judgments, http://terms.lexflow.invalid/x, 2026-10-20, LexFlow developers, Invented for automated tests only. Not real judgments; never cit..., t, 2026-10-20 08:03:36.080698+00, 2026-10-20 08:03:36.080698+00).
+E           [SQL: INSERT INTO judgment_sources (id, key, name, terms_url, terms_checked_on, terms_checked_by, permitted_use, is_synthetic) VALUES (%(id)s::UUID, %(key)s::VARCHAR, %(name)s::VARCHAR, %(terms_url)s::VARCHAR, %(terms_checked_on)s::DATE, %(terms_checked_by)s::VARCHAR, %(permitted_use)s::VARCHAR, %(is_synthetic)s) RETURNING judgment_sources.created_at, judgment_sources.updated_at]
+E           [parameters: {'id': UUID('<uuid>'), 'key': 'lexflow-synthetic', 'name': 'LexFlow synthetic test judgments', 'terms_url': 'http://terms.lexflow.invalid/x', 'terms_checked_on': datetime.date(2026, 10, 20), 'terms_checked_by': 'LexFlow developers', 'permitted_use': 'Invented for automated tests only. Not real judgments; never cite.', 'is_synthetic': True}]
+E           (Background on this error at: https://sqlalche.me/e/20/gkpj)
+.venv\Lib\site-packages\psycopg\cursor.py:117: IntegrityError
+=========================== short test summary info ===========================
+FAILED tests/test_judgment_import.py::test_invalid_manifests_import_nothing[<lambda>-https://]
+1 failed, 32 passed in 5.08s
+
+=== I-5 CAUGHT: synthetic sources use reserved .invalid addresses
+file: server/lexflow/services/judgment_import.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgment_import.py
+exit code: 1
+        committed_engine: Engine,
+        corpus: Path,
+        capsys: pytest.CaptureFixture[str],
+        change: Any,
+        message: str,
+    ) -> None:
+>       with pytest.raises(cli.CommandError, match="not a valid manifest") as raised:
+E       Failed: DID NOT RAISE CommandError
+tests\test_judgment_import.py:307: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_judgment_import.py::test_invalid_manifests_import_nothing[<lambda>-.invalid]
+1 failed, 32 passed in 5.06s
+
+=== I-6 CAUGHT: a file already in the collection is a duplicate
+file: server/lexflow/services/judgment_import.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgment_import.py
+exit code: 1
+        assert "same file as 'syn-001' in this manifest" in out
+        run(committed_engine, "import", str(corpus), "--allow-synthetic", "--confirm", "3")
+        other = manifest_of(corpus)
+        other["source"]["key"] = "another-synthetic"
+        other["judgments"] = [dict(other["judgments"][1], id="elsewhere", citation=None)]
+        _, out = run(committed_engine, "import", str(write(corpus, other)), "--allow-synthetic")
+>       assert "this file is already in the collection" in out
+E       AssertionError: assert 'this file is already in the collection' in 'Source: LexFlow synthetic test judgments (another-synthetic) [SYNTHETIC TEST DATA]\nTerms: https://terms.lexflow.inva... duplicate, 0 invalid.\nPreview only: nothing was changed. To import these 1, run the same command with --confirm 1.\n'
+tests\test_judgment_import.py:200: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_judgment_import.py::test_duplicates_are_reported_not_stored
+1 failed, 32 passed in 4.75s
+
+=== I-7 CAUGHT: a citation already in the collection is a duplicate
+file: server/lexflow/services/judgment_import.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgment_import.py
+exit code: 1
+            dict(
+                other["judgments"][0], id="clash", file="files/new.txt", citation="(syn) 2019 test 101"
+            )
+        ]
+        _, out = run(committed_engine, "import", str(write(corpus, other)), "--allow-synthetic")
+>       assert "another judgment has this citation" in out  # compared case-insensitively
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert 'another judgment has this citation' in 'Source: LexFlow synthetic test judgments (another-synthetic) [SYNTHETIC TEST DATA]\nTerms: https://terms.lexflow.inva... duplicate, 0 invalid.\nPreview only: nothing was changed. To import these 1, run the same command with --confirm 1.\n'
+tests\test_judgment_import.py:210: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_judgment_import.py::test_duplicates_are_reported_not_stored
+1 failed, 32 passed in 4.78s
+
+=== I-8 CAUGHT: a source cannot switch between real and synthetic
+file: server/lexflow/services/judgment_import.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgment_import.py
+exit code: 1
+        imported(committed_engine, corpus)
+        data = manifest_of(corpus)
+        data["source"]["synthetic"] = False
+        data["source"]["terms_url"] = "https://terms.example-court.in/terms"
+        for entry in data["judgments"]:
+            entry["source_url"] = "https://judgments.example-court.in/" + entry["id"]
+>       with pytest.raises(cli.CommandError, match="recorded as synthetic"):
+E       Failed: DID NOT RAISE CommandError
+tests\test_judgment_import.py:361: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_judgment_import.py::test_a_source_cannot_switch_between_real_and_synthetic
+1 failed, 32 passed in 4.77s
+
+=== I-9 CAUGHT: commands preview before changing anything
+file: server/lexflow/cli/judgments.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgment_import.py
+exit code: 1
+        if args.confirm != count:
+>           raise CommandError(
+                f"--confirm {args.confirm} does not match the {count} listed; nothing was changed."
+            )
+E           lexflow.cli.judgments.CommandError: --confirm None does not match the 13 listed; nothing was changed.
+lexflow\cli\judgments.py:63: CommandError
+=========================== short test summary info ===========================
+FAILED tests/test_judgment_import.py::test_preview_lists_everything_and_changes_nothing
+FAILED tests/test_judgment_import.py::test_duplicates_are_reported_not_stored
+FAILED tests/test_judgment_import.py::test_indexing_needs_embeddings_and_previews
+FAILED tests/test_judgment_import.py::test_removing_a_source_needs_the_previewed_count
+4 failed, 29 passed in 4.62s
+
+=== A-1 CAUGHT: only staff reach the collection
+file: server/lexflow/main.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgments_api.py
+exit code: 1
+        for path in paths:
+>           assert as_client("client").get(path).status_code == 403, path
+E           AssertionError: /api/judgments/facets
+E           assert 200 == 403
+E            +  where 200 = <Response [200 OK]>.status_code
+E            +    where <Response [200 OK]> = get('/api/judgments/facets')
+E            +      where get = <starlette.testclient.TestClient object at 0x0000024C916A15B0>.get
+E            +        where <starlette.testclient.TestClient object at 0x0000024C916A15B0> = <function as_client.<locals>.get at 0x0000024C9163FE20>('client')
+tests\test_judgments_api.py:103: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_judgments_api.py::test_clients_and_anonymous_callers_are_refused
+1 failed, 32 passed in 11.02s
+
+=== A-2 CAUGHT: semantic search refuses (409) when it cannot run
+file: server/lexflow/api/judgments.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgments_api.py
+exit code: 1
+  File "C:\Projects\Claude\Legal Case Management System\server\lexflow\api\judgments.py", line 154, in search_judgments
+    ranked = service.search(session, mode, query, filters, active)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Claude\Legal Case Management System\server\lexflow\services\judgments.py", line 214, in search
+    return semantic(session, provider, query, filters)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Claude\Legal Case Management System\server\lexflow\services\judgments.py", line 149, in semantic
+    vector = provider.embed_query(query)
+             ^^^^^^^^^^^^^^^^^^^^
+=========================== short test summary info ===========================
+FAILED tests/test_judgments_api.py::test_semantic_and_hybrid_need_embeddings
+1 failed, 32 passed in 11.15s
+
+=== A-3 CAUGHT: searches are audited
+file: server/lexflow/api/judgments.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgments_api.py
+exit code: 1
+        onerow = self._fetchone_impl
+        row: Optional[_InterimRowType[Any]] = onerow(hard_close=True)
+        if row is None:
+            if raise_for_none:
+>               raise exc.NoResultFound(
+                    "No row was found when one was required"
+                )
+E               sqlalchemy.exc.NoResultFound: No row was found when one was required
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:799: NoResultFound
+=========================== short test summary info ===========================
+FAILED tests/test_judgments_api.py::test_judgment_searches_are_audited_without_the_query
+1 failed, 32 passed in 10.93s
+
+=== A-4 CAUGHT: queries are at most 300 characters
+file: server/lexflow/api/judgments.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgments_api.py
+exit code: 1
+as_ = <function as_.<locals>.get at 0x0000029DA4115300>, collection = None
+    def test_invalid_search_requests_are_refused(as_: As, collection: None) -> None:
+        http = as_("lead")
+        assert search(http, "   ").json()["code"] == "query-empty"
+>       assert search(http, "x" * 301).status_code == 422
+E       AssertionError: assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+E        +    where <Response [200 OK]> = search(<starlette.testclient.TestClient object at 0x0000029DA44CEA50>, ('x' * 301))
+tests\test_judgments_api.py:244: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_judgments_api.py::test_invalid_search_requests_are_refused
+1 failed, 32 passed in 11.01s
+
+=== A-5 CAUGHT: search pages are bounded
+file: server/lexflow/api/judgments.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgments_api.py
+exit code: 1
+        ]
+        assert pieces == [r["judgment"]["id"] for r in whole["results"]][: len(pieces)]
+        assert whole["total"] == len(whole["results"]) and whole["maxResults"] == 100
+        assert search(http, "court held", page=10).json()["results"] == []
+>       assert search(http, "court held", page=11).status_code == 422
+E       AssertionError: assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+E        +    where <Response [200 OK]> = search(<starlette.testclient.TestClient object at 0x0000024D8AF6C770>, 'court held', page=11)
+tests\test_judgments_api.py:200: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_judgments_api.py::test_pages_split_one_ranking_without_gaps_or_repeats
+1 failed, 32 passed in 11.11s
+
+=== R-1 CAUGHT: vectors of another model are never compared
+file: server/lexflow/services/judgments.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgments_api.py
+exit code: 1
+collection = None
+words = <tests.embedding_fakes.WordsProvider object at 0x000001C178A0A960>
+    def test_vectors_of_another_model_are_not_used(
+        as_: As, db: Session, collection: None, words: WordsProvider
+    ) -> None:
+        index_all(db, WordsProvider("another-model@9"))
+>       assert search(as_("lead"), "tenant rent", mode="semantic").json()["total"] == 0
+E       assert 13 == 0
+tests\test_judgments_api.py:295: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_judgments_api.py::test_vectors_of_another_model_are_not_used
+1 failed, 32 passed in 11.01s
+
+=== R-2 CAUGHT: a vector of old text is never used
+file: server/lexflow/services/judgments.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgments_api.py
+exit code: 1
+        ).first()
+        assert chunk is not None
+        chunk.content_sha256 = "a" * 64  # its text changed after it was embedded
+        db.commit()
+        body = search(http, "tenant rent arrears repairs", mode="semantic").json()
+>       assert all(r["judgment"]["id"] != jid("syn-001") for r in body["results"])
+E       assert False
+E        +  where False = all(<generator object test_semantic_search_uses_current_vectors_only.<locals>.<genexpr> at 0x000001C839A675A0>)
+tests\test_judgments_api.py:288: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_judgments_api.py::test_semantic_search_uses_current_vectors_only
+1 failed, 32 passed in 11.11s
+
+=== U-1 CAUGHT: source links are https only
+file: src/components/research/Judgments.tsx
+command (cwd .): npx vitest run src/pages/research.test.tsx
+exit code: 1
+  View at source (
+  LexFlow synthetic test judgments
+  )
+</a>
+ ❯ src/pages/research.test.tsx:144:74
+    142|     await searchFor(user, 'rent');
+    143|     const card = await screen.findByRole('article', { name: 'Unsafe li…
+    144|     expect(within(card).queryByRole('link', { name: /View at source/ }…
+       |                                                                          ^
+    145|   });
+    146| });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+=== U-2 CAUGHT: unavailable search modes cannot be chosen
+file: src/components/research/Judgments.tsx
+command (cwd .): npx vitest run src/pages/research.test.tsx
+exit code: 1
+Received element is not disabled:
+  <option
+  value="semantic"
+/>
+ ❯ src/pages/research.test.tsx:75:20
+     73|     renderApp(CASE, { as: ARYAN_EMAIL });
+     74|     const option = await screen.findByRole('option', { name: /Meaning …
+     75|     expect(option).toBeDisabled();
+       |                    ^
+     76|     expect(
+     77|       screen.getByText(/Searching by meaning is unavailable: Semantic …
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+=== U-3 CAUGHT: results never outlive their query
+file: src/hooks/useJudgments.ts
+command (cwd .): npx vitest run src/pages/research.test.tsx
+exit code: 1
+              stroke-linecap="round"
+              stroke-line...
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/pages/research.test.tsx:131:25
+    129|     expect(screen.getAllByRole('article')).toHaveLength(10);
+    130|     await user.click(screen.getByRole('button', { name: /Next/ }));
+    131|     expect(await screen.findByText('Page 2 of 2')).toBeVisible();
+       |                         ^
+    132|     expect(screen.getAllByRole('article')).toHaveLength(2);
+    133|   });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+

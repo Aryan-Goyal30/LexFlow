@@ -1,7 +1,8 @@
 """Prepare and run an isolated API for the Playwright end-to-end tests.
 
     python scripts/e2e.py prepare   recreate the e2e database, migrate it, load sample data,
-                                    and create the e2e sign-in accounts
+                                    create the e2e sign-in accounts and import the
+                                    SYNTHETIC judgment fixtures
     python scripts/e2e.py serve     run the API against that database on 127.0.0.1:8001
                                     (the harness adds --run-id HEX32 to mark its process)
     python scripts/e2e.py work --run-id HEX32
@@ -34,6 +35,7 @@ from sqlalchemy.orm import Session
 
 SERVER_ROOT = Path(__file__).resolve().parent.parent
 UPLOAD_DIR = SERVER_ROOT / "var" / "e2e-uploads"
+JUDGMENT_FIXTURES = SERVER_ROOT / "tests" / "fixtures" / "judgments" / "synthetic" / "manifest.json"
 DEFAULT_PORT = "8001"
 DEFAULT_APP_PORT = "5174"
 RUN_ID = re.compile(r"[0-9a-f]{32}")
@@ -90,15 +92,43 @@ def prepare() -> int:
     with Session(engine) as session, session.begin():
         result = load_sample_data(session)
         accounts = _create_accounts(session, os.environ.get("LEXFLOW_E2E_PASSWORD"))
+    with Session(engine) as session:
+        judgments = _import_synthetic_judgments(session)
     engine.dispose()
 
     shutil.rmtree(UPLOAD_DIR, ignore_errors=True)
     UPLOAD_DIR.mkdir(parents=True)
     print(
         f"e2e database {url.database!r} ready: {result.total} sample rows, "
-        f"{accounts} sign-in accounts."
+        f"{accounts} sign-in accounts, {judgments} SYNTHETIC judgments."
     )
     return 0
+
+
+def _import_synthetic_judgments(session: Session) -> int:
+    """The SYNTHETIC judgment fixtures, through the real importer (test data only)."""
+    from datetime import UTC, datetime
+
+    from lexflow.extraction import Extracted, Limits, extract
+    from lexflow.services import judgment_import as importer
+
+    def in_process(content_type: str, data: bytes, limits: Limits, timeout: float) -> Extracted:
+        return extract(content_type, data, limits)
+
+    plan = importer.plan_import(session, JUDGMENT_FIXTURES, max_bytes=10_000_000)
+    outcome = importer.apply_import(
+        session,
+        plan,
+        update=False,
+        limits=Limits(max_pages=100, max_text_bytes=1_000_000, max_unpacked_bytes=10_000_000),
+        timeout_seconds=60,
+        extract=in_process,
+        operator="e2e prepare",
+        now=datetime.now(UTC),
+    )
+    if outcome.rejected:
+        raise SystemExit(f"The synthetic judgments did not import: {outcome.rejected}")
+    return len(outcome.imported)
 
 
 def _create_accounts(session: Session, password: str | None) -> int:
