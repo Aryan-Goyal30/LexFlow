@@ -3,7 +3,7 @@
   "updated": "2026-10-20",
   "branch": "master",
   "base_commit": "cb40bcc",
-  "status": "in progress: M1-M3 done",
+  "status": "in progress: M1-M4 done",
   "plan": "docs/PHASE5_PLAN.md",
   "log": "docs/PHASE5_EXECUTION_LOG.md",
   "decisions": {
@@ -25,12 +25,12 @@
     "M0": "done",
     "M1": "done (d681326)",
     "M2": "done (392f3b4)",
-    "M3": "done",
-    "M4": "pending",
+    "M3": "done (5128eb7)",
+    "M4": "done",
     "M5": "pending",
     "M6": "pending",
     "M7": "pending",
     "M8": "owner-gated (live migration not authorised in this run)"
   },
-  "next_action": "M4: validation of model output against the evidence, with tampering tests"
+  "next_action": "M5: runs queue, API endpoints, worker integration, audit, authorisation tests"
 }

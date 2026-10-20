@@ -51,8 +51,8 @@ structured-output support and pricing before the first real run.
 | M0 | Owner decisions D1–D5 | done (approved 2026-10-20) |
 | M1 | Contract, settings, migration 0011 (scratch only), output schema | done (`d681326`) |
 | M2 | Evidence assembly + prompt v1 | done (`392f3b4`) |
-| M3 | Provider layer | done |
-| M4 | Validation | pending |
+| M3 | Provider layer | done (`5128eb7`) |
+| M4 | Validation | done |
 | M5 | Runs: API, worker, audit, authorisation | pending |
 | M6 | User interface | pending |
 | M7 | Verification and documents | pending |
@@ -182,4 +182,35 @@ structured-output support and pricing before the first real run.
   stand-in class, no network), the conftest guard, `provider_for`, the
   scripted double.
 
-Checkpoint: M3 committed; next M4 (validation).
+## M4 — Validation (done)
+
+`lexflow/analysis/validation.py` decides what is stored and shown; the
+model's own claims about its sources are never trusted.
+
+| Item | Kept only if | Otherwise (reason code) |
+|---|---|---|
+| Fact | cites one `D` id sent in this run; its quote (≥ 15 characters, after NFKC, typographic-quote/dash and whitespace normalisation) occurs in **that** passage | `unknown-evidence`, `quote-not-found`, `quote-too-short`, `duplicate` |
+| Precedent | cites a `J` id retrieved for this run; title, court, citation, year and synthetic flag come from the collection, never from the model | `unknown-judgment` (the brief's "rejected"), `duplicate` |
+| Contradiction | at least two distinct verified sources | `contradiction-unsupported` |
+| Issue | refers to at least one surviving fact (others dropped from it) | `issue-without-facts` |
+| Any wording | names no law-report citation (AIR, SCC, SCR, … patterns) that is absent from the evidence | `unverified-citation` |
+| Outcome assessment | never | `outcome-discarded` |
+| Malformed / over-limit items | never | `malformed`, `over-limit` |
+
+- Every removal is counted with a plain-language reason (`removed`).
+- `insufficientEvidence` with a reason when no passage was sent (no provider
+  call), when the model says so, or when nothing could be verified.
+- `precedentsAvailable` is false when no judgment passage was sent (D5).
+- What validation does **not** do: decide whether a supported statement is a
+  correct reading of its quote, or whether a comparison is legally sound.
+  The disclaimer says so with every result.
+- Tests (`test_analysis_validation.py`, 19): supported fact with exact
+  source; unknown ids; facts citing judgments; quote from the wrong passage
+  or invented; short quote; whitespace/typography tolerance; duplicates;
+  invented and evidenced citations; **`test_an_output_citing_an_unknown_judgment_is_rejected`**;
+  precedent metadata from the collection; citation in precedent prose;
+  no judgments available; issue references; contradictions; outcome
+  discarded; malformed counted; the three insufficient-evidence paths; a
+  document instructing the model to cite `J99`.
+
+Checkpoint: M4 committed; next M5 (runs: API, worker, audit, authorisation).
