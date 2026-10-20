@@ -3,7 +3,7 @@
   "updated": "2026-10-20",
   "branch": "master",
   "base_commit": "cb40bcc",
-  "status": "in progress: M1-M5 done",
+  "status": "in progress: M1-M6 done",
   "plan": "docs/PHASE5_PLAN.md",
   "log": "docs/PHASE5_EXECUTION_LOG.md",
   "decisions": {
@@ -27,11 +27,12 @@
     "M2": "done (392f3b4)",
     "M3": "done (5128eb7)",
     "M4": "done (219945e)",
-    "M5": "done",
-    "M6": "pending",
+    "M5": "done (8e6430a)",
+    "M6": "done",
     "M7": "pending",
     "M8": "owner-gated (live migration not authorised in this run)"
   },
-  "next_action": "M6: AnalysisTab UI, aiService HTTP client, hooks, MSW mocks, Vitest",
-  "backend_tests": "807 passed (M5)"
+  "next_action": "M7: mutation checks, secret scan, ADR 0019, SRS/architecture/traceability, final verification",
+  "backend_tests": "807 passed (M5)",
+  "frontend_tests": "176 Vitest, 41 Playwright (M6)"
 }

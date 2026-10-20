@@ -14,6 +14,7 @@ import { advocates as sampleAdvocates, mockCases, mockClients } from '../data/mo
 import { formatFileSize, todayIsoDate } from '../lib/format';
 import { ACCEPTED_TYPES_LABEL } from '../lib/documentFiles';
 import { judgmentHandlers, resetMockJudgments } from './mockJudgments';
+import { analysisHandlers, resetMockAnalysis, type AnalysisCaseAccess } from './mockAnalysis';
 import type {
   AdminUser,
   AdminUserChanges,
@@ -472,6 +473,19 @@ export function mockSetProcessing(documentId: string, change: Partial<DocumentPr
   throw new Error(`no processed document ${documentId}`);
 }
 
+/** Give any document (even a sample record) extracted text, as if a file had been processed (tests only). */
+export function mockReadyText(documentId: string, sections: string[]): void {
+  for (const c of state.cases) {
+    const doc = c.documents.find((d) => d.id === documentId);
+    if (doc) {
+      doc.processing ??= initialProcessing('application/pdf');
+      mockSetText(documentId, sections);
+      return;
+    }
+  }
+  throw new Error(`no document ${documentId}`);
+}
+
 /** As for a file stored before text extraction existed: no job at all. */
 export function mockClearProcessing(documentId: string): void {
   for (const c of state.cases) {
@@ -509,6 +523,26 @@ function visibleCase(id: string): { c: StoredCase; rel: Relation } | null {
 }
 
 const caseNotFound = () => problem(404, 'case-not-found', 'No case with this id exists.');
+
+/** What the fake analysis routes need to know about a case the user may see. */
+function analysisAccess(caseId: string): AnalysisCaseAccess | null {
+  const found = visibleCase(caseId);
+  if (!found) return null;
+  const { c, rel } = found;
+  return {
+    rel: rel === 'client' ? 'none' : rel,
+    archived: c.archivedAt !== null,
+    isSample: c.isSample,
+    documents: c.documents.map((d) => ({
+      id: d.id,
+      name: d.name,
+      eligible: d.processing?.status === 'ready',
+      sectionCount: d.processing?.sectionCount ?? null,
+      pageCount: d.processing?.pageCount ?? null,
+    })),
+    actor: currentActor(),
+  };
+}
 const forbidden = () => problem(403, 'forbidden', 'You do not have permission to do this.');
 
 /** Sign a test account in, as if it had used the sign-in form. */
@@ -563,6 +597,7 @@ let state: State = initialState();
 export function resetMockApi(): void {
   state = initialState();
   resetMockJudgments();
+  resetMockAnalysis();
 }
 
 /** Read the fake server's current data in a test. */
@@ -672,6 +707,8 @@ export const handlers = [
   // The judgment collection (src/test/mockJudgments.ts); the gate above already
   // refuses Client accounts, like the server's staff router.
   ...judgmentHandlers(() => undefined),
+  // AI case analysis (src/test/mockAnalysis.ts), behind the same gate.
+  ...analysisHandlers(analysisAccess),
 
   http.get('*/api/auth/me', () => {
     const user = currentMockUser();

@@ -53,8 +53,8 @@ structured-output support and pricing before the first real run.
 | M2 | Evidence assembly + prompt v1 | done (`392f3b4`) |
 | M3 | Provider layer | done (`5128eb7`) |
 | M4 | Validation | done (`219945e`) |
-| M5 | Runs: API, worker, audit, authorisation | done |
-| M6 | User interface | pending |
+| M5 | Runs: API, worker, audit, authorisation | done (`8e6430a`) |
+| M6 | User interface | done |
 | M7 | Verification and documents | pending |
 | M8 | Live migration 0011 + manual smoke | **owner-gated: not done in this run** (applying 0011 to live was explicitly not authorised) |
 
@@ -273,4 +273,48 @@ model's own claims about its sources are never trusted.
 - Full backend suite: **807 passed**; ruff, format, mypy (Windows and
   Linux) clean; `export_openapi.py` regenerated; TS types regenerated.
 
-Checkpoint: M5 committed; next M6 (user interface).
+## M6 — User interface (done)
+
+- **Contract:** `src/types/ai.ts` now aliases the generated OpenAPI types
+  (one contract, drift-checked); the hand-written `CaseAnalysis`,
+  `relevance` score and `outcomeAssessment` are gone.
+- **Seam:** `src/services/ai/aiService.ts` is an HTTP client of the LexFlow
+  server only (`setup`, `start`, `listRuns`, `run`); the browser has no key
+  and builds no prompt. `src/hooks/useCaseAnalysis.ts` replaces
+  `useAiAssistant` (removed with its tests): a run is shown only under the
+  key of the run asked for, a run of another case is rejected, unfinished
+  runs are polled every 2 s, finishing refreshes history and setup.
+- **AI Analysis tab** (`AnalysisTab.tsx`):
+  - unavailable → the server's reason, nothing generated;
+  - "What leaves this computer" notice (provider, model, character limit,
+    sample-only rule, scripted provider called out as "not AI"), document
+    checkboxes (only ready text selectable), explicit confirmation
+    checkbox; the button explains why it is disabled;
+  - progress while queued/running; failures with the reason and no result;
+  - result: provider/model/prompt/time/requester, what was sent, the
+    insufficient-evidence statement, removed items with reasons, the
+    disclaimer, facts with the verified quote and a link to the document
+    page, issues with their facts, precedent comparisons (collection
+    metadata, synthetic badge, retrieval rank, link to the judgment
+    passage; "No precedents were available for comparison" when none),
+    contradictions with linked sources;
+  - run history; inputs panel from real case data.
+- `DecisionSupportNote` now also says that LexFlow checks provenance, not
+  legal correctness; it appears on the tab and with every result.
+- The workspace tab shows "Not available" when the server cannot analyse.
+- **Mocks:** `src/test/mockAnalysis.ts` mirrors the server's routes and
+  checks; `mockReadyText` gives a sample record extracted text.
+- **Tests:** `src/pages/analysis.test.tsx` (15) and updated workspace tests;
+  `e2e/analysis.spec.ts` (3): upload a synthetic text file, wait for
+  extraction, analyse with the scripted provider through the real worker,
+  open the fact's source page and the precedent's judgment page; paralegal
+  read-only; outsider 404 and client 403.
+- **Fix found by the e2e test:** the setup query was cached from when the
+  workspace opened, so a document whose text became ready later was not
+  offered. The setup query is now keyed on the documents' processing states
+  (and never cached as fresh), and the selection resets when eligible
+  documents change; a Vitest regression test covers it.
+- Results: `npm run check` green (176 Vitest tests, lint, format, types,
+  API drift, build); Playwright **41 passed** (port 5174 checked free first).
+
+Checkpoint: M6 committed; next M7 (verification, mutation checks, documents).

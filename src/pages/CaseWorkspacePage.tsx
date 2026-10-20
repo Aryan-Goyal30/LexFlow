@@ -3,7 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, BookOpenText, FileText, LayoutList, Scale, Sparkles } from 'lucide-react';
 import type { Case } from '../types';
 import { useCase } from '../hooks/useCases';
-import { useAiAssistant } from '../hooks/useAiAssistant';
+import { useAnalysisSetup } from '../hooks/useCaseAnalysis';
 import { ApiError } from '../services/api/client';
 import { Card } from '../components/ui/Card';
 import { ArchivedBadge, StatusBadge, PriorityBadge, SampleBadge } from '../components/ui/Badge';
@@ -68,14 +68,14 @@ export function CaseWorkspacePage() {
   return (
     <>
       {isError && <StaleDataNotice error={error} onRetry={() => refetch()} className="mb-4" />}
-      {/* Keyed by case so AI state never leaks from one matter into another. */}
+      {/* Keyed by case so analysis state never leaks from one matter into another. */}
       <Workspace key={legalCase.id} legalCase={legalCase} />
     </>
   );
 }
 
 function Workspace({ legalCase: c }: { legalCase: Case }) {
-  const ai = useAiAssistant(c);
+  const analysis = useAnalysisSetup(c);
   const idBase = useId();
   const [params, setParams] = useSearchParams();
   const requested = params.get('tab');
@@ -111,11 +111,11 @@ function Workspace({ legalCase: c }: { legalCase: Case }) {
     [tab, setParams],
   );
 
-  const notConnected = ai.connected ? undefined : 'Not connected';
+  const analysisMeta = analysis.data && !analysis.data.available ? 'Not available' : undefined;
   const tabs: TabItem<WorkspaceTab>[] = [
     { key: 'overview', label: 'Overview', icon: LayoutList },
     { key: 'documents', label: 'Documents', icon: FileText, meta: c.documents.length },
-    { key: 'analysis', label: 'AI Analysis', icon: Sparkles, meta: notConnected },
+    { key: 'analysis', label: 'AI Analysis', icon: Sparkles, meta: analysisMeta },
     { key: 'research', label: 'Research', icon: BookOpenText },
   ];
 
@@ -177,7 +177,7 @@ function Workspace({ legalCase: c }: { legalCase: Case }) {
         <div hidden={tab !== 'documents'}>
           <DocumentsTab legalCase={c} />
         </div>
-        {tab === 'analysis' && <AnalysisTab legalCase={c} ai={ai} />}
+        {tab === 'analysis' && <AnalysisTab legalCase={c} />}
         {tab === 'research' && <ResearchTab legalCase={c} />}
       </div>
     </>

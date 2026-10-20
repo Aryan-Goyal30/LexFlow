@@ -1,68 +1,35 @@
 /**
- * Types for the AI analysis and precedent-research features.
+ * Types for AI case analysis (Phase 5).
  *
- * None of this is implemented yet. These are the shapes the case workspace
- * renders against and the contract a real AI / RAG service must fulfil — see
- * src/services/ai/aiService.ts for the integration seam.
+ * The contract is the server's: these are aliases of the types generated from
+ * its OpenAPI document (`src/services/api/schema.gen.ts`, `npm run api:types`),
+ * so a server change that breaks the screens fails `npm run typecheck`.
  *
- * Every result is decision support for the advocate, never a ruling: outputs
- * carry their sources so a lawyer can verify each claim.
+ * Every item in a result was checked by the server before it was stored: a
+ * fact's quote occurs in the document passage it cites, a precedent is a
+ * judgment passage retrieved for that run. That is a check of provenance, not
+ * of legal correctness: results are decision support for the advocate, never
+ * a ruling, and there is no outcome assessment (a later, gated phase).
  */
 
-/** Where the assistant is for a given case. */
-export type AiStatus = 'not_connected' | 'idle' | 'running' | 'ready' | 'error';
+import type { components } from '../services/api/schema.gen';
 
-/** A fact pulled from the case record or one of its documents. */
-export interface ExtractedFact {
-  id: string;
-  statement: string;
-  /** The document the fact was drawn from, so it can be checked. */
-  sourceDocumentId?: string;
-}
+type Schemas = components['schemas'];
 
-/** A question of law the case turns on. */
-export interface LegalIssue {
-  id: string;
-  question: string;
-  relatedFactIds: string[];
-}
-
-/** A historical judgment retrieved from the legal knowledge base. */
-export interface Precedent {
-  id: string;
-  title: string;
-  citation: string;
-  court: string;
-  year: number;
-  /** Short summary of the judgment. */
-  summary: string;
-  /** Retrieval relevance, 0–1. */
-  relevance: number;
-  similarities: string[];
-  differences: string[];
-}
-
-/** Something in the record that conflicts with something else. */
-export interface Contradiction {
-  id: string;
-  description: string;
-  sourceDocumentIds: string[];
-}
-
-/** The full output of analysing one case. */
-export interface CaseAnalysis {
-  caseId: string;
-  generatedAt: string; // ISO timestamp
-  facts: ExtractedFact[];
-  issues: LegalIssue[];
-  precedents: Precedent[];
-  contradictions: Contradiction[];
-  /**
-   * Evidence-supported outcome assessment. Deliberately optional: a later
-   * milestone, and only produced when the supporting precedents are strong.
-   */
-  outcomeAssessment?: {
-    summary: string;
-    supportingPrecedentIds: string[];
-  };
-}
+/** Whether a case can be analysed now, and what would be sent where. */
+export type AnalysisSetup = Schemas['AnalysisSetupOut'];
+export type AnalysisDocument = Schemas['AnalysisDocumentOut'];
+/** Body of `POST /api/cases/{id}/analysis-runs`. */
+export type AnalysisRunInput = Schemas['AnalysisRunIn'];
+/** One run with its validated result (when ready). */
+export type AnalysisRun = Schemas['AnalysisRunOut'];
+export type AnalysisRunSummary = Schemas['AnalysisRunSummaryOut'];
+export type AnalysisRunList = Schemas['AnalysisRunListOut'];
+export type AnalysisStatus = AnalysisRun['status'];
+export type AnalysisResult = Schemas['AnalysisResultOut'];
+export type AnalysisFact = Schemas['AnalysisFactOut'];
+export type AnalysisSource = Schemas['AnalysisSourceOut'];
+export type AnalysisIssue = Schemas['AnalysisIssueOut'];
+export type AnalysisPrecedent = Schemas['AnalysisPrecedentOut'];
+export type AnalysisContradiction = Schemas['AnalysisContradictionOut'];
+export type AnalysisRemoved = Schemas['AnalysisRemovedOut'];

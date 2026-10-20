@@ -132,24 +132,24 @@ describe('Workspace tabs and the URL', () => {
   });
 });
 
-describe('AI Analysis while no service is connected; Research on the judgment collection', () => {
-  it('marks only AI Analysis as not connected', async () => {
+describe('AI Analysis while analysis is off on the server; Research on the judgment collection', () => {
+  it('marks only AI Analysis as not available', async () => {
     await openCase();
-    expect(tab(/AI Analysis/)).toHaveTextContent('Not connected');
-    expect(tab(/Research/)).not.toHaveTextContent('Not connected');
+    await waitFor(() => expect(tab(/AI Analysis/)).toHaveTextContent('Not available'));
+    expect(tab(/Research/)).not.toHaveTextContent('Not available');
   });
 
-  it('shows the unavailable state on AI Analysis and no results', async () => {
+  it('shows the unavailable state on AI Analysis, with the reason and no results', async () => {
     await openCase(`${CASE_URL}?tab=analysis`);
 
-    expect(screen.getByText('AI analysis is not connected yet')).toBeInTheDocument();
-    const analyse = screen.getByRole('button', { name: /Analyse case/ });
-    expect(analyse).toBeDisabled();
-    expect(analyse).toHaveAccessibleDescription(/no AI service is connected/);
+    expect(await screen.findByText('AI analysis is not available')).toBeInTheDocument();
+    expect(screen.getByText(/turned off on this server/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Analyse case/ })).not.toBeInTheDocument();
     expect(screen.queryByText(/Key Facts/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Relevant Precedents/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Precedent Comparisons/)).not.toBeInTheDocument();
     // The inputs panel is real case data from the API.
-    expect(screen.getByText('4 on file, 0 with a stored file')).toBeInTheDocument();
+    expect(screen.getByText('0 of 4 on file')).toBeInTheDocument();
+    expect(screen.getByText(/decision support for the advocate/)).toBeInTheDocument();
   });
 
   it('says plainly when the judgment collection is empty, with no results', async () => {
