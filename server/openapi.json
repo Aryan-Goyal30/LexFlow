@@ -1732,6 +1732,401 @@
         }
       }
     },
+    "/api/judgments/facets": {
+      "get": {
+        "tags": [
+          "judgments"
+        ],
+        "summary": "Judgment Facets",
+        "description": "Totals, courts and years in the collection, and which search modes work.",
+        "operationId": "judgment_facets_api_judgments_facets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JudgmentFacetsOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/judgments": {
+      "get": {
+        "tags": [
+          "judgments"
+        ],
+        "summary": "List Judgments",
+        "description": "The collection, newest decision first (undated last), with stable paging.",
+        "operationId": "list_judgments_api_judgments_get",
+        "parameters": [
+          {
+            "name": "court",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this court (exact name).",
+              "title": "Court"
+            },
+            "description": "Only this court (exact name)."
+          },
+          {
+            "name": "yearFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 1800
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Yearfrom"
+            }
+          },
+          {
+            "name": "yearTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 1800
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Yearto"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Pagesize"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JudgmentPageOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/judgments/search": {
+      "get": {
+        "tags": [
+          "judgments"
+        ],
+        "summary": "Search Judgments",
+        "description": "Judgments ranked by their best passage for the query (at most 100), paged.\n\n409 ``semantic-search-unavailable`` (with the reason) for semantic or\nhybrid search when embeddings cannot run; keyword search always works.",
+        "operationId": "search_judgments_api_judgments_search_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300,
+              "description": "What to look for.",
+              "title": "Q"
+            },
+            "description": "What to look for."
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "keyword",
+                "semantic",
+                "hybrid"
+              ],
+              "type": "string",
+              "default": "keyword",
+              "title": "Mode"
+            }
+          },
+          {
+            "name": "court",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this court (exact name).",
+              "title": "Court"
+            },
+            "description": "Only this court (exact name)."
+          },
+          {
+            "name": "yearFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 1800
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Yearfrom"
+            }
+          },
+          {
+            "name": "yearTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 1800
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Yearto"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 10,
+              "title": "Pagesize"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JudgmentSearchOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/judgments/{judgment_id}": {
+      "get": {
+        "tags": [
+          "judgments"
+        ],
+        "summary": "Get Judgment",
+        "description": "One judgment with its source and the terms-of-use record of that source.",
+        "operationId": "get_judgment_api_judgments__judgment_id__get",
+        "parameters": [
+          {
+            "name": "judgment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Judgment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JudgmentDetailOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/judgments/{judgment_id}/text": {
+      "get": {
+        "tags": [
+          "judgments"
+        ],
+        "summary": "Judgment Text",
+        "description": "One page (or part) of a judgment's text, exactly as extracted.",
+        "operationId": "judgment_text_api_judgments__judgment_id__text_get",
+        "parameters": [
+          {
+            "name": "judgment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Judgment Id"
+            }
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The page (PDF) or part to read.",
+              "default": 1,
+              "title": "Section"
+            },
+            "description": "The page (PDF) or part to read."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JudgmentTextOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/hearings": {
       "get": {
         "tags": [
@@ -4823,6 +5218,624 @@
         "type": "object",
         "title": "HearingUpdate",
         "description": "Change a scheduled hearing. Only the fields present change; ``time`` may be null."
+      },
+      "JudgmentDetailOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "court": {
+            "type": "string",
+            "title": "Court"
+          },
+          "citation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation",
+            "description": "Only when the source supplied one."
+          },
+          "decisionDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decisiondate"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "practiceAreas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Practiceareas"
+          },
+          "sourceName": {
+            "type": "string",
+            "title": "Sourcename"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "title": "Sourceurl",
+            "description": "The judgment at its source (https)."
+          },
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic",
+            "description": "True for invented test data; never a real judgment, never to be cited."
+          },
+          "bench": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bench"
+          },
+          "source": {
+            "$ref": "#/components/schemas/JudgmentSourceOut"
+          },
+          "pageCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagecount",
+            "description": "PDFs only."
+          },
+          "sectionCount": {
+            "type": "integer",
+            "title": "Sectioncount"
+          },
+          "charCount": {
+            "type": "integer",
+            "title": "Charcount"
+          },
+          "extractor": {
+            "type": "string",
+            "title": "Extractor"
+          },
+          "importedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Importedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "court",
+          "citation",
+          "decisionDate",
+          "year",
+          "practiceAreas",
+          "sourceName",
+          "sourceUrl",
+          "synthetic",
+          "bench",
+          "source",
+          "pageCount",
+          "sectionCount",
+          "charCount",
+          "extractor",
+          "importedAt"
+        ],
+        "title": "JudgmentDetailOut"
+      },
+      "JudgmentFacetsOut": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "synthetic": {
+            "type": "integer",
+            "title": "Synthetic",
+            "description": "Invented test judgments among them."
+          },
+          "indexed": {
+            "type": "integer",
+            "title": "Indexed",
+            "description": "Judgments with vectors for the current model."
+          },
+          "courts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Courts"
+          },
+          "yearMin": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yearmin"
+          },
+          "yearMax": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yearmax"
+          },
+          "modes": {
+            "$ref": "#/components/schemas/JudgmentSearchModesOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "synthetic",
+          "indexed",
+          "courts",
+          "yearMin",
+          "yearMax",
+          "modes"
+        ],
+        "title": "JudgmentFacetsOut",
+        "description": "What the collection holds, for filters and honest empty states."
+      },
+      "JudgmentHitOut": {
+        "properties": {
+          "judgment": {
+            "$ref": "#/components/schemas/JudgmentSummaryOut"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "description": "Ranking score of the mode (full-text rank, cosine similarity or reciprocal-rank fusion). Higher ranks first; not a probability or a legal opinion."
+          },
+          "passage": {
+            "$ref": "#/components/schemas/JudgmentPassageOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "judgment",
+          "score",
+          "passage"
+        ],
+        "title": "JudgmentHitOut"
+      },
+      "JudgmentPageOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/JudgmentSummaryOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "pageSize": {
+            "type": "integer",
+            "title": "Pagesize"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "title": "JudgmentPageOut"
+      },
+      "JudgmentPassageOut": {
+        "properties": {
+          "chunkId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Chunkid"
+          },
+          "sectionNumber": {
+            "type": "integer",
+            "title": "Sectionnumber",
+            "description": "The page (PDF) or part the passage is in."
+          },
+          "pageNumber": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagenumber"
+          },
+          "charStart": {
+            "type": "integer",
+            "title": "Charstart",
+            "description": "Offset of the passage in the section's text."
+          },
+          "charEnd": {
+            "type": "integer",
+            "title": "Charend"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The passage, exactly as extracted."
+          }
+        },
+        "type": "object",
+        "required": [
+          "chunkId",
+          "sectionNumber",
+          "pageNumber",
+          "charStart",
+          "charEnd",
+          "text"
+        ],
+        "title": "JudgmentPassageOut"
+      },
+      "JudgmentSearchModesOut": {
+        "properties": {
+          "keyword": {
+            "type": "boolean",
+            "title": "Keyword"
+          },
+          "semantic": {
+            "type": "boolean",
+            "title": "Semantic"
+          },
+          "hybrid": {
+            "type": "boolean",
+            "title": "Hybrid"
+          },
+          "unavailableReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailablereason",
+            "description": "Why semantic and hybrid are off."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "keyword",
+          "semantic",
+          "hybrid",
+          "unavailableReason",
+          "model"
+        ],
+        "title": "JudgmentSearchModesOut"
+      },
+      "JudgmentSearchOut": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "keyword",
+              "semantic",
+              "hybrid"
+            ],
+            "title": "Mode"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "The embedding model (semantic and hybrid modes)."
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Judgments ranked (at most maxResults)."
+          },
+          "maxResults": {
+            "type": "integer",
+            "title": "Maxresults"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "pageSize": {
+            "type": "integer",
+            "title": "Pagesize"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/JudgmentHitOut"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode",
+          "model",
+          "total",
+          "maxResults",
+          "page",
+          "pageSize",
+          "results"
+        ],
+        "title": "JudgmentSearchOut",
+        "description": "Judgments of the collection ranked by their best matching passage."
+      },
+      "JudgmentSourceOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "termsUrl": {
+            "type": "string",
+            "title": "Termsurl"
+          },
+          "termsCheckedOn": {
+            "type": "string",
+            "format": "date",
+            "title": "Termscheckedon"
+          },
+          "termsCheckedBy": {
+            "type": "string",
+            "title": "Termscheckedby"
+          },
+          "permittedUse": {
+            "type": "string",
+            "title": "Permitteduse",
+            "description": "What the source's terms allow, as recorded."
+          },
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "termsUrl",
+          "termsCheckedOn",
+          "termsCheckedBy",
+          "permittedUse",
+          "synthetic"
+        ],
+        "title": "JudgmentSourceOut"
+      },
+      "JudgmentSummaryOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "court": {
+            "type": "string",
+            "title": "Court"
+          },
+          "citation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation",
+            "description": "Only when the source supplied one."
+          },
+          "decisionDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decisiondate"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "practiceAreas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Practiceareas"
+          },
+          "sourceName": {
+            "type": "string",
+            "title": "Sourcename"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "title": "Sourceurl",
+            "description": "The judgment at its source (https)."
+          },
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic",
+            "description": "True for invented test data; never a real judgment, never to be cited."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "court",
+          "citation",
+          "decisionDate",
+          "year",
+          "practiceAreas",
+          "sourceName",
+          "sourceUrl",
+          "synthetic"
+        ],
+        "title": "JudgmentSummaryOut",
+        "description": "A judgment in the collection, with the metadata its import supplied."
+      },
+      "JudgmentTextOut": {
+        "properties": {
+          "judgmentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Judgmentid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic"
+          },
+          "pageCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagecount"
+          },
+          "sectionCount": {
+            "type": "integer",
+            "title": "Sectioncount"
+          },
+          "section": {
+            "$ref": "#/components/schemas/JudgmentTextSectionOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "judgmentId",
+          "title",
+          "synthetic",
+          "pageCount",
+          "sectionCount",
+          "section"
+        ],
+        "title": "JudgmentTextOut"
+      },
+      "JudgmentTextSectionOut": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "pageNumber": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagenumber"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "pageNumber",
+          "text"
+        ],
+        "title": "JudgmentTextSectionOut"
       },
       "MeOut": {
         "properties": {

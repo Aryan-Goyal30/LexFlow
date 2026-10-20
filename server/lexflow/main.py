@@ -21,6 +21,7 @@ from lexflow.api import (
     documents,
     health,
     hearings,
+    judgments,
     portal,
     reference,
     search,
@@ -102,6 +103,7 @@ def create_app() -> FastAPI:
     app.include_router(cases.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(documents.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(search.router, prefix=API_PREFIX, dependencies=staff)
+    app.include_router(judgments.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(hearings.router, prefix=API_PREFIX, dependencies=staff)
     administrators = [Depends(require_user), Depends(require_roles(ADMINISTRATOR))]
     app.include_router(admin.router, prefix=API_PREFIX, dependencies=administrators)

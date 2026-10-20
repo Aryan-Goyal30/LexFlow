@@ -470,6 +470,115 @@ class CaseSearchOut(ApiModel):
     results: list[CaseSearchHitOut]
 
 
+class JudgmentSummaryOut(ApiModel):
+    """A judgment in the collection, with the metadata its import supplied."""
+
+    id: uuid.UUID
+    title: str
+    court: str
+    citation: str | None = Field(description="Only when the source supplied one.")
+    decision_date: date | None
+    year: int | None
+    practice_areas: list[str]
+    source_name: str
+    source_url: str = Field(description="The judgment at its source (https).")
+    synthetic: bool = Field(
+        description="True for invented test data; never a real judgment, never to be cited."
+    )
+
+
+class JudgmentSourceOut(ApiModel):
+    key: str
+    name: str
+    terms_url: str
+    terms_checked_on: date
+    terms_checked_by: str
+    permitted_use: str = Field(description="What the source's terms allow, as recorded.")
+    synthetic: bool
+
+
+class JudgmentDetailOut(JudgmentSummaryOut):
+    bench: str | None
+    source: JudgmentSourceOut
+    page_count: int | None = Field(description="PDFs only.")
+    section_count: int
+    char_count: int
+    extractor: str
+    imported_at: datetime
+
+
+class JudgmentPageOut(ApiModel):
+    items: list[JudgmentSummaryOut]
+    total: int
+    page: int
+    page_size: int
+
+
+class JudgmentPassageOut(ApiModel):
+    chunk_id: uuid.UUID
+    section_number: int = Field(description="The page (PDF) or part the passage is in.")
+    page_number: int | None
+    char_start: int = Field(description="Offset of the passage in the section's text.")
+    char_end: int
+    text: str = Field(description="The passage, exactly as extracted.")
+
+
+class JudgmentHitOut(ApiModel):
+    judgment: JudgmentSummaryOut
+    score: float = Field(
+        description="Ranking score of the mode (full-text rank, cosine similarity or "
+        "reciprocal-rank fusion). Higher ranks first; not a probability or a legal opinion."
+    )
+    passage: JudgmentPassageOut
+
+
+class JudgmentSearchOut(ApiModel):
+    """Judgments of the collection ranked by their best matching passage."""
+
+    mode: Literal["keyword", "semantic", "hybrid"]
+    model: str | None = Field(description="The embedding model (semantic and hybrid modes).")
+    total: int = Field(description="Judgments ranked (at most maxResults).")
+    max_results: int
+    page: int
+    page_size: int
+    results: list[JudgmentHitOut]
+
+
+class JudgmentSearchModesOut(ApiModel):
+    keyword: bool
+    semantic: bool
+    hybrid: bool
+    unavailable_reason: str | None = Field(description="Why semantic and hybrid are off.")
+    model: str | None
+
+
+class JudgmentFacetsOut(ApiModel):
+    """What the collection holds, for filters and honest empty states."""
+
+    total: int
+    synthetic: int = Field(description="Invented test judgments among them.")
+    indexed: int = Field(description="Judgments with vectors for the current model.")
+    courts: list[str]
+    year_min: int | None
+    year_max: int | None
+    modes: JudgmentSearchModesOut
+
+
+class JudgmentTextSectionOut(ApiModel):
+    number: int
+    page_number: int | None
+    text: str
+
+
+class JudgmentTextOut(ApiModel):
+    judgment_id: uuid.UUID
+    title: str
+    synthetic: bool
+    page_count: int | None
+    section_count: int
+    section: JudgmentTextSectionOut
+
+
 class DocumentOut(ApiModel):
     id: uuid.UUID
     name: str

@@ -610,6 +610,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/judgments/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Judgment Facets
+         * @description Totals, courts and years in the collection, and which search modes work.
+         */
+        get: operations["judgment_facets_api_judgments_facets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/judgments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Judgments
+         * @description The collection, newest decision first (undated last), with stable paging.
+         */
+        get: operations["list_judgments_api_judgments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/judgments/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Judgments
+         * @description Judgments ranked by their best passage for the query (at most 100), paged.
+         *
+         *     409 ``semantic-search-unavailable`` (with the reason) for semantic or
+         *     hybrid search when embeddings cannot run; keyword search always works.
+         */
+        get: operations["search_judgments_api_judgments_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/judgments/{judgment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Judgment
+         * @description One judgment with its source and the terms-of-use record of that source.
+         */
+        get: operations["get_judgment_api_judgments__judgment_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/judgments/{judgment_id}/text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Judgment Text
+         * @description One page (or part) of a judgment's text, exactly as extracted.
+         */
+        get: operations["judgment_text_api_judgments__judgment_id__text_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/hearings": {
         parameters: {
             query?: never;
@@ -1780,6 +1883,265 @@ export interface components {
             court?: string | null;
             /** Purpose */
             purpose?: string | null;
+        };
+        /** JudgmentDetailOut */
+        JudgmentDetailOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Court */
+            court: string;
+            /**
+             * Citation
+             * @description Only when the source supplied one.
+             */
+            citation: string | null;
+            /** Decisiondate */
+            decisionDate: string | null;
+            /** Year */
+            year: number | null;
+            /** Practiceareas */
+            practiceAreas: string[];
+            /** Sourcename */
+            sourceName: string;
+            /**
+             * Sourceurl
+             * @description The judgment at its source (https).
+             */
+            sourceUrl: string;
+            /**
+             * Synthetic
+             * @description True for invented test data; never a real judgment, never to be cited.
+             */
+            synthetic: boolean;
+            /** Bench */
+            bench: string | null;
+            source: components["schemas"]["JudgmentSourceOut"];
+            /**
+             * Pagecount
+             * @description PDFs only.
+             */
+            pageCount: number | null;
+            /** Sectioncount */
+            sectionCount: number;
+            /** Charcount */
+            charCount: number;
+            /** Extractor */
+            extractor: string;
+            /**
+             * Importedat
+             * Format: date-time
+             */
+            importedAt: string;
+        };
+        /**
+         * JudgmentFacetsOut
+         * @description What the collection holds, for filters and honest empty states.
+         */
+        JudgmentFacetsOut: {
+            /** Total */
+            total: number;
+            /**
+             * Synthetic
+             * @description Invented test judgments among them.
+             */
+            synthetic: number;
+            /**
+             * Indexed
+             * @description Judgments with vectors for the current model.
+             */
+            indexed: number;
+            /** Courts */
+            courts: string[];
+            /** Yearmin */
+            yearMin: number | null;
+            /** Yearmax */
+            yearMax: number | null;
+            modes: components["schemas"]["JudgmentSearchModesOut"];
+        };
+        /** JudgmentHitOut */
+        JudgmentHitOut: {
+            judgment: components["schemas"]["JudgmentSummaryOut"];
+            /**
+             * Score
+             * @description Ranking score of the mode (full-text rank, cosine similarity or reciprocal-rank fusion). Higher ranks first; not a probability or a legal opinion.
+             */
+            score: number;
+            passage: components["schemas"]["JudgmentPassageOut"];
+        };
+        /** JudgmentPageOut */
+        JudgmentPageOut: {
+            /** Items */
+            items: components["schemas"]["JudgmentSummaryOut"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Pagesize */
+            pageSize: number;
+        };
+        /** JudgmentPassageOut */
+        JudgmentPassageOut: {
+            /**
+             * Chunkid
+             * Format: uuid
+             */
+            chunkId: string;
+            /**
+             * Sectionnumber
+             * @description The page (PDF) or part the passage is in.
+             */
+            sectionNumber: number;
+            /** Pagenumber */
+            pageNumber: number | null;
+            /**
+             * Charstart
+             * @description Offset of the passage in the section's text.
+             */
+            charStart: number;
+            /** Charend */
+            charEnd: number;
+            /**
+             * Text
+             * @description The passage, exactly as extracted.
+             */
+            text: string;
+        };
+        /** JudgmentSearchModesOut */
+        JudgmentSearchModesOut: {
+            /** Keyword */
+            keyword: boolean;
+            /** Semantic */
+            semantic: boolean;
+            /** Hybrid */
+            hybrid: boolean;
+            /**
+             * Unavailablereason
+             * @description Why semantic and hybrid are off.
+             */
+            unavailableReason: string | null;
+            /** Model */
+            model: string | null;
+        };
+        /**
+         * JudgmentSearchOut
+         * @description Judgments of the collection ranked by their best matching passage.
+         */
+        JudgmentSearchOut: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "keyword" | "semantic" | "hybrid";
+            /**
+             * Model
+             * @description The embedding model (semantic and hybrid modes).
+             */
+            model: string | null;
+            /**
+             * Total
+             * @description Judgments ranked (at most maxResults).
+             */
+            total: number;
+            /** Maxresults */
+            maxResults: number;
+            /** Page */
+            page: number;
+            /** Pagesize */
+            pageSize: number;
+            /** Results */
+            results: components["schemas"]["JudgmentHitOut"][];
+        };
+        /** JudgmentSourceOut */
+        JudgmentSourceOut: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Termsurl */
+            termsUrl: string;
+            /**
+             * Termscheckedon
+             * Format: date
+             */
+            termsCheckedOn: string;
+            /** Termscheckedby */
+            termsCheckedBy: string;
+            /**
+             * Permitteduse
+             * @description What the source's terms allow, as recorded.
+             */
+            permittedUse: string;
+            /** Synthetic */
+            synthetic: boolean;
+        };
+        /**
+         * JudgmentSummaryOut
+         * @description A judgment in the collection, with the metadata its import supplied.
+         */
+        JudgmentSummaryOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Court */
+            court: string;
+            /**
+             * Citation
+             * @description Only when the source supplied one.
+             */
+            citation: string | null;
+            /** Decisiondate */
+            decisionDate: string | null;
+            /** Year */
+            year: number | null;
+            /** Practiceareas */
+            practiceAreas: string[];
+            /** Sourcename */
+            sourceName: string;
+            /**
+             * Sourceurl
+             * @description The judgment at its source (https).
+             */
+            sourceUrl: string;
+            /**
+             * Synthetic
+             * @description True for invented test data; never a real judgment, never to be cited.
+             */
+            synthetic: boolean;
+        };
+        /** JudgmentTextOut */
+        JudgmentTextOut: {
+            /**
+             * Judgmentid
+             * Format: uuid
+             */
+            judgmentId: string;
+            /** Title */
+            title: string;
+            /** Synthetic */
+            synthetic: boolean;
+            /** Pagecount */
+            pageCount: number | null;
+            /** Sectioncount */
+            sectionCount: number;
+            section: components["schemas"]["JudgmentTextSectionOut"];
+        };
+        /** JudgmentTextSectionOut */
+        JudgmentTextSectionOut: {
+            /** Number */
+            number: number;
+            /** Pagenumber */
+            pageNumber: number | null;
+            /** Text */
+            text: string;
         };
         /**
          * MeOut
@@ -3422,6 +3784,184 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    judgment_facets_api_judgments_facets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JudgmentFacetsOut"];
+                };
+            };
+        };
+    };
+    list_judgments_api_judgments_get: {
+        parameters: {
+            query?: {
+                /** @description Only this court (exact name). */
+                court?: string | null;
+                yearFrom?: number | null;
+                yearTo?: number | null;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JudgmentPageOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    search_judgments_api_judgments_search_get: {
+        parameters: {
+            query: {
+                /** @description What to look for. */
+                q: string;
+                mode?: "keyword" | "semantic" | "hybrid";
+                /** @description Only this court (exact name). */
+                court?: string | null;
+                yearFrom?: number | null;
+                yearTo?: number | null;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JudgmentSearchOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_judgment_api_judgments__judgment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                judgment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JudgmentDetailOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    judgment_text_api_judgments__judgment_id__text_get: {
+        parameters: {
+            query?: {
+                /** @description The page (PDF) or part to read. */
+                section?: number;
+            };
+            header?: never;
+            path: {
+                judgment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JudgmentTextOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
             422: {
                 headers: {
                     [name: string]: unknown;
