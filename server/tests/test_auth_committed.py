@@ -57,11 +57,15 @@ def test_failures_and_lockout_survive_the_failed_requests(
         assert user is not None
         assert user.failed_login_count == 5
         assert user.locked_until is not None
+        # In the order they happened: without ORDER BY the database may return
+        # them in any order (this test failed intermittently because of that).
         events = session.scalars(
-            select(AuditEvent).where(AuditEvent.action == "auth.sign_in")
+            select(AuditEvent)
+            .where(AuditEvent.action == "auth.sign_in")
+            .order_by(AuditEvent.occurred_at, AuditEvent.id)
         ).all()
         assert [e.outcome for e in events] == ["failed"] * 5
-        assert events[-1].details["locked"] is True
+        assert [e.details.get("locked") for e in events] == [False] * 4 + [True]
 
 
 def test_a_sign_in_that_rolls_back_is_not_audited_as_a_success(

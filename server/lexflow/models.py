@@ -10,6 +10,7 @@ import uuid
 from datetime import UTC, date, datetime, time
 from typing import Any
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -559,6 +560,36 @@ class DocumentChunk(Base):
     char_end: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     content_sha256: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = _created_at()
+
+
+class DocumentChunkEmbedding(Base):
+    """The vector of one chunk under one model (pgvector; migration 0009).
+
+    ``content_sha256`` is the chunk's hash when it was embedded, so a vector
+    never outlives the text it was computed from; ``model`` names the model and
+    revision, so vectors of different models are never compared. Deleting a
+    chunk (re-extraction, purge) deletes its vectors.
+    """
+
+    __tablename__ = "document_chunk_embeddings"
+    __table_args__ = (
+        CheckConstraint("dimensions = vector_dims(embedding)", name="dimensions_match"),
+        CheckConstraint("content_sha256 ~ '^[0-9a-f]{64}$'", name="content_sha256_format"),
+        CheckConstraint("char_length(model) BETWEEN 1 AND 200", name="model_length"),
+        Index("ix_document_chunk_embeddings_document_id_model", "document_id", "model"),
+    )
+
+    chunk_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("document_chunks.id", ondelete="CASCADE"), primary_key=True
+    )
+    model: Mapped[str] = mapped_column(Text, primary_key=True)
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
+    )
+    content_sha256: Mapped[str] = mapped_column(Text, nullable=False)
+    dimensions: Mapped[int] = mapped_column(Integer, nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(384), nullable=False)
     created_at: Mapped[datetime] = _created_at()
 
 

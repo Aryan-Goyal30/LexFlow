@@ -15,3 +15,10 @@ argon2-cffi
 # Text extraction (Phase 3): PDF pages (BSD) and Word .docx files (MIT).
 pypdf
 python-docx
+# Embeddings (local only, opt-in): pgvector column type and adapters (MIT);
+# the ONNX model runtime (MIT), its tokenizer (Apache-2.0) and numpy (BSD).
+# The model itself is downloaded only by `python -m lexflow.cli.models download`.
+pgvector
+onnxruntime
+tokenizers
+numpy

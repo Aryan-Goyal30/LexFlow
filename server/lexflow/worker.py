@@ -28,21 +28,30 @@ from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager
 from datetime import UTC, datetime
 
-from sqlalchemy import update
+from sqlalchemy import Engine, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, sessionmaker
 
 from lexflow.config import Settings, get_settings
 from lexflow.db import engine_for
-from lexflow.embeddings import EmbeddingsUnavailableError, provider_for
+from lexflow.embeddings import (
+    EmbeddingProvider,
+    EmbeddingsUnavailableError,
+    check_database,
+    provider_for,
+)
 from lexflow.extraction import Extracted, ExtractionError, Limits
 from lexflow.extraction.chunking import chunk_sections
 from lexflow.extraction.runner import run_extraction
 from lexflow.models import Document, DocumentExtraction
 from lexflow.services import extraction_queue as queue
+from lexflow.services import indexing
 from lexflow.storage import LocalDiskStorage, Storage
 
 logger = logging.getLogger("lexflow.worker")
+
+# Default for ``run(provider=...)``: take the provider from the settings.
+FROM_SETTINGS = object()
 
 Sessions = Callable[[], AbstractContextManager[Session]]
 ExtractFn = Callable[[str, bytes, Limits, float], Extracted]
@@ -97,8 +106,10 @@ def process(
     *,
     extract: ExtractFn = default_extract,
     now: Callable[[], datetime] = _now,
+    index_status: str = "disabled",
 ) -> str:
-    """Process one claimed job; returns its new status (or ``"discarded"``)."""
+    """Process one claimed job; returns its new status (or ``"discarded"``).
+    With embeddings enabled, ``index_status="pending"`` queues the chunks for indexing."""
     with sessions() as session:
         document = session.get(Document, document_id)
         if document is not None:
@@ -137,6 +148,7 @@ def process(
             outcome=outcome,
             now=now(),
             max_attempts=settings.worker_max_attempts,
+            index_status=index_status,
         )
     if isinstance(outcome, queue.Failure):
         logger.info("document %s: %s (%s)", document_id, status, outcome.code)
@@ -176,11 +188,25 @@ def run(
     extract: ExtractFn = default_extract,
     now: Callable[[], datetime] = _now,
     sleep: Callable[[float], None] = time.sleep,
+    engine: Engine | None = None,
+    provider: EmbeddingProvider | object | None = FROM_SETTINGS,
 ) -> int:
     """Claim and process jobs. With ``once``, stop when nothing is waiting.
-    Returns how many jobs were processed. Raises ``EmbeddingsUnavailableError`` before
-    claiming anything when the configured embeddings cannot be produced."""
-    provider_for(settings)  # chunks are stored with index status "disabled"
+    Returns how many jobs were processed (text extractions and indexings).
+
+    Raises ``EmbeddingsUnavailableError`` before claiming anything when the
+    configured embeddings cannot be produced or stored. With embeddings on,
+    extracted chunks are queued for indexing, and documents waiting for
+    indexing are embedded whenever no text is waiting to be extracted."""
+    if provider is FROM_SETTINGS:
+        provider = provider_for(settings)  # loads local files only; never downloads
+    if provider is not None and not isinstance(provider, EmbeddingProvider):
+        raise TypeError("provider must be an EmbeddingProvider")
+    if provider is not None:
+        if engine is None:
+            raise ValueError("indexing needs the database engine")
+        with sessions() as session:
+            check_database(session)
     processed = 0
     while True:
         with sessions() as session:
@@ -192,12 +218,28 @@ def run(
                 max_attempts=settings.worker_max_attempts,
             )
         if document_id is None:
+            if provider is not None and engine is not None:
+                indexed = indexing.index_next(
+                    engine, provider, batch_size=settings.embedding_batch_size, now=now
+                )
+                if indexed is not None:
+                    processed += 1
+                    continue
             if once:
                 return processed
             sleep(settings.worker_poll_seconds)
             continue
         try:
-            process(sessions, storage, settings, document_id, worker_id, extract=extract, now=now)
+            process(
+                sessions,
+                storage,
+                settings,
+                document_id,
+                worker_id,
+                extract=extract,
+                now=now,
+                index_status="disabled" if provider is None else "pending",
+            )
         except BaseException:
             release(sessions, document_id, worker_id)
             raise
@@ -210,7 +252,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     settings = get_settings()
-    factory = sessionmaker(bind=engine_for(settings.database_url), expire_on_commit=False)
+    engine = engine_for(settings.database_url)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
     storage = LocalDiskStorage(settings.upload_dir)
     worker_id = new_worker_id()
     logger.info(
@@ -220,7 +263,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         settings.extraction_timeout_seconds,
     )
     try:
-        count = run(factory, storage, settings, worker_id=worker_id, once=args.once)
+        count = run(factory, storage, settings, worker_id=worker_id, once=args.once, engine=engine)
     except KeyboardInterrupt:
         logger.info("worker %s stopped", worker_id)
         return 0

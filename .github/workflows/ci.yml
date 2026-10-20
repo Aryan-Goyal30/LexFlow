@@ -55,7 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17
+        # pgvector on Debian 13 (same PostgreSQL and glibc as postgres:17; ADR 0016).
+        image: pgvector/pgvector:pg17-trixie
         env:
           POSTGRES_USER: lexflow
           POSTGRES_DB: lexflow
@@ -105,7 +106,8 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17
+        # pgvector on Debian 13 (same PostgreSQL and glibc as postgres:17; ADR 0016).
+        image: pgvector/pgvector:pg17-trixie
         env:
           POSTGRES_USER: lexflow
           POSTGRES_DB: lexflow

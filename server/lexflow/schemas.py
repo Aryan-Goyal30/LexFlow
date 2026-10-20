@@ -440,6 +440,36 @@ class DocumentTextOut(ApiModel):
     section: DocumentTextSectionOut
 
 
+class CaseSearchHitOut(ApiModel):
+    """A passage of one of the case's documents, located exactly."""
+
+    document_id: uuid.UUID
+    document_name: str
+    chunk_id: uuid.UUID
+    chunk_number: int
+    section_number: int = Field(description="The page (PDF) or part the passage is in.")
+    page_number: int | None = Field(description="The PDF page; null for documents without pages.")
+    char_start: int = Field(description="Offset of the passage in the section's extracted text.")
+    char_end: int
+    text: str = Field(description="The passage, exactly as extracted.")
+    score: float = Field(
+        description="Ranking score of the mode: cosine similarity (semantic), full-text rank "
+        "(keyword) or reciprocal-rank fusion (hybrid). Higher is closer; not a probability."
+    )
+
+
+class CaseSearchOut(ApiModel):
+    """Passages of the case's own documents ranked against the query (no legal judgment)."""
+
+    mode: Literal["keyword", "semantic", "hybrid"]
+    model: str | None = Field(description="The embedding model (semantic and hybrid modes).")
+    documents_with_text: int = Field(description="Live documents of the case whose text is ready.")
+    documents_indexed: int = Field(
+        description="Of those, how many have vectors for the model (semantic and hybrid)."
+    )
+    results: list[CaseSearchHitOut]
+
+
 class DocumentOut(ApiModel):
     id: uuid.UUID
     name: str

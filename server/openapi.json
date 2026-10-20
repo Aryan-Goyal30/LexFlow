@@ -1627,6 +1627,111 @@
         }
       }
     },
+    "/api/cases/{case_id}/search": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Search Case",
+        "description": "Passages of this case's documents that match the query, best first.\n\nFor staff who may view the case. Results come only from the case's own\ndocuments (not deleted, text extracted) and show where each passage is.\nThey are ranked text, not legal advice or a prediction.",
+        "operationId": "search_case_api_cases__case_id__search_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "description": "What to look for.",
+              "title": "Q"
+            },
+            "description": "What to look for."
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "keyword",
+                "semantic",
+                "hybrid"
+              ],
+              "type": "string",
+              "description": "keyword (full text), semantic (embeddings) or hybrid.",
+              "default": "keyword",
+              "title": "Mode"
+            },
+            "description": "keyword (full text), semantic (embeddings) or hybrid."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseSearchOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/hearings": {
       "get": {
         "tags": [
@@ -3365,6 +3470,131 @@
         ],
         "title": "CasePermissions",
         "description": "What the signed-in user may do on this case (to show the right controls).\n\nA convenience for the screens only: the server checks every action again."
+      },
+      "CaseSearchHitOut": {
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Documentid"
+          },
+          "documentName": {
+            "type": "string",
+            "title": "Documentname"
+          },
+          "chunkId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Chunkid"
+          },
+          "chunkNumber": {
+            "type": "integer",
+            "title": "Chunknumber"
+          },
+          "sectionNumber": {
+            "type": "integer",
+            "title": "Sectionnumber",
+            "description": "The page (PDF) or part the passage is in."
+          },
+          "pageNumber": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagenumber",
+            "description": "The PDF page; null for documents without pages."
+          },
+          "charStart": {
+            "type": "integer",
+            "title": "Charstart",
+            "description": "Offset of the passage in the section's extracted text."
+          },
+          "charEnd": {
+            "type": "integer",
+            "title": "Charend"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The passage, exactly as extracted."
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "description": "Ranking score of the mode: cosine similarity (semantic), full-text rank (keyword) or reciprocal-rank fusion (hybrid). Higher is closer; not a probability."
+          }
+        },
+        "type": "object",
+        "required": [
+          "documentId",
+          "documentName",
+          "chunkId",
+          "chunkNumber",
+          "sectionNumber",
+          "pageNumber",
+          "charStart",
+          "charEnd",
+          "text",
+          "score"
+        ],
+        "title": "CaseSearchHitOut",
+        "description": "A passage of one of the case's documents, located exactly."
+      },
+      "CaseSearchOut": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "keyword",
+              "semantic",
+              "hybrid"
+            ],
+            "title": "Mode"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "The embedding model (semantic and hybrid modes)."
+          },
+          "documentsWithText": {
+            "type": "integer",
+            "title": "Documentswithtext",
+            "description": "Live documents of the case whose text is ready."
+          },
+          "documentsIndexed": {
+            "type": "integer",
+            "title": "Documentsindexed",
+            "description": "Of those, how many have vectors for the model (semantic and hybrid)."
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/CaseSearchHitOut"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode",
+          "model",
+          "documentsWithText",
+          "documentsIndexed",
+          "results"
+        ],
+        "title": "CaseSearchOut",
+        "description": "Passages of the case's own documents ranked against the query (no legal judgment)."
       },
       "CaseSummary": {
         "properties": {

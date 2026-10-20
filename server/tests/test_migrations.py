@@ -30,6 +30,7 @@ APP_TABLES = {
     "document_extractions",
     "document_sections",
     "document_chunks",
+    "document_chunk_embeddings",
 }
 
 

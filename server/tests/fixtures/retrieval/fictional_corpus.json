@@ -1,0 +1,91 @@
+{
+  "about": "FICTIONAL documents and queries for an engineering check of LexFlow's case search. Every name, place, date and fact is invented; nothing here is a real matter, judgment or citation. Each query lists the (document, page) pairs that answer it. 'lexical' queries share words with their answer; 'paraphrase' queries mean the same thing in other words. Written by the developer, so it measures plumbing and gross behaviour, not legal research quality.",
+  "documents": [
+    {
+      "name": "Rent recovery plaint.pdf",
+      "pages": [
+        "FICTIONAL. Plaint for recovery of arrears of rent. The plaintiff, Meera Kulkarni, owns a shop at 14 Lotus Lane, Nashik. The defendant, Vikram Shetty, took the shop on a monthly tenancy at a rent of Rs. 18,000 payable on the fifth of every month.",
+        "FICTIONAL. The defendant paid rent regularly until February. From March onwards he paid nothing, and by August the arrears amounted to Rs. 1,08,000. Reminders sent by the plaintiff on 10 April and 2 June went unanswered.",
+        "FICTIONAL. The plaintiff therefore prays for a decree directing the defendant to pay the arrears with interest at nine per cent a year, and for costs of this suit."
+      ]
+    },
+    {
+      "name": "Notice to quit.pdf",
+      "pages": [
+        "FICTIONAL. Legal notice under section 106 of the Transfer of Property Act. You are hereby called upon to vacate and hand over peaceful possession of the shop at 14 Lotus Lane within fifteen days of receiving this notice, failing which proceedings for eviction will be started.",
+        "FICTIONAL. The notice was sent by registered post with acknowledgement due on 20 August and was also delivered by hand to the tenant's manager, who refused to sign the copy."
+      ]
+    },
+    {
+      "name": "Written statement of defendant.pdf",
+      "pages": [
+        "FICTIONAL. The defendant denies that any rent is due. He states that the roof of the shop leaked throughout the monsoon and the plaintiff refused to repair it despite repeated requests.",
+        "FICTIONAL. The defendant spent Rs. 42,000 of his own money on waterproofing and claims that this amount must be adjusted against any sum found payable to the plaintiff.",
+        "FICTIONAL. The defendant further states that the suit is premature because no valid notice terminating the tenancy was ever served on him."
+      ]
+    },
+    {
+      "name": "Trademark opposition.pdf",
+      "pages": [
+        "FICTIONAL. Notice of opposition to application number 9988776 for the mark SUNCRISP in class 30 covering biscuits, rusks and bakery products, filed by Golden Grain Foods.",
+        "FICTIONAL. The opponent has used the mark SUNCRUST for biscuits since 2009 and holds a registration in class 30. The two marks are phonetically and visually similar and the goods are identical.",
+        "FICTIONAL. Sales figures annexed show turnover of Rs. 40 crore under SUNCRUST in the last financial year, establishing a substantial reputation in the market."
+      ]
+    },
+    {
+      "name": "Employment termination letter.pdf",
+      "pages": [
+        "FICTIONAL. Your services as senior accountant are terminated with effect from 30 September on the ground of unauthorised absence from duty for forty-two days without leave or intimation.",
+        "FICTIONAL. You will be paid one month's salary in lieu of notice together with gratuity and the leave encashment due to you, after you return the company laptop and identity card."
+      ]
+    },
+    {
+      "name": "Medical certificate.pdf",
+      "pages": [
+        "FICTIONAL. This is to certify that Mr. Arjun Pillai was admitted to City Care Hospital on 12 August with a fracture of the right femur after a road accident and was advised complete bed rest for eight weeks."
+      ]
+    },
+    {
+      "name": "Bail application.pdf",
+      "pages": [
+        "FICTIONAL. Application for regular bail on behalf of the accused, who has been in judicial custody for ninety days. The charge sheet has already been filed and no further custodial interrogation is required.",
+        "FICTIONAL. The accused has deep roots in the community, owns a house in Pune, and undertakes to attend every date of hearing and not to tamper with evidence or influence witnesses."
+      ]
+    },
+    {
+      "name": "Sale deed dispute.pdf",
+      "pages": [
+        "FICTIONAL. The plaintiff seeks cancellation of a sale deed dated 3 January executed by her late father, alleging that his signature was obtained by fraud when he was seriously ill and unable to understand the document.",
+        "FICTIONAL. A handwriting expert compared the signature on the deed with admitted signatures and found significant differences in letter formation and pen pressure."
+      ]
+    }
+  ],
+  "queries": [
+    {"query": "arrears of rent unpaid since March", "kind": "lexical", "relevant": [["Rent recovery plaint.pdf", 2]]},
+    {"query": "interest at nine per cent and costs of the suit", "kind": "lexical", "relevant": [["Rent recovery plaint.pdf", 3]]},
+    {"query": "notice to vacate within fifteen days", "kind": "lexical", "relevant": [["Notice to quit.pdf", 1]]},
+    {"query": "registered post acknowledgement due", "kind": "lexical", "relevant": [["Notice to quit.pdf", 2]]},
+    {"query": "roof leaked during the monsoon", "kind": "lexical", "relevant": [["Written statement of defendant.pdf", 1]]},
+    {"query": "waterproofing cost adjusted against rent", "kind": "lexical", "relevant": [["Written statement of defendant.pdf", 2]]},
+    {"query": "SUNCRUST used for biscuits since 2009", "kind": "lexical", "relevant": [["Trademark opposition.pdf", 2]]},
+    {"query": "unauthorised absence from duty", "kind": "lexical", "relevant": [["Employment termination letter.pdf", 1]]},
+    {"query": "gratuity and leave encashment", "kind": "lexical", "relevant": [["Employment termination letter.pdf", 2]]},
+    {"query": "fracture of the right femur", "kind": "lexical", "relevant": [["Medical certificate.pdf", 1]]},
+    {"query": "regular bail after charge sheet filed", "kind": "lexical", "relevant": [["Bail application.pdf", 1]]},
+    {"query": "handwriting expert compared signatures", "kind": "lexical", "relevant": [["Sale deed dispute.pdf", 2]]},
+    {"query": "the tenant stopped paying the landlord", "kind": "paraphrase", "relevant": [["Rent recovery plaint.pdf", 2]]},
+    {"query": "how much money does the shop occupant owe", "kind": "paraphrase", "relevant": [["Rent recovery plaint.pdf", 2]]},
+    {"query": "eviction warning given to the occupant", "kind": "paraphrase", "relevant": [["Notice to quit.pdf", 1]]},
+    {"query": "proof that the letter reached the recipient", "kind": "paraphrase", "relevant": [["Notice to quit.pdf", 2]]},
+    {"query": "landlord did not fix water damage to the premises", "kind": "paraphrase", "relevant": [["Written statement of defendant.pdf", 1]]},
+    {"query": "can repair expenses be deducted from what is owed", "kind": "paraphrase", "relevant": [["Written statement of defendant.pdf", 2]]},
+    {"query": "the lease was never properly ended so the case is too early", "kind": "paraphrase", "relevant": [["Written statement of defendant.pdf", 3]]},
+    {"query": "confusingly similar brand names for cookies", "kind": "paraphrase", "relevant": [["Trademark opposition.pdf", 2]]},
+    {"query": "evidence of the earlier brand's market reputation", "kind": "paraphrase", "relevant": [["Trademark opposition.pdf", 3]]},
+    {"query": "why was the employee dismissed", "kind": "paraphrase", "relevant": [["Employment termination letter.pdf", 1]]},
+    {"query": "broken leg from a traffic collision", "kind": "paraphrase", "relevant": [["Medical certificate.pdf", 1]]},
+    {"query": "accused is not likely to flee or interfere with the trial", "kind": "paraphrase", "relevant": [["Bail application.pdf", 2]]},
+    {"query": "property transfer signed by a sick parent who was deceived", "kind": "paraphrase", "relevant": [["Sale deed dispute.pdf", 1]]},
+    {"query": "forensic opinion that the signature may be forged", "kind": "paraphrase", "relevant": [["Sale deed dispute.pdf", 2]]}
+  ]
+}

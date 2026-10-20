@@ -23,6 +23,7 @@ from lexflow.api import (
     hearings,
     portal,
     reference,
+    search,
 )
 from lexflow.auth.deps import require_roles, require_user
 from lexflow.auth.gate import SessionGateMiddleware
@@ -100,6 +101,7 @@ def create_app() -> FastAPI:
     app.include_router(clients.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(cases.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(documents.router, prefix=API_PREFIX, dependencies=staff)
+    app.include_router(search.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(hearings.router, prefix=API_PREFIX, dependencies=staff)
     administrators = [Depends(require_user), Depends(require_roles(ADMINISTRATOR))]
     app.include_router(admin.router, prefix=API_PREFIX, dependencies=administrators)

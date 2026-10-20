@@ -586,6 +586,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Case
+         * @description Passages of this case's documents that match the query, best first.
+         *
+         *     For staff who may view the case. Results come only from the case's own
+         *     documents (not deleted, text extracted) and show where each passage is.
+         *     They are ranked text, not legal advice or a prediction.
+         */
+        get: operations["search_case_api_cases__case_id__search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/hearings": {
         parameters: {
             query?: never;
@@ -1192,6 +1216,81 @@ export interface components {
             canRestoreDocuments: boolean;
             /** Cansharedocuments */
             canShareDocuments: boolean;
+        };
+        /**
+         * CaseSearchHitOut
+         * @description A passage of one of the case's documents, located exactly.
+         */
+        CaseSearchHitOut: {
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
+            /** Documentname */
+            documentName: string;
+            /**
+             * Chunkid
+             * Format: uuid
+             */
+            chunkId: string;
+            /** Chunknumber */
+            chunkNumber: number;
+            /**
+             * Sectionnumber
+             * @description The page (PDF) or part the passage is in.
+             */
+            sectionNumber: number;
+            /**
+             * Pagenumber
+             * @description The PDF page; null for documents without pages.
+             */
+            pageNumber: number | null;
+            /**
+             * Charstart
+             * @description Offset of the passage in the section's extracted text.
+             */
+            charStart: number;
+            /** Charend */
+            charEnd: number;
+            /**
+             * Text
+             * @description The passage, exactly as extracted.
+             */
+            text: string;
+            /**
+             * Score
+             * @description Ranking score of the mode: cosine similarity (semantic), full-text rank (keyword) or reciprocal-rank fusion (hybrid). Higher is closer; not a probability.
+             */
+            score: number;
+        };
+        /**
+         * CaseSearchOut
+         * @description Passages of the case's own documents ranked against the query (no legal judgment).
+         */
+        CaseSearchOut: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "keyword" | "semantic" | "hybrid";
+            /**
+             * Model
+             * @description The embedding model (semantic and hybrid modes).
+             */
+            model: string | null;
+            /**
+             * Documentswithtext
+             * @description Live documents of the case whose text is ready.
+             */
+            documentsWithText: number;
+            /**
+             * Documentsindexed
+             * @description Of those, how many have vectors for the model (semantic and hybrid).
+             */
+            documentsIndexed: number;
+            /** Results */
+            results: components["schemas"]["CaseSearchHitOut"][];
         };
         /** CaseSummary */
         CaseSummary: {
@@ -3269,6 +3368,61 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    search_case_api_cases__case_id__search_get: {
+        parameters: {
+            query: {
+                /** @description What to look for. */
+                q: string;
+                /** @description keyword (full text), semantic (embeddings) or hybrid. */
+                mode?: "keyword" | "semantic" | "hybrid";
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseSearchOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

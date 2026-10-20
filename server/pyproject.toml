@@ -50,6 +50,11 @@ files = ["lexflow", "tests", "migrations/env.py", "scripts"]
 module = ["migrations.versions.*"]
 disallow_untyped_defs = false
 
+# onnxruntime ships no type information.
+[[tool.mypy.overrides]]
+module = ["onnxruntime"]
+ignore_missing_imports = true
+
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
