@@ -1,0 +1,241 @@
+Phase 3 mutation checks at commit c12d248, started 2026-10-20 03:28:16 UTC
+Redacted: local home paths, database role names and row ids (see REDACTIONS).
+
+=== M4-1 CAUGHT: text is served only once it is ready
+file: server/lexflow/services/document_text.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_document_text.py
+exit code: 1
+    ) -> None:
+        waiting = upload(as_("lead"), "Waiting.pdf", pdf_with_pages(["FICTIONAL."]))
+        response = text(as_("lead"), waiting)
+>       assert (response.status_code, response.json()["code"]) == (409, "text-not-available")
+E       AssertionError: assert (404, 'section-not-found') == (409, 'text-not-available')
+E         
+E         At index 0 diff: 404 != 409
+E         Use -v to get more diff
+tests\test_document_text.py:120: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_document_text.py::test_text_is_not_available_until_it_is_ready_and_says_why
+1 failed, 20 passed in 5.80s
+
+=== M4-2 CAUGHT: a retry needs permission to add documents
+file: server/lexflow/api/documents.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_document_text.py tests/test_access_required.py tests/test_portal.py
+exit code: 1
+        as_("lead").delete(f"/api/documents/{other}")
+        gone = as_("lead").post(f"/api/documents/{other}/reprocess")
+        assert (gone.status_code, gone.json()["code"]) == (404, "document-not-found")
+        as_("admin").post(f"/api/cases/{SATTVIK}/archive")
+        archived = as_("admin").post(f"/api/documents/{document}/reprocess")
+>       assert (archived.status_code, archived.json()["code"]) == (409, "case-archived")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'code'
+tests\test_document_text.py:210: KeyError
+=========================== short test summary info ===========================
+FAILED tests/test_document_text.py::test_no_retry_on_an_archived_case_or_for_a_deleted_document
+1 failed, 48 passed in 11.65s
+
+=== M4-3 CAUGHT: reading text is audited
+file: server/lexflow/api/documents.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_document_text.py
+exit code: 1
+        onerow = self._fetchone_impl
+        row: Optional[_InterimRowType[Any]] = onerow(hard_close=True)
+        if row is None:
+            if raise_for_none:
+>               raise exc.NoResultFound(
+                    "No row was found when one was required"
+                )
+E               sqlalchemy.exc.NoResultFound: No row was found when one was required
+.venv\Lib\site-packages\sqlalchemy\engine\result.py:799: NoResultFound
+=========================== short test summary info ===========================
+FAILED tests/test_document_text.py::test_reading_text_is_audited - sqlalchemy...
+1 failed, 20 passed in 5.94s
+
+=== M4-4 CAUGHT: no retry while already queued or processing
+file: server/lexflow/services/document_text.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_document_text.py
+exit code: 1
+as_ = <function as_.<locals>.get at 0x00000242EF9D5260>
+storage_root = WindowsPath('<home>/AppData/Local/Temp/pytest-of-<user>/pytest-146/test_retries_that_cannot_help_0/uploads')
+    def test_retries_that_cannot_help_are_refused(as_: As, storage_root: Path) -> None:
+        waiting = upload(as_("lead"), "Waiting.pdf", pdf_with_pages(["FICTIONAL."]))
+        queued = as_("lead").post(f"/api/documents/{waiting}/reprocess")
+>       assert (queued.status_code, queued.json()["code"]) == (409, "already-processing")
+                                    ^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'code'
+tests\test_document_text.py:191: KeyError
+=========================== short test summary info ===========================
+FAILED tests/test_document_text.py::test_retries_that_cannot_help_are_refused
+1 failed, 20 passed in 5.93s
+
+=== M4-5 CAUGHT: Try again offered only to those who may upload
+file: src/components/workspace/DocumentsTab.tsx
+command (cwd .): npx vitest run src/pages/documentText.test.tsx
+exit code: 1
+  type="button"
+>
+  Try again
+</button>
+ ❯ src/pages/documentText.test.tsx:126:70
+    124|     renderApp(`/app/cases/${SATTVIK}?tab=documents`, { as: ARYAN_EMAIL…
+    125|     expect((await screen.findAllByText(/Text extraction failed: Damage…
+    126|     expect(screen.queryByRole('button', { name: /Try extracting/ })).t…
+       |                                                                      ^
+    127|   });
+    128| });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+=== M4-6 CAUGHT: View text offered only when the text is ready
+file: src/components/workspace/DocumentsTab.tsx
+command (cwd .): npx vitest run src/pages/documentText.test.tsx src/pages/documentProcessing.test.tsx
+exit code: 1
+  href="/app/cases/case-1005/documents/doc-new-1/text"
+>
+  View text
+</a>
+ ❯ src/pages/documentText.test.tsx:97:79
+     95|     );
+     96|     // No text to view until it has been extracted.
+     97|     expect(screen.queryByRole('link', { name: 'View the text of Scan.p…
+       |                                                                               ^
+     98|     await user.click(retry);
+     99|     expect(await screen.findByText('Scan.pdf will be processed again.'…
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+=== M5-1 CAUGHT: local embeddings are refused
+file: server/lexflow/embeddings.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_embeddings.py
+exit code: 1
+    def test_status_shows_that_local_embeddings_would_be_refused(tmp_path: Path) -> None:
+        code, out = status(embeddings="local", model_dir=tmp_path)
+        assert code == 0
+>       assert f"Worker:        will not start: {UNAVAILABLE}" in out
+E       AssertionError: assert 'Worker:        will not start: LEXFLOW_EMBEDDINGS=local is not available yet: storing embeddings needs a PostgreSQL i...ector extension, which has not been set up (see docs/PHASE3_EXECUTION_LOG.md, P3-M5). Set LEXFLOW_EMBEDDINGS=disabled.' in 'Embeddings:    local (LEXFLOW_EMBEDDINGS)\nModel:         BAAI/bge-small-en-v1.5\nModel folder:  <home>\\Ap...rver\nNote:          local embeddings need a database image with pgvector (see docs/PHASE3_EXECUTION_LOG.md, P3-M5).\n'
+tests\test_embeddings.py:97: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_embeddings.py::test_local_embeddings_are_refused_with_the_reason
+FAILED tests/test_embeddings.py::test_the_worker_takes_no_job_when_embeddings_cannot_run
+FAILED tests/test_embeddings.py::test_the_worker_command_says_why_it_will_not_start
+FAILED tests/test_embeddings.py::test_status_shows_that_local_embeddings_would_be_refused
+4 failed, 5 passed in 3.53s
+
+=== M5-2 CAUGHT: the worker checks embeddings before claiming a job
+file: server/lexflow/worker.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_embeddings.py
+exit code: 1
+        monkeypatch.setenv("LEXFLOW_EMBEDDINGS", "local")
+        get_settings.cache_clear()
+        try:
+>           assert worker.main(["--once"]) == 2
+E           AssertionError: assert 0 == 2
+E            +  where 0 = <function main at 0x00000203CD4BBCE0>(['--once'])
+E            +    where <function main at 0x00000203CD4BBCE0> = worker.main
+tests\test_embeddings.py:58: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_embeddings.py::test_the_worker_takes_no_job_when_embeddings_cannot_run
+FAILED tests/test_embeddings.py::test_the_worker_command_says_why_it_will_not_start
+2 failed, 7 passed in 3.48s
+
+=== M6-1 CAUGHT: backfill leaves existing jobs alone
+file: server/lexflow/cli/documents.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_cli_documents.py
+exit code: 1
+E       AssertionError: CASE           TYPE                         ID                                    NAME
+E         LF-2026-0361   application/pdf              <uuid>  Deleted.pdf
+E         LF-2026-0361   application/pdf              <uuid>  Older.pdf
+E         LF-2026-0361   application/pdf              <uuid>  Done.pdf
+E         
+E       assert 1 == 0
+tests\test_cli_documents.py:251: AssertionError
+---------------------------- Captured stderr call -----------------------------
+--confirm 2 does not match the 3 document(s) listed; nothing was queued. Check the preview again.
+=========================== short test summary info ===========================
+FAILED tests/test_cli_documents.py::test_queue_extraction_queues_only_files_never_queued
+1 failed, 14 passed in 2.97s
+
+=== M6-2 CAUGHT: backfill skips records without a stored file
+file: server/lexflow/cli/documents.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_cli_documents.py
+exit code: 1
+        code, out = run("queue-extraction", "--confirm", "0")
+>       assert code == 0
+E       assert 1 == 0
+tests\test_cli_documents.py:292: AssertionError
+---------------------------- Captured stderr call -----------------------------
+--confirm 0 does not match the 26 document(s) listed; nothing was queued. Check the preview again.
+=========================== short test summary info ===========================
+FAILED tests/test_cli_documents.py::test_queue_extraction_previews_first - As...
+FAILED tests/test_cli_documents.py::test_queue_extraction_queues_only_files_never_queued
+FAILED tests/test_cli_documents.py::test_queue_extraction_marks_other_file_types_unsupported
+FAILED tests/test_cli_documents.py::test_sample_records_without_files_are_never_queued
+4 failed, 11 passed in 2.95s
+
+=== M6-3 CAUGHT: backfill previews before changing anything
+file: server/lexflow/cli/documents.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_cli_documents.py
+exit code: 1
+committed_engine = Engine(postgresql+psycopg://<user>:***@127.0.0.1:5432/lexflow_test)
+    def test_queue_extraction_previews_first(docs: Docs, committed_engine: Engine) -> None:
+        older = docs.add("Older.pdf", deleted_days_ago=None)
+        code, out = run("queue-extraction")
+>       assert code == 0
+E       assert 1 == 0
+tests\test_cli_documents.py:231: AssertionError
+---------------------------- Captured stderr call -----------------------------
+--confirm None does not match the 1 document(s) listed; nothing was queued. Check the preview again.
+=========================== short test summary info ===========================
+FAILED tests/test_cli_documents.py::test_queue_extraction_previews_first - as...
+1 failed, 14 passed in 2.96s
+
+=== M6-4 CAUGHT: no retry for records without a stored file
+file: server/lexflow/services/document_text.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_document_text.py
+exit code: 1
+        image = upload(as_("lead"), "Photo.png", png_bytes(), "image/png")
+        unsupported = as_("lead").post(f"/api/documents/{image}/reprocess")
+        assert (unsupported.status_code, unsupported.json()["code"]) == (409, "unsupported")
+        sample = sample_uuid("document", "d-18")
+        no_file = as_("lead").post(f"/api/documents/{sample}/reprocess")
+>       assert (no_file.status_code, no_file.json()["code"]) == (422, "no-file")
+                                     ^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'code'
+tests\test_document_text.py:197: KeyError
+=========================== short test summary info ===========================
+FAILED tests/test_document_text.py::test_retries_that_cannot_help_are_refused
+1 failed, 20 passed in 5.75s
+
+=== M6-5 CAUGHT: never-queued files are explained honestly
+file: server/lexflow/services/document_text.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_document_text.py
+exit code: 1
+        document = upload(as_("lead"), "Older.pdf", pdf_with_pages(["FICTIONAL."]))
+        job = db.get(DocumentExtraction, uuid.UUID(document))
+        db.delete(job)  # as for a file stored before migration 0008
+        db.flush()
+        waiting = text(as_("lead"), document)
+        assert (waiting.status_code, waiting.json()["code"]) == (409, "text-not-available")
+>       assert "uploaded before text extraction was available" in waiting.json()["detail"]
+E       AssertionError: assert 'uploaded before text extraction was available' in 'This record has no stored file, so it has no text.'
+tests\test_document_text.py:227: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_document_text.py::test_files_uploaded_before_extraction_existed_can_be_queued
+1 failed, 20 passed in 5.65s
+
+=== M6-6 CAUGHT: Extract text offered only for stored files
+file: src/components/workspace/DocumentsTab.tsx
+command (cwd .): npx vitest run src/pages/documentText.test.tsx
+exit code: 1
++   "Extract the text of Plaint with Interim Application.pdf",
++   "Extract the text of Cease and Desist Notice.pdf",
++   "Extract the text of Trade Mark Registration Certificate (Class 30).pdf",
+  ]
+ ❯ src/pages/documentText.test.tsx:112:62
+    110|     // Sample records (no file) are not offered it.
+    111|     const offered = screen.getAllByRole('button', { name: /^Extract th…
+    112|     expect(offered.map((b) => b.getAttribute('aria-label'))).toEqual(
+       |                                                              ^
+    113|       offered.map(() => 'Extract the text of Older.pdf'),
+    114|     );
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
