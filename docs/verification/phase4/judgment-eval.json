@@ -1,0 +1,902 @@
+{
+  "generated_at": "2026-10-20T05:52:40+00:00",
+  "git_commit": "979b1af",
+  "synthetic": true,
+  "evaluation_set": {
+    "version": "synthetic-eval-v1",
+    "sha256": "3dbed523bb10e296a246874971278e4cddd427e43eabb3f8b1a90db05aff4464",
+    "queries": 27
+  },
+  "corpus": {
+    "manifest_sha256": "e5d1a8849177704b970b193183eceda689fa54ba22cd775715012b879cadbb26",
+    "judgments": 13
+  },
+  "model": "BAAI/bge-small-en-v1.5@5c38ec7c405e",
+  "modes_run": [
+    "keyword",
+    "semantic",
+    "hybrid"
+  ],
+  "modes_skipped": {},
+  "k": 10,
+  "metrics": {
+    "keyword": {
+      "all": {
+        "recall@10": 0.52,
+        "precision@10": 0.056,
+        "mrr@10": 0.52,
+        "queries": 25,
+        "no_answer_queries": 2,
+        "no_answer_with_no_results": 2,
+        "errors": [],
+        "recall@1": 0.5,
+        "recall@3": 0.52,
+        "recall@5": 0.52
+      },
+      "lexical": {
+        "recall@10": 1.0,
+        "precision@10": 0.1077,
+        "mrr@10": 1.0,
+        "queries": 13,
+        "no_answer_queries": 0,
+        "no_answer_with_no_results": 0,
+        "errors": [],
+        "recall@1": 0.9615,
+        "recall@3": 1.0,
+        "recall@5": 1.0
+      },
+      "paraphrase": {
+        "recall@10": 0.0,
+        "precision@10": 0.0,
+        "mrr@10": 0.0,
+        "queries": 12,
+        "no_answer_queries": 0,
+        "no_answer_with_no_results": 0,
+        "errors": [],
+        "recall@1": 0.0,
+        "recall@3": 0.0,
+        "recall@5": 0.0
+      },
+      "no-answer": {
+        "recall@10": 0.0,
+        "precision@10": 0.0,
+        "mrr@10": 0.0,
+        "queries": 0,
+        "no_answer_queries": 2,
+        "no_answer_with_no_results": 2,
+        "errors": [],
+        "recall@1": 0.0,
+        "recall@3": 0.0,
+        "recall@5": 0.0
+      }
+    },
+    "semantic": {
+      "all": {
+        "recall@10": 1.0,
+        "precision@10": 0.104,
+        "mrr@10": 0.8813,
+        "queries": 25,
+        "no_answer_queries": 2,
+        "no_answer_with_no_results": 0,
+        "errors": [],
+        "recall@1": 0.78,
+        "recall@3": 0.96,
+        "recall@5": 1.0
+      },
+      "lexical": {
+        "recall@10": 1.0,
+        "precision@10": 0.1077,
+        "mrr@10": 0.8103,
+        "queries": 13,
+        "no_answer_queries": 0,
+        "no_answer_with_no_results": 0,
+        "errors": [],
+        "recall@1": 0.6538,
+        "recall@3": 0.9231,
+        "recall@5": 1.0
+      },
+      "paraphrase": {
+        "recall@10": 1.0,
+        "precision@10": 0.1,
+        "mrr@10": 0.9583,
+        "queries": 12,
+        "no_answer_queries": 0,
+        "no_answer_with_no_results": 0,
+        "errors": [],
+        "recall@1": 0.9167,
+        "recall@3": 1.0,
+        "recall@5": 1.0
+      },
+      "no-answer": {
+        "recall@10": 0.0,
+        "precision@10": 0.0,
+        "mrr@10": 0.0,
+        "queries": 0,
+        "no_answer_queries": 2,
+        "no_answer_with_no_results": 0,
+        "errors": [],
+        "recall@1": 0.0,
+        "recall@3": 0.0,
+        "recall@5": 0.0
+      }
+    },
+    "hybrid": {
+      "all": {
+        "recall@10": 1.0,
+        "precision@10": 0.104,
+        "mrr@10": 0.98,
+        "queries": 25,
+        "no_answer_queries": 2,
+        "no_answer_with_no_results": 0,
+        "errors": [],
+        "recall@1": 0.94,
+        "recall@3": 1.0,
+        "recall@5": 1.0
+      },
+      "lexical": {
+        "recall@10": 1.0,
+        "precision@10": 0.1077,
+        "mrr@10": 1.0,
+        "queries": 13,
+        "no_answer_queries": 0,
+        "no_answer_with_no_results": 0,
+        "errors": [],
+        "recall@1": 0.9615,
+        "recall@3": 1.0,
+        "recall@5": 1.0
+      },
+      "paraphrase": {
+        "recall@10": 1.0,
+        "precision@10": 0.1,
+        "mrr@10": 0.9583,
+        "queries": 12,
+        "no_answer_queries": 0,
+        "no_answer_with_no_results": 0,
+        "errors": [],
+        "recall@1": 0.9167,
+        "recall@3": 1.0,
+        "recall@5": 1.0
+      },
+      "no-answer": {
+        "recall@10": 0.0,
+        "precision@10": 0.0,
+        "mrr@10": 0.0,
+        "queries": 0,
+        "no_answer_queries": 2,
+        "no_answer_with_no_results": 0,
+        "errors": [],
+        "recall@1": 0.0,
+        "recall@3": 0.0,
+        "recall@5": 0.0
+      }
+    }
+  },
+  "per_query": [
+    {
+      "id": "L01",
+      "kind": "lexical",
+      "query": "arrears of rent monthly tenancy",
+      "relevant": [
+        "syn-001"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-001"
+        ],
+        "semantic": [
+          "syn-001",
+          "syn-002",
+          "syn-011"
+        ],
+        "hybrid": [
+          "syn-001",
+          "syn-002",
+          "syn-011"
+        ]
+      }
+    },
+    {
+      "id": "L02",
+      "kind": "lexical",
+      "query": "notice to quit fifteen clear days",
+      "relevant": [
+        "syn-002"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-002"
+        ],
+        "semantic": [
+          "syn-002",
+          "syn-007",
+          "syn-001"
+        ],
+        "hybrid": [
+          "syn-002",
+          "syn-007",
+          "syn-001"
+        ]
+      }
+    },
+    {
+      "id": "L03",
+      "kind": "lexical",
+      "query": "deceptively similar mark biscuits",
+      "relevant": [
+        "syn-003"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-003"
+        ],
+        "semantic": [
+          "syn-003",
+          "syn-005",
+          "syn-001"
+        ],
+        "hybrid": [
+          "syn-003",
+          "syn-005",
+          "syn-001"
+        ]
+      }
+    },
+    {
+      "id": "L04",
+      "kind": "lexical",
+      "query": "regular bail charge sheet",
+      "relevant": [
+        "syn-004"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-004"
+        ],
+        "semantic": [
+          "syn-004",
+          "syn-010",
+          "syn-009"
+        ],
+        "hybrid": [
+          "syn-004",
+          "syn-010",
+          "syn-009"
+        ]
+      }
+    },
+    {
+      "id": "L05",
+      "kind": "lexical",
+      "query": "cheque dishonoured insufficient funds",
+      "relevant": [
+        "syn-005"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-005"
+        ],
+        "semantic": [
+          "syn-005",
+          "syn-007",
+          "syn-001"
+        ],
+        "hybrid": [
+          "syn-005",
+          "syn-007",
+          "syn-001"
+        ]
+      }
+    },
+    {
+      "id": "L06",
+      "kind": "lexical",
+      "query": "specific performance readiness and willingness",
+      "relevant": [
+        "syn-006"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 3,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-006"
+        ],
+        "semantic": [
+          "syn-003",
+          "syn-007",
+          "syn-006"
+        ],
+        "hybrid": [
+          "syn-006",
+          "syn-003",
+          "syn-007"
+        ]
+      }
+    },
+    {
+      "id": "L07",
+      "kind": "lexical",
+      "query": "domestic inquiry unauthorised absence",
+      "relevant": [
+        "syn-007"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-007"
+        ],
+        "semantic": [
+          "syn-007",
+          "syn-002",
+          "syn-011"
+        ],
+        "hybrid": [
+          "syn-007",
+          "syn-002",
+          "syn-011"
+        ]
+      }
+    },
+    {
+      "id": "L08",
+      "kind": "lexical",
+      "query": "multiplier method permanent partial disability",
+      "relevant": [
+        "syn-008"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-008"
+        ],
+        "semantic": [
+          "syn-008",
+          "syn-007",
+          "syn-004"
+        ],
+        "hybrid": [
+          "syn-008",
+          "syn-007",
+          "syn-004"
+        ]
+      }
+    },
+    {
+      "id": "L09",
+      "kind": "lexical",
+      "query": "deficiency in service refund",
+      "relevant": [
+        "syn-009"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 5,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-009"
+        ],
+        "semantic": [
+          "syn-007",
+          "syn-002",
+          "syn-001"
+        ],
+        "hybrid": [
+          "syn-009",
+          "syn-007",
+          "syn-002"
+        ]
+      }
+    },
+    {
+      "id": "L10",
+      "kind": "lexical",
+      "query": "anticipatory bail",
+      "relevant": [
+        "syn-010"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 2,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-010"
+        ],
+        "semantic": [
+          "syn-004",
+          "syn-010",
+          "syn-005"
+        ],
+        "hybrid": [
+          "syn-010",
+          "syn-004",
+          "syn-005"
+        ]
+      }
+    },
+    {
+      "id": "L11",
+      "kind": "lexical",
+      "query": "maintenance earning capacity",
+      "relevant": [
+        "syn-011"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 2,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-011"
+        ],
+        "semantic": [
+          "syn-001",
+          "syn-011",
+          "syn-002"
+        ],
+        "hybrid": [
+          "syn-011",
+          "syn-001",
+          "syn-002"
+        ]
+      }
+    },
+    {
+      "id": "L12",
+      "kind": "lexical",
+      "query": "defamatory publication fair comment",
+      "relevant": [
+        "syn-012"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-012"
+        ],
+        "semantic": [
+          "syn-012",
+          "syn-007",
+          "syn-005"
+        ],
+        "hybrid": [
+          "syn-012",
+          "syn-007",
+          "syn-005"
+        ]
+      }
+    },
+    {
+      "id": "L13",
+      "kind": "lexical",
+      "query": "bail",
+      "relevant": [
+        "syn-004",
+        "syn-010"
+      ],
+      "ranks": {
+        "keyword": 1,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [
+          "syn-004",
+          "syn-010"
+        ],
+        "semantic": [
+          "syn-004",
+          "syn-010",
+          "syn-005"
+        ],
+        "hybrid": [
+          "syn-004",
+          "syn-010",
+          "syn-005"
+        ]
+      }
+    },
+    {
+      "id": "P01",
+      "kind": "paraphrase",
+      "query": "occupant stopped paying the landlord for the shop",
+      "relevant": [
+        "syn-001"
+      ],
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-001",
+          "syn-002",
+          "syn-009"
+        ],
+        "hybrid": [
+          "syn-001",
+          "syn-002",
+          "syn-009"
+        ]
+      }
+    },
+    {
+      "id": "P02",
+      "kind": "paraphrase",
+      "query": "eviction warning gave too little time to leave",
+      "relevant": [
+        "syn-002"
+      ],
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-002",
+          "syn-001",
+          "syn-007"
+        ],
+        "hybrid": [
+          "syn-002",
+          "syn-001",
+          "syn-007"
+        ]
+      }
+    },
+    {
+      "id": "P03",
+      "kind": "paraphrase",
+      "query": "confusing brand names for cookies",
+      "relevant": [
+        "syn-003"
+      ],
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-003",
+          "syn-009",
+          "syn-005"
+        ],
+        "hybrid": [
+          "syn-003",
+          "syn-009",
+          "syn-005"
+        ]
+      }
+    },
+    {
+      "id": "P04",
+      "kind": "paraphrase",
+      "query": "release of an accused once the investigation is over",
+      "relevant": [
+        "syn-004"
+      ],
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-004",
+          "syn-010",
+          "syn-002"
+        ],
+        "hybrid": [
+          "syn-004",
+          "syn-010",
+          "syn-002"
+        ]
+      }
+    },
+    {
+      "id": "P05",
+      "kind": "paraphrase",
+      "query": "payment instrument bounced for a supply bill",
+      "relevant": [
+        "syn-005"
+      ],
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-005",
+          "syn-009",
+          "syn-001"
+        ],
+        "hybrid": [
+          "syn-005",
+          "syn-009",
+          "syn-001"
+        ]
+      }
+    },
+    {
+      "id": "P06",
+      "kind": "paraphrase",
+      "query": "buyer wants the house transferred as agreed",
+      "relevant": [
+        "syn-006"
+      ],
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-006",
+          "syn-001",
+          "syn-002"
+        ],
+        "hybrid": [
+          "syn-006",
+          "syn-001",
+          "syn-002"
+        ]
+      }
+    },
+    {
+      "id": "P07",
+      "kind": "paraphrase",
+      "query": "employee fired without a fair hearing",
+      "relevant": [
+        "syn-007"
+      ],
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-007",
+          "syn-002",
+          "syn-009"
+        ],
+        "hybrid": [
+          "syn-007",
+          "syn-002",
+          "syn-009"
+        ]
+      }
+    },
+    {
+      "id": "P08",
+      "kind": "paraphrase",
+      "query": "compensation after a bus hit a scooter rider",
+      "relevant": [
+        "syn-008"
+      ],
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-008",
+          "syn-001",
+          "syn-004"
+        ],
+        "hybrid": [
+          "syn-008",
+          "syn-001",
+          "syn-004"
+        ]
+      }
+    },
+    {
+      "id": "P09",
+      "kind": "paraphrase",
+      "query": "online seller never delivered the appliance",
+      "relevant": [
+        "syn-009"
+      ],
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-009",
+          "syn-001",
+          "syn-007"
+        ],
+        "hybrid": [
+          "syn-009",
+          "syn-001",
+          "syn-007"
+        ]
+      }
+    },
+    {
+      "id": "P10",
+      "kind": "paraphrase",
+      "query": "protection from arrest in a dispute that is really civil",
+      "relevant": [
+        "syn-010"
+      ],
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-010",
+          "syn-004",
+          "syn-002"
+        ],
+        "hybrid": [
+          "syn-010",
+          "syn-004",
+          "syn-002"
+        ]
+      }
+    },
+    {
+      "id": "P11",
+      "kind": "paraphrase",
+      "query": "husband claims he has no job to avoid supporting his family",
+      "relevant": [
+        "syn-011"
+      ],
+      "ranks": {
+        "keyword": null,
+        "semantic": 1,
+        "hybrid": 1
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-011",
+          "syn-007",
+          "syn-005"
+        ],
+        "hybrid": [
+          "syn-011",
+          "syn-007",
+          "syn-005"
+        ]
+      }
+    },
+    {
+      "id": "P12",
+      "kind": "paraphrase",
+      "query": "newspaper accused a contractor of bribery without proof",
+      "relevant": [
+        "syn-012"
+      ],
+      "ranks": {
+        "keyword": null,
+        "semantic": 2,
+        "hybrid": 2
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-007",
+          "syn-012",
+          "syn-005"
+        ],
+        "hybrid": [
+          "syn-007",
+          "syn-012",
+          "syn-005"
+        ]
+      }
+    },
+    {
+      "id": "N01",
+      "kind": "no-answer",
+      "query": "patent infringement of a pharmaceutical compound",
+      "relevant": [],
+      "ranks": {
+        "keyword": null,
+        "semantic": null,
+        "hybrid": null
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-005",
+          "syn-006",
+          "syn-008"
+        ],
+        "hybrid": [
+          "syn-005",
+          "syn-006",
+          "syn-008"
+        ]
+      }
+    },
+    {
+      "id": "N02",
+      "kind": "no-answer",
+      "query": "maritime salvage of a sunken vessel",
+      "relevant": [],
+      "ranks": {
+        "keyword": null,
+        "semantic": null,
+        "hybrid": null
+      },
+      "top3": {
+        "keyword": [],
+        "semantic": [
+          "syn-007",
+          "syn-005",
+          "syn-013"
+        ],
+        "hybrid": [
+          "syn-007",
+          "syn-005",
+          "syn-013"
+        ]
+      }
+    }
+  ]
+}

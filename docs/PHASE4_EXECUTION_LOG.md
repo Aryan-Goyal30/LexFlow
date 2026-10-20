@@ -65,7 +65,7 @@ Started 2026-10-20. Scope: `docs/DEVELOPMENT_BRIEF.md` §4 Phase 4 and
 | M1 | Schema (migration 0010), source-aware importer, CLI | done |
 | M2 | Search service and API (keyword, semantic, hybrid), library endpoints | done |
 | M3 | Research tab and Precedent Library UI | done |
-| M4 | Evaluation framework and synthetic engineering run | pending |
+| M4 | Evaluation framework and synthetic engineering run | done |
 | M5 | Security, mutation and end-to-end verification | pending |
 | M6 | Gated live migration 0010 | pending |
 | M7 | Software-engineering documents, final verification | pending |
@@ -144,6 +144,38 @@ Started 2026-10-20. Scope: `docs/DEVELOPMENT_BRIEF.md` §4 Phase 4 and
   embeddings work had slipped past `npm run check`).
 - `npm run check`: exit 0, **169 tests**, API types match, build OK.
 
+## M4 — Evaluation framework (done)
+
+- `lexflow/evaluation.py`: Recall@K, Precision@K (divided by K), MRR@K;
+  no-answer queries scored separately (how many returned nothing); a relevant
+  judgment missing from the corpus is an **error** listed in the report, not
+  a silent miss. Tests `tests/test_evaluation.py`: **10 passed**.
+- Evaluation set format `lexflow-judgment-eval/1`, versioned, recording its
+  corpus manifest SHA-256 (the runner refuses a changed corpus).
+  Shipped set `synthetic-eval-v1` (27 queries: 13 lexical, 12 paraphrase,
+  2 no-answer) over the 13 SYNTHETIC judgments, labels by the developer.
+- `server/scripts/evaluate_judgment_search.py`: throwaway
+  `lexflow_eval_test` (dropped afterwards), real importer, real model when
+  present, every mode through the API's search functions; writes
+  `docs/verification/phase4/judgment-eval.{json,md}` with commit, set
+  version and hash, corpus hash, model, modes run and skipped.
+- **Result (commit `979b1af`, synthetic — not a legal quality measure):**
+
+| Queries | Mode | Recall@1 | Recall@10 | MRR@10 |
+|---|---|---|---|---|
+| lexical (13) | keyword | 0.96 | 1.0 | 1.0 |
+| lexical (13) | semantic | 0.65 | 1.0 | 0.81 |
+| lexical (13) | hybrid | 0.96 | 1.0 | 1.0 |
+| paraphrase (12) | keyword | 0.0 | 0.0 | 0.0 |
+| paraphrase (12) | semantic | 0.92 | 1.0 | 0.96 |
+| paraphrase (12) | hybrid | 0.92 | 1.0 | 0.96 |
+
+  No-answer queries: keyword returned nothing for 2/2; semantic and hybrid
+  always return their nearest judgments (no similarity threshold), 0/2.
+  Precision@10 ≤ 0.2 by construction (1–2 relevant per query).
+  **Real-corpus quality: unevaluated** (needs a licensed corpus and a
+  lawyer-labelled set: `PHASE4_PLAN.md`). The brief defines no thresholds.
+
 ---
 
-Checkpoint: M3 committed (see `git log`). Next: M4 evaluation framework.
+Checkpoint: M4 committed (see `git log`). Next: M5 security, mutation, e2e.
