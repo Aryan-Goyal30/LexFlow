@@ -1,0 +1,40 @@
+{
+  "format": "lexflow-judgment-eval/1",
+  "version": "synthetic-eval-v1",
+  "about": "SYNTHETIC engineering evaluation set for LexFlow judgment search. The corpus is invented test data and the relevance labels were written by the developer, not by a lawyer: these results check the search machinery, not legal research quality.",
+  "corpus": {
+    "manifest": "../synthetic/manifest.json",
+    "manifest_sha256": "e5d1a8849177704b970b193183eceda689fa54ba22cd775715012b879cadbb26",
+    "source": "lexflow-synthetic"
+  },
+  "k": 10,
+  "queries": [
+    {"id": "L01", "kind": "lexical", "query": "arrears of rent monthly tenancy", "relevant": ["syn-001"]},
+    {"id": "L02", "kind": "lexical", "query": "notice to quit fifteen clear days", "relevant": ["syn-002"]},
+    {"id": "L03", "kind": "lexical", "query": "deceptively similar mark biscuits", "relevant": ["syn-003"]},
+    {"id": "L04", "kind": "lexical", "query": "regular bail charge sheet", "relevant": ["syn-004"]},
+    {"id": "L05", "kind": "lexical", "query": "cheque dishonoured insufficient funds", "relevant": ["syn-005"]},
+    {"id": "L06", "kind": "lexical", "query": "specific performance readiness and willingness", "relevant": ["syn-006"]},
+    {"id": "L07", "kind": "lexical", "query": "domestic inquiry unauthorised absence", "relevant": ["syn-007"]},
+    {"id": "L08", "kind": "lexical", "query": "multiplier method permanent partial disability", "relevant": ["syn-008"]},
+    {"id": "L09", "kind": "lexical", "query": "deficiency in service refund", "relevant": ["syn-009"]},
+    {"id": "L10", "kind": "lexical", "query": "anticipatory bail", "relevant": ["syn-010"]},
+    {"id": "L11", "kind": "lexical", "query": "maintenance earning capacity", "relevant": ["syn-011"]},
+    {"id": "L12", "kind": "lexical", "query": "defamatory publication fair comment", "relevant": ["syn-012"]},
+    {"id": "L13", "kind": "lexical", "query": "bail", "relevant": ["syn-004", "syn-010"]},
+    {"id": "P01", "kind": "paraphrase", "query": "occupant stopped paying the landlord for the shop", "relevant": ["syn-001"]},
+    {"id": "P02", "kind": "paraphrase", "query": "eviction warning gave too little time to leave", "relevant": ["syn-002"]},
+    {"id": "P03", "kind": "paraphrase", "query": "confusing brand names for cookies", "relevant": ["syn-003"]},
+    {"id": "P04", "kind": "paraphrase", "query": "release of an accused once the investigation is over", "relevant": ["syn-004"]},
+    {"id": "P05", "kind": "paraphrase", "query": "payment instrument bounced for a supply bill", "relevant": ["syn-005"]},
+    {"id": "P06", "kind": "paraphrase", "query": "buyer wants the house transferred as agreed", "relevant": ["syn-006"]},
+    {"id": "P07", "kind": "paraphrase", "query": "employee fired without a fair hearing", "relevant": ["syn-007"]},
+    {"id": "P08", "kind": "paraphrase", "query": "compensation after a bus hit a scooter rider", "relevant": ["syn-008"]},
+    {"id": "P09", "kind": "paraphrase", "query": "online seller never delivered the appliance", "relevant": ["syn-009"]},
+    {"id": "P10", "kind": "paraphrase", "query": "protection from arrest in a dispute that is really civil", "relevant": ["syn-010"]},
+    {"id": "P11", "kind": "paraphrase", "query": "husband claims he has no job to avoid supporting his family", "relevant": ["syn-011"]},
+    {"id": "P12", "kind": "paraphrase", "query": "newspaper accused a contractor of bribery without proof", "relevant": ["syn-012"]},
+    {"id": "N01", "kind": "no-answer", "query": "patent infringement of a pharmaceutical compound", "relevant": []},
+    {"id": "N02", "kind": "no-answer", "query": "maritime salvage of a sunken vessel", "relevant": []}
+  ]
+}
