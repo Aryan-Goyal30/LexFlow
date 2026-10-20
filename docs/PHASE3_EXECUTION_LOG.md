@@ -370,3 +370,7 @@ Checkpoint: P3-M6 committed (see `git log`). Phase 3 complete except
 embeddings (blocked). Next actions belong to the owner: approve a database
 image for pgvector, run `queue-extraction` on `lexflow` if wanted, and the
 Phase 4 decisions in `docs/PHASE4_PLAN.md`.
+
+**Update (2026-10-20):** the embeddings were completed after the owner
+authorised `pgvector/pgvector:pg17-trixie`; see
+`docs/EMBEDDINGS_EXECUTION_LOG.md` and ADR 0017.

@@ -1,0 +1,29 @@
+CASE           NOW       ID                                    NAME
+LF-2026-0361   disabled  032d4a23-bae7-4f54-8868-8fa1f45b1949  paralegal-note.txt
+LF-2026-0361   disabled  6120bb04-4916-4e56-acab-604ddf1a3e10  e2e-client-advice.txt
+LF-2026-0361   disabled  b733b6a9-8f04-47d8-9019-9d47b7a80dab  e2e-restore.txt
+LF-2026-0361   disabled  ebdb8d3f-9e27-4e3b-bb90-e3cbdb6ecd04  e2e-fictional-petition-3-pages.pdf
+LF-2026-0491   disabled  8ffa9885-9e98-4366-b55c-254be51740c6  e2e-notes.txt
+Preview only: nothing was changed. To queue these 5 document(s) for indexing, run the same command with --confirm 5.
+CASE           NOW       ID                                    NAME
+LF-2026-0361   disabled  032d4a23-bae7-4f54-8868-8fa1f45b1949  paralegal-note.txt
+LF-2026-0361   disabled  6120bb04-4916-4e56-acab-604ddf1a3e10  e2e-client-advice.txt
+LF-2026-0361   disabled  b733b6a9-8f04-47d8-9019-9d47b7a80dab  e2e-restore.txt
+LF-2026-0361   disabled  ebdb8d3f-9e27-4e3b-bb90-e3cbdb6ecd04  e2e-fictional-petition-3-pages.pdf
+LF-2026-0491   disabled  8ffa9885-9e98-4366-b55c-254be51740c6  e2e-notes.txt
+Queued 5 document(s) for indexing.
+lexflow.worker worker ARYAN-PC:36700:7a828939 started (embeddings: local, timeout 120s)
+lexflow.worker document 032d4a23-bae7-4f54-8868-8fa1f45b1949: indexed (1 chunks embedded, 0 already current)
+lexflow.worker document 6120bb04-4916-4e56-acab-604ddf1a3e10: indexed (1 chunks embedded, 0 already current)
+lexflow.worker document 8ffa9885-9e98-4366-b55c-254be51740c6: indexed (1 chunks embedded, 0 already current)
+lexflow.worker document b733b6a9-8f04-47d8-9019-9d47b7a80dab: indexed (1 chunks embedded, 0 already current)
+lexflow.worker document ebdb8d3f-9e27-4e3b-bb90-e3cbdb6ecd04: indexed (3 chunks embedded, 0 already current)
+lexflow.worker worker ARYAN-PC:36700:7a828939 finished: 5 document(s) processed
+e2e-client-advice.txt: indexed, 1/1 vectors OK
+e2e-fictional-petition-3-pages.pdf: indexed, 3/3 vectors OK
+e2e-notes.txt: indexed, 1/1 vectors OK
+e2e-restore.txt: indexed, 1/1 vectors OK
+paralegal-note.txt: indexed, 1/1 vectors OK
+semantic search: 1 result(s)
+  0.711 e2e-notes.txt chunk 1 offsets exact
+SMOKE TEST PASSED

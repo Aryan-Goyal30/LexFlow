@@ -6,7 +6,10 @@ name: lexflow
 
 services:
   db:
-    image: postgres:17
+    # PostgreSQL 17 with pgvector, on Debian 13 like postgres:17 (same glibc and
+    # collation version), so the existing data directory is used unchanged.
+    # Not the plain :pg17 tag (Debian 12, older glibc). See docs/adr/0016.
+    image: pgvector/pgvector:pg17-trixie
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in server/.env}

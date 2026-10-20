@@ -204,8 +204,98 @@ adds almost nothing on this corpus. With 26 hand-written queries these are
 indications, not benchmarks; a lawyer-reviewed relevance set on real
 (licensed) material is needed for any claim about legal research.
 
+E3 commit: `4c6dc96`.
+
+## E4 — Gated live change (done)
+
+**Rehearsals on the physical copy** (the real data directory, isolated):
+the exact SQL of `alembic upgrade 0008:0009 --sql` → existing tables
+identical; the downgrade SQL → whole database identical, `vector` removed;
+then the candidate container was stopped and **`postgres:17` started on the
+same data** (`lexflow-pgv-rollback`): started cleanly, collation 2.41/2.41,
+`amcheck` passed on all 1,032 B-tree indexes in 7 databases, data identical.
+So both directions and the image rollback are rehearsed.
+
+**Gates (all passed before the change):** fresh checksummed backups ✔;
+logical and physical restores ✔; candidate compatibility (collation, amcheck,
+pgvector operations) ✔; 0009 upgrade/downgrade/re-upgrade on the logical
+restore and the physical copy ✔; rollback rehearsed ✔; automated tests
+(629 passed on the candidate image) ✔; live target identified ✔.
+
+**Pre-change record:** container `165f4f29ea25…` (`postgres:17`,
+`sha256:2d2b8998d310…`), volume `lexflow_pgdata`, compose project `lexflow`,
+revision 0008, no client connections (the dev API and worker were stopped).
+
+**Backups taken immediately before** (`server/var/backups/`, git-ignored):
+
+| Backup | SHA-256 |
+|---|---|
+| `lexflow-20261020-pre-swap.dump` (logical, 14 table-data entries) | `8a433f2e7328dca506e1dd99806168ce3e00fa8a7e2270d9dc8e1e39d5b1567a` |
+| `lexflow-20261020-pre-swap-basebackup/base.tar.gz` (physical) | `f21638c6171517d30f4b0a8858021cfe69634d7e8e70c16248b361847e6a92b5` |
+| `lexflow-20261020-pre-swap-basebackup/pg_wal.tar.gz` | `6cf7c0e81db3b7d3ec26c74e7b4c785bf1e400f17e6960e0ff263dc6601ae016` |
+| volume `lexflow_pgdata_pre_pgvector_20261020` (cold copy while stopped) | 2,837 files, 118,683,330 bytes, per-file hash list `d743079ad14c5f0e…` identical to the source |
+
+**Change (the rehearsed procedure):** `docker compose stop db`; cold volume
+copy; `compose.yaml` `image: pgvector/pgvector:pg17-trixie`;
+`docker compose up -d --wait db` → new container `e7908aef99c9…`, same
+volume, "Skipping initialization", clean start, healthy. Checks: collation
+2.41/2.41 in all 7 databases; `lexflow` fingerprint identical to the pre-swap
+one; `vector` 0.8.7 available; port still 127.0.0.1 only; no warnings.
+Then `alembic upgrade head` on `lexflow` → **0009 (head)**; existing 13
+tables identical; new table empty; extensions `plpgsql`, `vector 0.8.7`;
+`alembic check` clean.
+
+**After the change:**
+- API restarted (health ok; anonymous search/text 401; route in OpenAPI);
+  worker restarted with embeddings **disabled** (the default).
+- `models status` on `lexflow`: model verified, pgvector installed, 1
+  extracted document (index status `disabled`), 0 vectors.
+- Full back-end suite with the **default** test configuration (now the live
+  cluster's `lexflow_test`): **629 passed**
+  (`docs/verification/embeddings/pytest-full-live-cluster.log`).
+- Playwright on the live cluster's `lexflow_e2e`: **32 passed**
+  (`playwright-live-cluster.log`); no leftover processes.
+- Real worker + real model on the live server, FICTIONAL e2e data only
+  (`live_worker_smoke.py`, `live-worker-smoke.log`): `queue-indexing`
+  preview + `--confirm 5`; `python -m lexflow.worker --once` with
+  `LEXFLOW_EMBEDDINGS=local` indexed 5 documents (7 chunks); every document
+  has one vector per chunk from the pinned model; a semantic search returned
+  passages whose offsets match the stored text; deleted documents excluded.
+  **PASSED.**
+- `lexflow` fingerprint after all of this: unchanged since migration 0009.
+
+**Not done on purpose:** embeddings were **not enabled** for `lexflow` and
+the owner's extracted document was **not** indexed — enabling is a
+configuration decision for the owner (`server/README.md`, "Embeddings and
+case search").
+
+**Recovery (rehearsed):** (1) `alembic downgrade 0008`; (2) then
+`docker compose stop db`, `image: postgres:17`, `docker compose up -d --wait
+db`; (3) if anything else fails: the cold volume copy, the physical base
+backup or the logical dump above (restoring replaces data: owner decision).
+
+## Scratch resources (left in place; remove only when the owner agrees)
+
+| Resource | State | Notes |
+|---|---|---|
+| `lexflow_pgdata_pre_pgvector_20261020` | volume | **the pre-change snapshot; keep until satisfied** |
+| `lexflow-pgv-test` | container, running, tmpfs, 127.0.0.1:55432 | scratch test server; its data vanishes when stopped |
+| `lexflow-pgv-physical`, `lexflow-pgv-rollback` | containers, stopped | rehearsal servers |
+| `lexflow_pgv_physical_scratch` | volume | the physical rehearsal copy |
+| `lexflow-pgvector-rehearsal` | container, stopped | from Phase 3 |
+| `lexflow_p3_restore`, `lexflow_restore_check` | databases in the live cluster | earlier restore checks |
+
+## Final state
+
+- Live: `pgvector/pgvector:pg17-trixie`, volume `lexflow_pgdata`, `lexflow`
+  at **0009**; embeddings **disabled**; model downloaded and verified;
+  API and worker running.
+- Tests: back end 629 passed (scratch and live cluster); Playwright 32;
+  front end 158 + build; mutation checks 16/16; evaluation recorded.
+
 ---
 
-Checkpoint: E3 committed (see `git log`). Next: E4 gated live change —
-fresh backups, physical rehearsal of 0009 and of the rollback, image swap of
-`lexflow-db-1` to `pgvector/pgvector:pg17-trixie`, migration 0009, checks.
+Checkpoint: E4 committed (see `git log`). Embeddings implemented and the live
+database migrated. Next actions are the owner's: enable embeddings if wanted
+(`LEXFLOW_EMBEDDINGS=local`, restart, `queue-indexing`), keep or remove the
+scratch resources, decide on a search screen and on Phase 4.

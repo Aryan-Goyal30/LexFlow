@@ -81,7 +81,12 @@ and `docs/adr/` records the main decisions.
   the page count, or failed with the reason) and refreshes itself; staff on the
   case open **View text** page by page, and those who may upload can **try
   again**. Scans fail honestly ("no text layer": there is no OCR). Clients never
-  see extracted text. Embeddings are **not** computed yet (see Limitations).
+  see extracted text.
+- **Case search (API only):** `GET /api/cases/{id}/search` finds passages in a
+  case's documents by keywords, or by meaning with optional **local
+  embeddings** (`BAAI/bge-small-en-v1.5` on this computer, off by default;
+  `server/README.md`). Results are the case's own passages with page and
+  position, for staff who may view the case. There is no search screen yet.
 
 ### Firm-wide pages
 
@@ -314,6 +319,7 @@ same commands have been run locally.
 | `GET`/`POST /api/cases/{id}/documents`, `GET /api/cases/{id}/documents/deleted` | Documents; upload; deleted ones |
 | `GET /api/documents/{id}/download`, `DELETE /api/documents/{id}`, `POST .../restore`, `.../share`, `.../unshare` | Download, (soft) delete, restore, share with the client |
 | `GET /api/documents/{id}/text?section=`, `POST /api/documents/{id}/reprocess` | Extracted text, one page or part at a time (audited); extract again |
+| `GET /api/cases/{id}/search?q=&mode=keyword\|semantic\|hybrid&limit=` | Passages of the case's documents, best first (audited without the query) |
 | `GET`/`POST /api/clients`, `GET`/`PATCH /api/clients/{id}`, `GET /api/clients/options` | Clients |
 | `GET /api/advocates`, `GET /api/staff` | Reference lists |
 | `/api/portal/cases`, `/api/portal/cases/{id}`, `/api/portal/documents/{id}/download` | Client portal (Client accounts only) |
@@ -338,7 +344,7 @@ src/
 └── test/                        # setup, renderApp, mockApi (MSW fake API)
 server/
 ├── lexflow/                     # FastAPI app: api/, services/, auth/, cli/, seed/, extraction/, worker, authz, audit, models, schemas
-├── migrations/                  # Alembic (0001 to 0008)
+├── migrations/                  # Alembic (0001 to 0009)
 ├── tests/                       # pytest
 └── scripts/                     # export_openapi.py, e2e.py
 e2e/                             # Playwright tests and the API start/stop helpers
@@ -358,19 +364,20 @@ scripts/                         # api-types.mjs, export-sample-data.mjs
   backup or retention policy.
 - No AI analysis, OCR, precedent search, judgment collection or outcome
   prediction.
-- **No embeddings yet.** Storing vectors needs a PostgreSQL image with
-  pgvector; the planned image was not compatible with the existing database
-  (different C library), so it was not applied (`docs/adr/0016`). Extracted
-  text and chunks are stored and can be embedded later.
+- **Embeddings are off by default** and English-only. Semantic search was
+  measured only on a small fictional corpus; its quality on real legal
+  documents is unmeasured. Search covers one case at a time and has no
+  screen in the app yet.
 - Text extraction reads only text layers: scanned PDFs, images and `.doc`
   files have no text. Word headers, footers and comments are not read, and
   Word text has no page numbers (it is shown in parts).
 
 ## Next phase
 
-Phase 3 (document text extraction) is done except embeddings, which wait for
-a compatible pgvector database image (`docs/PHASE3_EXECUTION_LOG.md`).
+Phase 3 (document text extraction) is done, including optional local
+embeddings on the pgvector image (`docs/PHASE3_EXECUTION_LOG.md`,
+`docs/EMBEDDINGS_EXECUTION_LOG.md`).
 According to `docs/DEVELOPMENT_BRIEF.md`, Phase 4 is the **judgment collection
 and retrieval**. It has not started: it needs a judgment source whose terms of
-use have been verified, vector storage, and a lawyer's relevance judgments.
+use have been verified, and a lawyer's relevance judgments.
 `docs/PHASE4_PLAN.md` lists the decisions needed and the proposed milestones.

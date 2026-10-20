@@ -1,6 +1,7 @@
 # 0016 — Embeddings: off by default, local only, and gated on a compatible pgvector image
 
-Status: Accepted (Phase 3); vector storage **blocked** pending the image decision
+Status: Superseded in part by 0017 (the image was approved and applied; storage and the
+local model are implemented). Kept for the compatibility analysis.
 
 ## Context
 
