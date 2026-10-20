@@ -1,0 +1,16 @@
+{
+  "phase": 5,
+  "updated": "2026-10-20",
+  "branch": "master",
+  "base_commit": "e122d11",
+  "status": "plan only; not started",
+  "plan": "docs/PHASE5_PLAN.md",
+  "migration_head_in_code": "0010",
+  "live_lexflow_revision": "0010",
+  "migration_needed": "0011 analysis_runs (additive; scratch rehearsal first; live only with owner go-ahead)",
+  "gemini_calls_made": 0,
+  "dependencies_installed": [],
+  "milestones": {"M0": "owner decisions pending", "M1": "pending", "M2": "pending", "M3": "pending", "M4": "pending", "M5": "pending", "M6": "pending", "M7": "pending", "M8": "owner-gated"},
+  "open_decisions": ["D1 data tier / client material", "D2 model and project", "D3 SDK vs REST", "D4 who may start a run", "D5 proceed with empty judgment collection"],
+  "next_action": "Owner records D1-D5 in docs/PHASE5_PLAN.md section 9; then implement M1 (contract, settings, migration 0011 on scratch only)"
+}
