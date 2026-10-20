@@ -51,14 +51,11 @@ def test_model_name_has_no_default_and_is_checked() -> None:
 def test_the_scripted_double_is_refused_outside_test_and_e2e_databases() -> None:
     refused = "is a test double"
     with pytest.raises(ValidationError, match=refused):
-        Settings(DATABASE_URL=LIVE_DB, LEXFLOW_ENV="development", **OUTSIDE_TESTS)  # type: ignore[arg-type]
+        Settings(**{"DATABASE_URL": LIVE_DB, "LEXFLOW_ENV": "development", **OUTSIDE_TESTS})  # type: ignore[arg-type]
     with pytest.raises(ValidationError, match=refused):
-        Settings(DATABASE_URL=TEST_DB, LEXFLOW_ENV="production", **OUTSIDE_TESTS)  # type: ignore[arg-type]
-    e2e = Settings(
-        DATABASE_URL="postgresql+psycopg://u:p@127.0.0.1/lexflow_e2e",
-        LEXFLOW_ENV="development",
-        **OUTSIDE_TESTS,  # type: ignore[arg-type]
-    )
+        Settings(**{"DATABASE_URL": TEST_DB, "LEXFLOW_ENV": "production", **OUTSIDE_TESTS})  # type: ignore[arg-type]
+    e2e_db = "postgresql+psycopg://u:p@127.0.0.1/lexflow_e2e"
+    e2e = Settings(**{"DATABASE_URL": e2e_db, "LEXFLOW_ENV": "development", **OUTSIDE_TESTS})  # type: ignore[arg-type]
     assert e2e.ai_provider == "scripted"
 
 

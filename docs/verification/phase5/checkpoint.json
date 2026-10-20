@@ -3,7 +3,7 @@
   "updated": "2026-10-20",
   "branch": "master",
   "base_commit": "cb40bcc",
-  "status": "in progress: M1-M2 done",
+  "status": "in progress: M1-M3 done",
   "plan": "docs/PHASE5_PLAN.md",
   "log": "docs/PHASE5_EXECUTION_LOG.md",
   "decisions": {
@@ -24,13 +24,13 @@
   "milestones": {
     "M0": "done",
     "M1": "done (d681326)",
-    "M2": "done",
-    "M3": "pending",
+    "M2": "done (392f3b4)",
+    "M3": "done",
     "M4": "pending",
     "M5": "pending",
     "M6": "pending",
     "M7": "pending",
     "M8": "owner-gated (live migration not authorised in this run)"
   },
-  "next_action": "M3: provider layer (GeminiProvider with mocked client, scripted double) with tests"
+  "next_action": "M4: validation of model output against the evidence, with tampering tests"
 }

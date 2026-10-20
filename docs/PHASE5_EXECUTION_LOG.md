@@ -50,8 +50,8 @@ structured-output support and pricing before the first real run.
 |---|---|---|
 | M0 | Owner decisions D1–D5 | done (approved 2026-10-20) |
 | M1 | Contract, settings, migration 0011 (scratch only), output schema | done (`d681326`) |
-| M2 | Evidence assembly + prompt v1 | done |
-| M3 | Provider layer | pending |
+| M2 | Evidence assembly + prompt v1 | done (`392f3b4`) |
+| M3 | Provider layer | done |
 | M4 | Validation | pending |
 | M5 | Runs: API, worker, audit, authorisation | pending |
 | M6 | User interface | pending |
@@ -147,4 +147,39 @@ structured-output support and pricing before the first real run.
 - Fix during M2: documents uploaded in one transaction tied on
   `created_at`; ordering is now upload date, then name, then id.
 
-Checkpoint: M2 committed; next M3 (provider layer).
+## M3 — Provider layer (done)
+
+- `lexflow/analysis/provider.py`: `AnalysisProvider` protocol
+  (`generate(Request) -> Response`), `provider_for(settings)` → provider or
+  `Unavailable(code, reason)`; building a provider contacts nothing.
+- `GeminiProvider` (official SDK): `genai.Client(api_key, HttpOptions(timeout
+  in ms, retry_options=None))`, `models.generate_content(model, contents,
+  GenerateContentConfig(system_instruction, response_mime_type
+  "application/json", response_json_schema, max_output_tokens,
+  candidate_count=1))`. Temperature is left at the model's default (newer
+  models advise against changing it; not verified against Google's
+  documentation in this run).
+  - Errors map to fixed codes and messages, never the provider's text, and
+    the original exception is suppressed (`from None`): 429 →
+    `provider-rate-limited` (retry), 5xx → `provider-unavailable` (retry),
+    timeouts → `provider-timeout` (retry), connection → `provider-unreachable`
+    (retry), 401/403 → `provider-auth-failed`, 404 →
+    `provider-model-not-found`, other 4xx → `provider-rejected`, prompt
+    block / safety finish → `provider-blocked`, no text → `provider-empty`.
+  - `MAX_TOKENS` marks the answer as truncated; "thought" parts are excluded;
+    token counts are kept.
+  - The key is read from the `SecretStr` only when the client is built;
+    `repr` shows the model only.
+- `lexflow/analysis/scripted.py`: the e2e/test double (`scripted-v1`, "not
+  AI"): fixed-shape answer quoting the first words of passages, "[Scripted]"
+  on every statement, plus one fact citing `D999` that validation must
+  remove. Refused by the settings outside test/e2e databases.
+- Tests (`test_analysis_provider.py`, 22; fakes in `tests/analysis_fakes.py`):
+  request contents (schema, instruction, limits, timeout in ms), usage,
+  thoughts excluded, truncation, ten failure mappings with the key and the
+  provider's text absent from messages and logs, blocked/empty answers, the
+  default client built with the key and no SDK retries (recorded with a
+  stand-in class, no network), the conftest guard, `provider_for`, the
+  scripted double.
+
+Checkpoint: M3 committed; next M4 (validation).
