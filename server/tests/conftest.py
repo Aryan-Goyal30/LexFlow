@@ -58,6 +58,12 @@ os.environ["DATABASE_URL"] = TEST_DATABASE_URL.render_as_string(hide_password=Fa
 os.environ["LEXFLOW_ENV"] = "test"
 # Cheap Argon2 parameters keep the suite fast; settings refuse this outside tests.
 os.environ["LEXFLOW_PASSWORD_HASH_PROFILE"] = "test-fast"
+# AI analysis is off unless a test turns it on, whatever server/.env says, and
+# no test ever sees a real Gemini key (blank counts as missing).
+os.environ["LEXFLOW_AI_PROVIDER"] = "disabled"
+os.environ["GEMINI_API_KEY"] = ""
+os.environ["GEMINI_MODEL"] = ""
+os.environ["LEXFLOW_AI_ALLOW_CLIENT_DATA"] = "false"
 
 # What the browser app sends with every change: its origin and the CSRF header.
 APP_ORIGIN = "http://localhost:5173"
@@ -274,3 +280,15 @@ def committed_engine(engine: Engine) -> Iterator[Engine]:
                 "judgment_sources RESTART IDENTITY CASCADE"
             )
         )
+
+
+@pytest.fixture(autouse=True)
+def _no_real_gemini_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test may build a real Gemini client (and so reach Google): tests use
+    the scripted provider or inject a fake client."""
+    from google import genai
+
+    def refuse(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("a test tried to create a real Gemini client")
+
+    monkeypatch.setattr(genai, "Client", refuse)

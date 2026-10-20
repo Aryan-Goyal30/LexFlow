@@ -22,3 +22,6 @@ pgvector
 onnxruntime
 tokenizers
 numpy
+# AI case analysis (Phase 5, opt-in): Google's official Gemini SDK
+# (Apache-2.0). Used only by lexflow/analysis/provider.py, on the server.
+google-genai

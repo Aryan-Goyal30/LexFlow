@@ -120,6 +120,9 @@ def test_workers_get_the_oldest_waiting_job_with_a_lease(
 ) -> None:
     first = upload(as_("lead"), "One.pdf", PDF, "application/pdf")["id"]
     second = upload(as_("lead"), "Two.txt", b"two", "text/plain")["id"]
+    # Both times explicit: the upload stamps the real clock, which says nothing
+    # about NOW (a fixed date).
+    job(db, first).queued_at = NOW
     job(db, second).queued_at = NOW + timedelta(seconds=1)
     db.commit()
 

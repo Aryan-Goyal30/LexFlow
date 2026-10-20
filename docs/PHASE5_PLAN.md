@@ -1,9 +1,9 @@
-# Phase 5 plan — AI case analysis with Google Gemini (not started)
+# Phase 5 plan — AI case analysis with Google Gemini
 
-Status (2026-10-20): **plan only; nothing implemented.** Repository at
-`e122d11` (Phase 4 complete). Scope from `docs/DEVELOPMENT_BRIEF.md` §4
-Phase 5. Machine-readable state: `docs/verification/phase5/checkpoint.json`.
-No Gemini call has been made; no dependency installed; no migration run.
+Status (2026-10-20): **decisions approved (§9); implementation recorded in
+`docs/PHASE5_EXECUTION_LOG.md`.** Planned at `e122d11` (Phase 4 complete).
+Scope from `docs/DEVELOPMENT_BRIEF.md` §4 Phase 5. Machine-readable state:
+`docs/verification/phase5/checkpoint.json`.
 
 ## 1. Brief: scope and "done when"
 
@@ -209,18 +209,36 @@ prompt and schema) and an output cap of a few thousand tokens; one retry at
 most on malformed output. Cost depends on the model and tier chosen (D2) —
 check Google's current pricing; no figure is assumed here.
 
-## 9. Owner decisions (open)
+## 9. Owner decisions (approved 2026-10-20)
 
-- **D1 Data:** paid tier for any real client material? Until then, sample and
-  synthetic cases only.
-- **D2 Model and project:** which Gemini model (current list), which Google
-  Cloud project/billing; key provisioned by the owner into `server/.env`.
-- **D3 Dependency:** official SDK (recommended) or standard-library REST.
-- **D4 Roles:** who may start an analysis (proposed: Administrator + advocates
-  on the case); allowed on archived cases?
-- **D5 Precedents:** with the live collection empty, precedent comparison
-  returns "no precedents available"; proceed anyway (recommended) or wait for
-  an approved judgment source.
+Approved by the owner at the start of the implementation run and applied as
+follows.
+
+- **D1 Data privacy — approved.** Initially analyse only synthetic or sample
+  cases. Never send real confidential client material to Gemini during this
+  implementation. Gemini receives the selected case content; production use
+  requires a separate privacy, confidentiality and provider-terms review. A
+  paid subscription alone does not establish legal or contractual compliance.
+  *Applied:* `LEXFLOW_AI_ALLOW_CLIENT_DATA=false` (default) refuses any case
+  not marked as sample; the UI states what is sent to Google before every
+  run and asks for confirmation.
+- **D2 Model — approved.** Gemini API through a configurable model setting
+  (`GEMINI_MODEL`, no hard-coded default). Key read only from backend
+  configuration `GEMINI_API_KEY`, configured manually by the owner in
+  `server/.env` (never requested, printed or exposed). Missing key or model →
+  analysis reported unavailable with a clear reason, never a crash. Model
+  names, structured-output support and pricing must be checked against
+  Google's official documentation by the owner when choosing the model.
+- **D3 Dependency — approved.** Official `google-genai` Python SDK, pinned
+  with pip-compile like every other dependency.
+- **D4 Roles — approved.** Only the Administrator and advocates authorised on
+  the case (lead or associate) may start an analysis; archived cases are
+  refused; every read of past results is authorised (`view` on the case;
+  inaccessible cases answer "not found"); audit events follow existing
+  conventions with no secrets or prompt text.
+- **D5 Precedents — approved.** Analysis remains usable with no judgments;
+  the result states explicitly that no precedents were available for
+  comparison; judgments are never invented.
 
 ## 10. Risks
 

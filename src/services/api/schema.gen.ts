@@ -1319,6 +1319,8 @@ export interface components {
             canRestoreDocuments: boolean;
             /** Cansharedocuments */
             canShareDocuments: boolean;
+            /** Canrunanalysis */
+            canRunAnalysis: boolean;
         };
         /**
          * CaseSearchHitOut

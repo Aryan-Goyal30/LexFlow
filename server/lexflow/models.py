@@ -36,6 +36,8 @@ from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from lexflow.domain import (
+    ANALYSIS_REASON_MAX,
+    ANALYSIS_STATUSES,
     AUDIT_OUTCOMES,
     CASE_PRIORITIES,
     CASE_STATUSES,
@@ -775,6 +777,89 @@ class JudgmentChunkEmbedding(Base):
     dimensions: Mapped[int] = mapped_column(Integer, nullable=False)
     embedding: Mapped[list[float]] = mapped_column(Vector(384), nullable=False)
     created_at: Mapped[datetime] = _created_at()
+
+
+class AnalysisRun(Base):
+    """One AI case analysis (Phase 5): what was asked, what was sent, what survived.
+
+    Created ``queued`` by the API; the worker claims it with a lease (like
+    document extraction), assembles the evidence, calls the configured
+    provider and stores only the **validated** result: every fact, quote and
+    precedent in ``result`` points at evidence listed in ``evidence``. Raw
+    model output is never stored. ``evidence`` holds references and content
+    hashes, not the text itself. ``removed`` counts what validation dropped.
+    At most one run per case is waiting or running at a time.
+    """
+
+    __tablename__ = "analysis_runs"
+    __table_args__ = (
+        CheckConstraint(_in_list("status", ANALYSIS_STATUSES), name="status_valid"),
+        CheckConstraint(
+            "(status = 'failed') = (reason_code IS NOT NULL)", name="reason_matches_status"
+        ),
+        CheckConstraint(
+            f"reason IS NULL OR char_length(reason) <= {ANALYSIS_REASON_MAX}",
+            name="reason_length",
+        ),
+        CheckConstraint(
+            "(status = 'running') = (lease_expires_at IS NOT NULL)", name="lease_matches_status"
+        ),
+        CheckConstraint("(status = 'ready') = (result IS NOT NULL)", name="result_matches_status"),
+        CheckConstraint("attempts >= 0", name="attempts_non_negative"),
+        CheckConstraint("char_length(provider) BETWEEN 1 AND 50", name="provider_length"),
+        CheckConstraint("char_length(model) BETWEEN 1 AND 100", name="model_length"),
+        CheckConstraint(
+            "char_length(prompt_version) BETWEEN 1 AND 50", name="prompt_version_length"
+        ),
+        Index("ix_analysis_runs_case_id_created_at", "case_id", "created_at"),
+        Index("ix_analysis_runs_status_available_at", "status", "available_at"),
+        Index("ix_analysis_runs_requested_by_id_created_at", "requested_by_id", "created_at"),
+        Index(
+            "uq_analysis_runs_case_id_active",
+            "case_id",
+            unique=True,
+            postgresql_where=text("status IN ('queued', 'running')"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
+    requested_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    # A stable code (for example "provider-timeout") and a message for people.
+    reason_code: Mapped[str | None] = mapped_column(Text)
+    reason: Mapped[str | None] = mapped_column(Text)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    # A waiting run is not claimed before this (a pause after a busy provider).
+    available_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    worker_id: Mapped[str | None] = mapped_column(Text)
+    # Which provider and model were asked, and the prompt's version.
+    provider: Mapped[str] = mapped_column(Text, nullable=False)
+    model: Mapped[str] = mapped_column(Text, nullable=False)
+    prompt_version: Mapped[str] = mapped_column(Text, nullable=False)
+    # The request: selected document ids and the limits in force.
+    selection: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    # The evidence sent (ids -> references and content hashes), once assembled.
+    evidence: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    result: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    removed: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # Token counts reported by the provider, if any.
+    usage: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        server_default=func.now(),
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class CaseNumberCounter(Base):

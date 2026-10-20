@@ -36,6 +36,7 @@ APP_TABLES = {
     "judgment_sections",
     "judgment_chunks",
     "judgment_chunk_embeddings",
+    "analysis_runs",
 }
 
 

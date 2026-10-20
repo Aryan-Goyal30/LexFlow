@@ -99,7 +99,8 @@ type Action =
   | 'upload'
   | 'delete'
   | 'restore'
-  | 'share';
+  | 'share'
+  | 'runAnalysis';
 
 // The same rules as the server (lexflow/authz.py).
 const STAFF: Relation[] = ['admin', 'lead', 'associate', 'paralegal'];
@@ -118,6 +119,7 @@ const ALLOWED: Record<Action, Relation[]> = {
   delete: ['admin', 'lead'],
   restore: ['admin', 'lead'],
   share: ADVOCATES,
+  runAnalysis: ADVOCATES,
 };
 const allows = (rel: Relation, action: Action) => ALLOWED[action].includes(rel);
 const FIELD_ACTIONS: [string, Action][] = [
@@ -146,6 +148,7 @@ export function permissionsFor(rel: Relation, isArchived = false): Case['permiss
     canDeleteDocuments: may('delete'),
     canRestoreDocuments: may('restore'),
     canShareDocuments: may('share'),
+    canRunAnalysis: may('runAnalysis'),
   };
 }
 

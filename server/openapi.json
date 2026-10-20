@@ -3848,6 +3848,10 @@
           "canShareDocuments": {
             "type": "boolean",
             "title": "Cansharedocuments"
+          },
+          "canRunAnalysis": {
+            "type": "boolean",
+            "title": "Canrunanalysis"
           }
         },
         "type": "object",
@@ -3861,7 +3865,8 @@
           "canUploadDocuments",
           "canDeleteDocuments",
           "canRestoreDocuments",
-          "canShareDocuments"
+          "canShareDocuments",
+          "canRunAnalysis"
         ],
         "title": "CasePermissions",
         "description": "What the signed-in user may do on this case (to show the right controls).\n\nA convenience for the screens only: the server checks every action again."

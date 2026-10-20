@@ -2,15 +2,33 @@
   "phase": 5,
   "updated": "2026-10-20",
   "branch": "master",
-  "base_commit": "e122d11",
-  "status": "plan only; not started",
+  "base_commit": "cb40bcc",
+  "status": "in progress: M1 done",
   "plan": "docs/PHASE5_PLAN.md",
-  "migration_head_in_code": "0010",
+  "log": "docs/PHASE5_EXECUTION_LOG.md",
+  "decisions": {
+    "D1": "approved: synthetic/sample cases only; LEXFLOW_AI_ALLOW_CLIENT_DATA=false",
+    "D2": "approved: Gemini API, GEMINI_MODEL configurable (no default), GEMINI_API_KEY in server/.env by the owner",
+    "D3": "approved: google-genai SDK, pinned",
+    "D4": "approved: admin + lead/associate advocates start runs; archived refused; reads need view",
+    "D5": "approved: works with no judgments and says so"
+  },
+  "migration_head_in_code": "0011",
+  "migration_0011_rehearsed_on": "scratch database lexflow_autogen_p5_test (127.0.0.1:55432): upgrade, check, downgrade, upgrade, check",
   "live_lexflow_revision": "0010",
-  "migration_needed": "0011 analysis_runs (additive; scratch rehearsal first; live only with owner go-ahead)",
   "gemini_calls_made": 0,
-  "dependencies_installed": [],
-  "milestones": {"M0": "owner decisions pending", "M1": "pending", "M2": "pending", "M3": "pending", "M4": "pending", "M5": "pending", "M6": "pending", "M7": "pending", "M8": "owner-gated"},
-  "open_decisions": ["D1 data tier / client material", "D2 model and project", "D3 SDK vs REST", "D4 who may start a run", "D5 proceed with empty judgment collection"],
-  "next_action": "Owner records D1-D5 in docs/PHASE5_PLAN.md section 9; then implement M1 (contract, settings, migration 0011 on scratch only)"
+  "real_client_data_sent": false,
+  "dependencies_installed": ["google-genai==2.31.0 (+14 transitive pins)"],
+  "milestones": {
+    "M0": "done",
+    "M1": "done",
+    "M2": "pending",
+    "M3": "pending",
+    "M4": "pending",
+    "M5": "pending",
+    "M6": "pending",
+    "M7": "pending",
+    "M8": "owner-gated (live migration not authorised in this run)"
+  },
+  "next_action": "M2: evidence assembly and prompt v1 with tests"
 }

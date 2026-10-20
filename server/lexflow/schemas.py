@@ -651,6 +651,7 @@ class CasePermissions(ApiModel):
     can_delete_documents: bool
     can_restore_documents: bool
     can_share_documents: bool
+    can_run_analysis: bool
 
 
 class TeamMemberOut(ApiModel):
@@ -907,3 +908,171 @@ class CaseUpdate(InputModel):
     @classmethod
     def _short(cls, value: str | None) -> str | None:
         return _check_short(value)
+
+
+# --- AI case analysis (Phase 5) -------------------------------------------------------
+# Every item below was checked by the server against the evidence the run
+# sent: a fact's quote occurs verbatim in the passage it cites, a precedent is
+# a judgment passage that was retrieved for this run. That check is about
+# provenance only: it does not make the model's wording legally correct.
+
+
+class AnalysisSourceOut(ApiModel):
+    """A passage of one of the case's documents that supports an item, with the
+    verified quote."""
+
+    evidence_id: str = Field(description="The passage's id in this run's evidence, e.g. 'D3'.")
+    document_id: uuid.UUID
+    document_name: str
+    chunk_id: uuid.UUID
+    section_number: int = Field(description="The page (PDF) or part; links to the document text.")
+    page_number: int | None = Field(description="The PDF page; null for documents without pages.")
+    quote: str = Field(description="Occurs verbatim in the passage (whitespace normalised).")
+
+
+class AnalysisFactOut(ApiModel):
+    id: str
+    statement: str = Field(description="The model's wording; supported by the quoted source.")
+    source: AnalysisSourceOut
+
+
+class AnalysisIssueOut(ApiModel):
+    id: str
+    question: str
+    fact_ids: list[str] = Field(description="Facts of this result the issue rests on.")
+
+
+class AnalysisPassageRefOut(ApiModel):
+    chunk_id: uuid.UUID
+    section_number: int
+    page_number: int | None
+
+
+class AnalysisPrecedentOut(ApiModel):
+    """A comparison with a judgment passage that was retrieved for this run."""
+
+    id: str
+    evidence_id: str = Field(description="e.g. 'J1'.")
+    judgment_id: uuid.UUID
+    title: str
+    court: str
+    citation: str | None
+    year: int | None
+    synthetic: bool = Field(description="Invented test judgment: never to be cited.")
+    retrieval_rank: int = Field(description="Its rank in the keyword retrieval (1 = first).")
+    passage: AnalysisPassageRefOut
+    summary: str = Field(description="What the judgment passage says (the model's summary).")
+    similarities: list[str]
+    differences: list[str]
+
+
+class AnalysisContradictionOut(ApiModel):
+    id: str
+    description: str
+    sources: list[AnalysisSourceOut] = Field(description="At least two verified sources.")
+
+
+class AnalysisRemovedReasonOut(ApiModel):
+    code: str
+    message: str
+    count: int
+
+
+class AnalysisRemovedOut(ApiModel):
+    """What validation removed from the model's answer, and why."""
+
+    count: int
+    reasons: list[AnalysisRemovedReasonOut]
+
+
+class AnalysisResultOut(ApiModel):
+    facts: list[AnalysisFactOut]
+    issues: list[AnalysisIssueOut]
+    precedents: list[AnalysisPrecedentOut]
+    contradictions: list[AnalysisContradictionOut]
+    insufficient_evidence: bool = Field(
+        description="True when the evidence did not support a useful analysis."
+    )
+    insufficient_reason: str | None
+    precedents_available: bool = Field(
+        description="False when no judgment passage was available to compare with."
+    )
+    removed: AnalysisRemovedOut
+
+
+class AnalysisEvidenceSummaryOut(ApiModel):
+    documents: int = Field(description="Documents whose passages were sent.")
+    passages: int
+    judgment_passages: int
+    characters: int = Field(description="Characters of case and judgment text sent.")
+    truncated: bool = Field(description="True when limits left some passages out.")
+
+
+class AnalysisRunSummaryOut(ApiModel):
+    id: uuid.UUID
+    case_id: uuid.UUID
+    status: Literal["queued", "running", "ready", "failed"]
+    reason_code: str | None
+    reason: str | None
+    provider: str = Field(description="'gemini' (Google Gemini API) or 'scripted' (test double).")
+    model: str
+    prompt_version: str
+    requested_by: ActorOut | None
+    document_count: int = Field(description="Documents selected for the run.")
+    created_at: datetime
+    started_at: datetime | None
+    finished_at: datetime | None
+
+
+class AnalysisRunOut(AnalysisRunSummaryOut):
+    evidence: AnalysisEvidenceSummaryOut | None
+    result: AnalysisResultOut | None = Field(description="Only for status 'ready'.")
+
+
+class AnalysisRunListOut(ApiModel):
+    items: list[AnalysisRunSummaryOut]
+
+
+class AnalysisDocumentOut(ApiModel):
+    id: uuid.UUID
+    name: str
+    eligible: bool = Field(description="Its text is ready, so it can be analysed.")
+    section_count: int | None
+    page_count: int | None
+
+
+class AnalysisLimitsOut(ApiModel):
+    max_documents: int
+    max_input_chars: int
+    max_precedents: int
+    runs_per_hour: int
+
+
+class AnalysisSetupOut(ApiModel):
+    """Whether this case can be analysed now, and what would be sent where."""
+
+    available: bool = Field(description="Analysis is configured on this server.")
+    unavailable_reason: str | None
+    provider: str | None = Field(description="Null when analysis is not configured.")
+    provider_label: str | None = Field(description="e.g. 'Google Gemini API'.")
+    model: str | None
+    prompt_version: str
+    can_run: bool = Field(description="This user may start an analysis on this case now.")
+    cannot_run_reason: str | None
+    sample_only: bool = Field(
+        description="Only sample (fictional) cases may be analysed on this server."
+    )
+    case_is_sample: bool
+    documents: list[AnalysisDocumentOut]
+    judgments_available: int = Field(description="Judgments in the collection (0 = none).")
+    limits: AnalysisLimitsOut
+    active_run_id: uuid.UUID | None
+
+
+class AnalysisRunIn(InputModel):
+    document_ids: list[uuid.UUID] = Field(
+        min_length=1, max_length=100, description="Documents of this case to analyse."
+    )
+    confirm_transmission: bool = Field(
+        description="Must be true: the user confirms the selected text is sent to the provider."
+    )

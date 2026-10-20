@@ -2,17 +2,30 @@
 
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError
 
 SERVER_ROOT = Path(__file__).resolve().parent.parent
 
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost"})
+
+_MODEL_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,99}")
+
+
+def _is_test_database(database_url: str) -> bool:
+    try:
+        name = make_url(database_url).database or ""
+    except ArgumentError:
+        return False
+    return "test" in name or "e2e" in name
 
 
 class Settings(BaseSettings):
@@ -114,6 +127,58 @@ class Settings(BaseSettings):
     )
     embedding_threads: int = Field(default=2, ge=1, le=64, alias="LEXFLOW_EMBEDDING_THREADS")
 
+    # --- AI case analysis (Phase 5) ---------------------------------------------------
+    # "disabled" (default): no analysis. "gemini": the worker sends the selected
+    # case text to Google's Gemini API (see docs/adr/0019-ai-case-analysis.md).
+    # "scripted": a canned test double (lexflow/analysis/scripted.py), refused
+    # outside test and e2e databases. A missing key or model does not stop the
+    # API or the worker: analysis is reported unavailable, with the reason.
+    ai_provider: Literal["disabled", "gemini", "scripted"] = Field(
+        default="disabled", alias="LEXFLOW_AI_PROVIDER"
+    )
+    # Never logged, audited, returned by the API or shown in the app.
+    gemini_api_key: SecretStr | None = Field(default=None, alias="GEMINI_API_KEY")
+    # No default on purpose: the owner chooses from Google's current model list.
+    gemini_model: str | None = Field(default=None, alias="GEMINI_MODEL")
+    ai_timeout_seconds: int = Field(default=90, ge=5, le=600, alias="LEXFLOW_AI_TIMEOUT_SECONDS")
+    ai_max_input_chars: int = Field(
+        default=60_000, ge=5_000, le=500_000, alias="LEXFLOW_AI_MAX_INPUT_CHARS"
+    )
+    ai_max_documents: int = Field(default=20, ge=1, le=100, alias="LEXFLOW_AI_MAX_DOCUMENTS")
+    ai_max_passages: int = Field(default=40, ge=1, le=200, alias="LEXFLOW_AI_MAX_PASSAGES")
+    ai_max_precedents: int = Field(default=8, ge=0, le=20, alias="LEXFLOW_AI_MAX_PRECEDENTS")
+    ai_max_output_tokens: int = Field(
+        default=16_384, ge=1_024, le=65_536, alias="LEXFLOW_AI_MAX_OUTPUT_TOKENS"
+    )
+    ai_runs_per_user_per_hour: int = Field(
+        default=10, ge=1, le=1_000, alias="LEXFLOW_AI_RUNS_PER_USER_PER_HOUR"
+    )
+    # Tries per run when the provider is busy or unreachable (with a pause between).
+    ai_max_attempts: int = Field(default=3, ge=1, le=5, alias="LEXFLOW_AI_MAX_ATTEMPTS")
+    # Only sample (fictional) cases may be analysed unless this is true: real
+    # client material needs a privacy, confidentiality and provider-terms review.
+    ai_allow_client_data: bool = Field(default=False, alias="LEXFLOW_AI_ALLOW_CLIENT_DATA")
+
+    @field_validator("gemini_model")
+    @classmethod
+    def _plain_model_name(cls, value: str | None) -> str | None:
+        if value is None or not value.strip():
+            return None
+        value = value.strip()
+        if not _MODEL_NAME.fullmatch(value):
+            raise ValueError(
+                "GEMINI_MODEL must be a model name such as the ones in Google's model list "
+                "(letters, digits, '.', '-', '_' and '/', at most 100 characters)"
+            )
+        return value
+
+    @field_validator("gemini_api_key")
+    @classmethod
+    def _blank_key_is_missing(cls, value: SecretStr | None) -> SecretStr | None:
+        if value is None or not value.get_secret_value().strip():
+            return None
+        return SecretStr(value.get_secret_value().strip())
+
     @field_validator("timezone")
     @classmethod
     def _known_timezone(cls, value: str) -> str:
@@ -146,7 +211,19 @@ class Settings(BaseSettings):
             )
         if self.chunk_overlap >= self.chunk_size // 2:
             raise ValueError("LEXFLOW_CHUNK_OVERLAP must be less than half of LEXFLOW_CHUNK_SIZE")
+        if self.ai_provider == "scripted" and not (
+            self.env in ("test", "development") and _is_test_database(self.database_url)
+        ):
+            raise ValueError(
+                "LEXFLOW_AI_PROVIDER=scripted is a test double: it is only allowed with a "
+                "test or e2e database (name containing 'test' or 'e2e')"
+            )
         return self
+
+    @property
+    def ai_lease_seconds(self) -> int:
+        """How long a claimed analysis run is reserved: two provider calls and margin."""
+        return 2 * self.ai_timeout_seconds + 60
 
     @property
     def tz(self) -> ZoneInfo:

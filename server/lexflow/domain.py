@@ -28,6 +28,8 @@ HearingStatus = Literal["Scheduled", "Cancelled"]
 # for search (embeddings).
 ExtractionStatus = Literal["queued", "processing", "ready", "failed", "unsupported"]
 IndexStatus = Literal["disabled", "pending", "indexed", "failed"]
+# An AI case analysis run (Phase 5).
+AnalysisStatus = Literal["queued", "running", "ready", "failed"]
 
 USER_ROLES: tuple[str, ...] = get_args(UserRole)
 AUDIT_OUTCOMES: tuple[str, ...] = get_args(AuditOutcome)
@@ -41,6 +43,8 @@ HEARING_SCHEDULED, HEARING_CANCELLED = "Scheduled", "Cancelled"
 EXTRACTION_STATUSES: tuple[str, ...] = get_args(ExtractionStatus)
 INDEX_STATUSES: tuple[str, ...] = get_args(IndexStatus)
 EXTRACTION_REASON_MAX = 500
+ANALYSIS_STATUSES: tuple[str, ...] = get_args(AnalysisStatus)
+ANALYSIS_REASON_MAX = 500
 
 TITLE_MIN, TITLE_MAX = 4, 300
 DESCRIPTION_MIN, DESCRIPTION_MAX = 10, 10_000
