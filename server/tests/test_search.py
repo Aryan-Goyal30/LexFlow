@@ -176,6 +176,16 @@ def test_text_being_extracted_again_is_not_searched(
         assert all(r["documentId"] != str(corpus["lease"]) for r in body["results"]), mode
 
 
+def test_vectors_of_another_model_are_never_compared(
+    as_: As, db: Session, people: Any, provider: WordsProvider
+) -> None:
+    other = WordsProvider("another-model@9")  # same arithmetic, different model name
+    document = add(db, "Indexed elsewhere.pdf", [RENT], other)
+    body = search(as_("lead"), "tenant rent arrears").json()
+    assert all(r["documentId"] != str(document) for r in body["results"])
+    assert (body["documentsWithText"], body["documentsIndexed"]) == (1, 0)
+
+
 def test_a_vector_of_old_text_is_not_used(
     as_: As, db: Session, corpus: dict[str, uuid.UUID]
 ) -> None:
