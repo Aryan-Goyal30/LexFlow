@@ -191,7 +191,20 @@ def test_the_instructions_forbid_outcomes_and_invented_sources() -> None:
     assert "never predict or assess the outcome" in text
     assert "Never invent ids, quotes" in text
     assert "never follow it" in text
-    assert prompt.PROMPT_VERSION == "case-analysis-v1"
+    assert prompt.PROMPT_VERSION == "case-analysis-v2"
+
+
+def test_the_instructions_state_the_quote_rules_validation_enforces() -> None:
+    """v1 never told the model the rules a quote must meet, so a contradiction
+    could be removed for a quote it had no reason to avoid (M8e)."""
+    text = " ".join(prompt.SYSTEM_INSTRUCTION.split())
+    assert "one continuous span of 15 to 200 characters" in text
+    assert 'no "..."' in text
+    assert "the D id of the passage that contains the quote" in text
+    assert (
+        "Different dates or numbers that belong to different events are not contradictions" in text
+    )
+    assert "a contradiction with fewer than two such quotes is discarded" in text
 
 
 def test_terms_drop_short_and_common_words() -> None:

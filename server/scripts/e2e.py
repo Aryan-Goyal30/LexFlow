@@ -10,8 +10,8 @@
                                     (AI analysis uses the scripted test double, never Gemini)
 
 The e2e database is the server named by ``DATABASE_URL`` with the database name
-replaced by ``lexflow_e2e`` (override with ``LEXFLOW_E2E_DATABASE``; the name must
-contain "e2e", because ``prepare`` drops it). Uploads go to
+replaced by ``lexflow_e2e`` (override with ``LEXFLOW_E2E_DATABASE``; "e2e" must be a
+whole part of the name, because ``prepare`` drops it). Uploads go to
 ``server/var/e2e-uploads``, which ``prepare`` empties. The development database
 and upload folder are never touched, and the database URL is never printed.
 
@@ -64,8 +64,11 @@ from lexflow.config import Settings, get_settings  # noqa: E402 - needs the path
 
 def e2e_database_url() -> URL:
     name = os.environ.get("LEXFLOW_E2E_DATABASE", "lexflow_e2e")
-    if "e2e" not in name:
-        raise SystemExit(f"Refusing to use database {name!r}: its name must contain 'e2e'.")
+    if "e2e" not in re.split(r"[^a-z0-9]+", name.lower()):
+        raise SystemExit(
+            f"Refusing to use database {name!r}: 'e2e' must be a part of its name "
+            "(as in lexflow_e2e)."
+        )
     base = make_url(Settings().database_url)  # DATABASE_URL from the environment or .env
     if {"dbname", "service"} & set(base.query):
         # Either would make psycopg connect to another database than the name set here.

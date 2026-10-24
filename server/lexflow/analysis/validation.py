@@ -4,14 +4,19 @@ What survives, and only that, is stored and shown:
 
 - a **fact** cites exactly one case passage (``D`` id) that was sent in this
   run, and its quote occurs in that passage (after Unicode and whitespace
-  normalisation, at least ``QUOTE_MIN`` characters); otherwise it is removed;
+  normalisation, at least ``QUOTE_MIN`` characters); otherwise it is removed.
+  A quote shortened with "..." is accepted only if every piece has at least
+  ``QUOTE_MIN`` characters and the pieces occur in that order in the cited
+  passage; it is shown with "…" where words were left out. A quote is never
+  moved to another passage than the one cited;
 - a **precedent** cites a judgment passage (``J`` id) retrieved for this run;
   one citing any other judgment is rejected (the brief: "an output citing an
   unknown judgment is rejected"). Its title, court and citation come from the
   collection, never from the model;
 - a **contradiction** needs at least two distinct verified sources: two
-  quotes that are the same text, or one quote inside another from the same
-  passage, count once;
+  quotes that are the same text, or that overlap (or one inside the other)
+  in the same passage, count once. Whether the sources really conflict is
+  the model's reading, shown for the lawyer to check; it is not proved here;
 - an **issue** keeps only references to surviving facts and is removed when
   none are left;
 - any item whose wording names a law-report or neutral citation that occurs
@@ -44,6 +49,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections import Counter
+from dataclasses import dataclass
 
 from lexflow.analysis.evidence import Evidence, Passage
 from lexflow.analysis.output import EVIDENCE_ID, ParsedOutput
@@ -63,8 +69,14 @@ QUOTE_MIN = 15
 # Changes whenever the rules below change. "grounding-1": M4 to M8;
 # "grounding-2": M9 (neutral citations, case names, outcome wording,
 # distinct contradiction sources); "grounding-3": M9 review (outcome wording
-# narrowed to litigation outcomes, so factual statements are kept).
-VALIDATOR_VERSION = "grounding-3"
+# narrowed to litigation outcomes, so factual statements are kept);
+# "grounding-4": M10 (quotes shortened with "..." checked piece by piece;
+# overlapping quotes of one passage are one contradiction source).
+VALIDATOR_VERSION = "grounding-4"
+# A quote may be shortened with "...", "…" (NFKC turns it into "..."), "[...]"
+# or "(...)"; at most this many pieces.
+_ELISION = re.compile(r"\s*[\[(]?\.{3,}[\])]?\s*")
+QUOTE_PIECES_MAX = 3
 
 REASONS: dict[str, str] = {
     "unknown-evidence": "Cited a passage that was not part of this analysis's evidence.",
@@ -203,6 +215,30 @@ class _Tally:
         )
 
 
+@dataclass(frozen=True)
+class _Located:
+    """A verified source and where its quote lies in the normalised passage."""
+
+    source: AnalysisSourceOut
+    start: int
+    end: int
+
+
+def _find_in_order(text: str, pieces: list[str]) -> tuple[int, int] | None:
+    """The span from the first piece to the last if the pieces occur in this
+    order without overlapping, else None."""
+    start = text.find(pieces[0])
+    if start < 0:
+        return None
+    end = start + len(pieces[0])
+    for piece in pieces[1:]:
+        found = text.find(piece, end)
+        if found < 0:
+            return None
+        end = found + len(piece)
+    return start, end
+
+
 class _Checker:
     def __init__(self, evidence: Evidence) -> None:
         self.evidence = evidence
@@ -216,27 +252,33 @@ class _Checker:
         self._known_text = "\n".join(known)
         self._known_words = set(_WORD.findall(self._known_text.lower()))
 
-    def source(self, evidence_id: str, quote: str) -> AnalysisSourceOut | str:
+    def source(self, evidence_id: str, quote: str) -> _Located | str:
         """A verified source, or the reason code it fails."""
         passage: Passage | None = (
             self.evidence.passage(evidence_id) if EVIDENCE_ID.fullmatch(evidence_id) else None
         )
         if passage is None:
             return "unknown-evidence"
-        wanted = normalise(quote)
-        if len(wanted) < QUOTE_MIN:
+        pieces = [piece for piece in _ELISION.split(normalise(quote)) if piece]
+        if not pieces or any(len(piece) < QUOTE_MIN for piece in pieces):
             return "quote-too-short"
-        if wanted not in self._normal[passage.id]:
+        span = (
+            _find_in_order(self._normal[passage.id], pieces)
+            if len(pieces) <= QUOTE_PIECES_MAX
+            else None
+        )
+        if span is None:
             return "quote-not-found"
-        return AnalysisSourceOut(
+        verified = AnalysisSourceOut(
             evidence_id=passage.id,
             document_id=passage.document_id,
             document_name=passage.document_name,
             chunk_id=passage.chunk_id,
             section_number=passage.section_number,
             page_number=passage.page_number,
-            quote=wanted,
+            quote=" … ".join(pieces),
         )
+        return _Located(verified, *span)
 
     def _unknown_party(self, party: str) -> bool:
         words = [w for w in _WORD.findall(party.lower()) if w not in _GENERIC]
@@ -267,12 +309,15 @@ class _Checker:
         return None
 
 
-def _same_source(a: AnalysisSourceOut, b: AnalysisSourceOut) -> bool:
-    """Two sources that cannot disagree: the same text, or (in one passage) one
-    quote inside the other."""
-    if a.quote == b.quote:
+def _same_source(a: _Located, b: _Located) -> bool:
+    """Two sources that cannot disagree: the same text, or (in one passage)
+    overlapping quotes or one quote inside the other."""
+    if a.source.quote == b.source.quote:
         return True
-    return a.evidence_id == b.evidence_id and (a.quote in b.quote or b.quote in a.quote)
+    if a.source.evidence_id != b.source.evidence_id:
+        return False
+    overlap = a.start < b.end and b.start < a.end
+    return overlap or a.source.quote in b.source.quote or b.source.quote in a.source.quote
 
 
 def validate(parsed: ParsedOutput, evidence: Evidence) -> AnalysisResultOut:
@@ -289,10 +334,11 @@ def validate(parsed: ParsedOutput, evidence: Evidence) -> AnalysisResultOut:
         if fact.id in seen_fact_ids:
             tally.remove("duplicate")
             continue
-        source = check.source(fact.evidence, fact.quote)
-        if isinstance(source, str):
-            tally.remove(source)
+        located = check.source(fact.evidence, fact.quote)
+        if isinstance(located, str):
+            tally.remove(located)
             continue
+        source = located.source
         prose = check.rejected_prose(fact.statement)
         if prose is not None:
             tally.remove(prose)
@@ -354,13 +400,11 @@ def validate(parsed: ParsedOutput, evidence: Evidence) -> AnalysisResultOut:
 
     contradictions: list[AnalysisContradictionOut] = []
     for contradiction in parsed.contradictions:
-        sources: list[AnalysisSourceOut] = []
+        sources: list[_Located] = []
         for raw in contradiction.sources:
-            source = check.source(raw.evidence, raw.quote)
-            if isinstance(source, AnalysisSourceOut) and not any(
-                _same_source(s, source) for s in sources
-            ):
-                sources.append(source)
+            located = check.source(raw.evidence, raw.quote)
+            if isinstance(located, _Located) and not any(_same_source(s, located) for s in sources):
+                sources.append(located)
         if len(sources) < 2:
             tally.remove("contradiction-unsupported")
             continue
@@ -372,7 +416,7 @@ def validate(parsed: ParsedOutput, evidence: Evidence) -> AnalysisResultOut:
             AnalysisContradictionOut(
                 id=f"C{len(contradictions) + 1}",
                 description=contradiction.description,
-                sources=sources,
+                sources=[s.source for s in sources],
             )
         )
 

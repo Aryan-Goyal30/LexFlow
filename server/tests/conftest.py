@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import atexit
 import os
+import re
 import shutil
 import tempfile
 import uuid
@@ -35,6 +36,12 @@ SERVER_ROOT = Path(__file__).resolve().parent.parent
 pytest_plugins = ["tests.access_fixtures"]
 
 
+def is_test_name(name: str) -> bool:
+    """True when "test" is a whole part of the name, split on non-letters
+    (lexflow_test, lexflow_seed_test); not for lexflow_latest or contest."""
+    return "test" in re.split(r"[^a-z0-9]+", name.lower())
+
+
 def _test_database_url() -> URL:
     raw = os.environ.get("TEST_DATABASE_URL") or dotenv_values(SERVER_ROOT / ".env").get(
         "TEST_DATABASE_URL"
@@ -42,9 +49,13 @@ def _test_database_url() -> URL:
     if not raw:
         pytest.exit("TEST_DATABASE_URL is not set (see server/.env.example)", returncode=2)
     url = make_url(raw)
-    if "test" not in (url.database or ""):
+    if not is_test_name(url.database or ""):
         # Guard against pointing the destructive test setup at a real database.
-        pytest.exit(f"Refusing to use database {url.database!r}: its name must contain 'test'", 2)
+        pytest.exit(
+            f"Refusing to use database {url.database!r}: 'test' must be a part of its name "
+            "(as in lexflow_test)",
+            2,
+        )
     if {"dbname", "service"} & set(url.query):
         # Either would make psycopg connect to another database than the name checked above.
         pytest.exit("Refusing a TEST_DATABASE_URL with a dbname or service parameter.", 2)
@@ -82,13 +93,13 @@ atexit.register(shutil.rmtree, TEST_UPLOAD_DIR, ignore_errors=True)
 
 
 def database_url(name: str) -> URL:
-    """The test server's URL for another database (its name must contain 'test')."""
+    """The test server's URL for another database ('test' must be a part of its name)."""
     return TEST_DATABASE_URL.set(database=name)
 
 
 def _guard(url: URL) -> str:
     name = url.database
-    if not name or "test" not in name:
+    if not name or not is_test_name(name) or {"dbname", "service"} & set(url.query):
         raise ValueError(f"refusing to modify database {name!r}")
     return name
 

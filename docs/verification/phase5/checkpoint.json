@@ -3,7 +3,7 @@
   "updated": "2026-10-25",
   "branch": "master",
   "base_commit": "cb40bcc",
-  "status": "NOT COMPLETE: M1-M8 recorded; M9 stabilisation (P5-S2) implemented, reviewed and fixed 2026-10-24/25, UNCOMMITTED; demo-import flag kept provisionally (owner decision 2026-10-25); two owner decisions open (see next_action)",
+  "status": "COMPLETE: Phase 5 closed 2026-10-25 (M1-M10; closure commit 'Phase 5: close acceptance criteria' on 81e8e8c); deferred non-Phase-5 items listed in m10_closure.deferred",
   "plan": "docs/PHASE5_PLAN.md",
   "log": "docs/PHASE5_EXECUTION_LOG.md",
   "decisions": {
@@ -78,12 +78,12 @@
     },
     "pending_current_status_2026_10_25": {
       "note": "m8.pending was written on 2026-10-20 (before M9) and is kept as history; this object gives the current status of each item. Sources: execution log M9.0, M9.8, M9.10.",
-      "contradiction_detection_live": "STILL OPEN: the planted 2015/2017 conflict of run 4fc9ab87 remains unreported; three later live runs (1712d02e, 5aa4711d, ea18be07) each reported one contradiction (log M9.0). Whether to investigate is an open owner decision (see next_action).",
+      "contradiction_detection_live": "ADDRESSED in M10 (log M10.1): lost at validation because prompt v1 never stated the quote rules (exact failing quote unknowable); prompt case-analysis-v2 and validator grounding-4 with regression on the reconstructed document; whether a real model now reports it needs a real call (owner decision).",
       "precedent_comparison_live": "SUPERSEDED: precedent comparison has run live, against SYNTHETIC demo judgments only - three judgments labelled 'SYNTHETIC DEMO - NOT REAL CASE LAW' were recorded in the live collection in the 2026-10-20 observation (log M9.0; not re-queried). No real judgment source is approved (open owner decision, see next_action).",
       "rejection_of_injected_output_live": "UNCHANGED: still covered by automated tests only (M9 added the offline evaluation, server/scripts/evaluate_analysis.py, which is synthetic and calls no model).",
       "http_400_root_cause": "UNCHANGED: not established; the schema is now versioned (case-analysis-schema-2, pinned by hash) and recorded per run, so a recurrence can be tied to a schema version.",
       "reverification": "SUPERSEDED: the full backend suite passed with 906 tests at the end of M9 (pytest-full-m9.log, 2026-10-24) and with 950 tests after the M9 review fixes (pytest-full-m9-review-fixes.log, 2026-10-25). The full mutation run caught 61 of 61 (mutation-report-working-tree.md, 2026-10-24) BEFORE the M2 outcome-filter change; after M2 only an anchor dry run was repeated (61 of 61 snippets found), not the full mutation suite.",
-      "commit": "STILL OPEN: M8 and M9 work is uncommitted (see m9_stabilisation.git_at_end); staging and committing await the owner."
+      "commit": "DONE: M9 committed (81e8e8c); M10 closure committed ('Phase 5: close acceptance criteria')."
     }
   },
   "gemini_calls_made": "7 generateContent requests across 4 runs (3x503, 3x400 INVALID_ARGUMENT, 1x200); synthetic data only; none made by the assistant",
@@ -102,7 +102,7 @@
     "M7": "done (6b8f865)",
     "M8": "migration applied and verified 2026-10-20; real Gemini smoke test run (1 success after 3 failures); open items listed in m8.pending"
   },
-  "next_action": "Owner: (1) stage the M9 working tree for review and commit it as 'Phase 5 M9: stabilisation'. Then decide two open follow-ups: (2) whether to investigate the planted 2015/2017 contradiction that live analysis did not report (m8.pending.contradiction_detection_live); (3) whether to approve a real judgment source for future dataset work (none approved; the live collection held only three SYNTHETIC demo judgments in the 2026-10-20 observation). The M9 batches are complete; the low findings L2/L3 and the known limitations remain open (current_status_2026_10_25, m9_stabilisation.review_2026_10_25).",
+  "next_action": "Phase 5 is closed. Owner: decide when to start Phase 6 (lawyer review). Optional, separate owner decisions: a real Gemini run to check prompt v2 on the planted document; a real judgment source in the dataset phase (requirements in log M10.3).",
   "backend_tests": "807 passed at the M7 commit 6b8f865 (not rerun in full since); 134 focused analysis tests passed after the diagnostic and schema changes",
   "frontend_tests": "176 Vitest passed; 41 Playwright passed (at the M7 commit; frontend unchanged since)",
   "rehearsal_dump": {
@@ -204,5 +204,54 @@
     "uncommitted": "46 paths: 34 modified tracked files and 12 untracked files (m9_stabilisation.git_at_end); nothing staged or committed.",
     "known_limitations": "Validation proves provenance, not legal correctness; outcome-wording and case-name checks are patterns (miss paraphrases, may remove an unusual factual sentence); a non-conflicting pair of verified quotes can be kept as a contradiction; offline evaluation measures checks, not model quality.",
     "open_low_findings": "see m9_stabilisation.review_2026_10_25.open_low (L2, L3)"
+  },
+  "m10_closure": {
+    "started": "2026-10-25",
+    "start_head": "81e8e8c80d5e2935a0fc2e3abe686f1e13cb3036",
+    "brief_sha256_at_start": "274ecaed93400f51dd47c42337fbd6e101aa6be366b80d977d1522359b34c2ec",
+    "batches": {
+      "C0 preflight + records start": "done",
+      "C1 missed 2015/2017 contradiction: trace, fix or justified limitation, regression": "done (2026-10-25; lost at validation, exact source unknowable; prompt case-analysis-v2 + validator grounding-4; log M10.1)",
+      "C2 acceptance criteria verification + known low findings": "done (2026-10-25; all criteria met in code/tests; contradiction-link and issue-link UI tests added; L2 fixed; L3 kept by design; log M10.2)",
+      "C3 judgment-source decision record": "done (2026-10-25; deferred dataset decision, not a Phase 5 defect; approval requirements recorded; log M10.3)",
+      "C4 offline evaluation (new dated report)": "done (2026-10-25; 81/81 as expected; analysis-eval-2026-10-25.{json,md}; earlier reports kept)",
+      "C5 full verification": "done (2026-10-25; pytest 980, Vitest 180 + build, Playwright 41, mutation 65/65, static and contract checks clean; log M10.4)",
+      "C6 records reconciliation + closure commit": "done (2026-10-25; records reconciled; closure commit 'Phase 5: close acceptance criteria' on 81e8e8c; its hash is in git)"
+    },
+    "contradiction_2015_2017": {
+      "reconstructed_file": "server/tests/fixtures/analysis/SYNTHETIC-phase5-smoke-notice.txt (1850 bytes; D1 1072 chars as recorded)",
+      "cause": "lost at validation (contradiction-unsupported: fewer than two verified sources); the quote rules were never stated in prompt v1; which source failed is not recoverable (raw answer not stored)",
+      "fix": "prompt case-analysis-v2 states the quote and contradiction rules; validator grounding-4 accepts '...'-shortened quotes piece by piece and counts overlapping spans of one passage once",
+      "open": "whether a real model now reports the conflict needs a real call (not authorised); validation proves provenance, not conflict"
+    },
+    "decisions": {
+      "judgment_source": "deferred to the dataset phase; no real source approved or import authorised; requirements recorded in log M10.3",
+      "synthetic_import_flag": "PROVISIONAL - retained (owner 2026-10-25) with the M9.6 safeguards",
+      "L3_last_attempt_interrupt": "kept by design (bounds a run that keeps stopping the worker); documented"
+    },
+    "verification": {
+      "pytest": "980 passed, exit 0 (pytest-full-m10.log)",
+      "ruff_check_format": "exit 0 / exit 0 (152 files)",
+      "mypy": "exit 0 (138 files); linux 149 files exit 0",
+      "openapi_and_api_types": "up to date, exit 0",
+      "alembic_check_lexflow_test": "no new upgrade operations, exit 0",
+      "evaluation": "81/81 as expected, 0 unsafe messages, exit 0 (analysis-eval-2026-10-25.md; fixture sha256 c9035a58b4bece938ebb10efc7f81056ad880f5b79653a25fe81c27284d18238)",
+      "npm_check": "180 Vitest passed, build OK, exit 0 (npm-check-m10.log)",
+      "playwright": "41 passed, exit 0 (playwright-m10.log)",
+      "mutation": "65 of 65 caught, exit 0 (mutation-report-working-tree-m10.md)"
+    },
+    "versions": {
+      "prompt": "case-analysis-v2",
+      "schema": "case-analysis-schema-2",
+      "validator": "grounding-4"
+    },
+    "finished": "2026-10-25",
+    "closure_commit": "the commit titled 'Phase 5: close acceptance criteria', child of 81e8e8c (its hash is recorded by git, not in this file)",
+    "deferred": {
+      "judgment_source": "dataset phase; requirements in log M10.3; no real import authorised",
+      "real_model_checks": "owner decision (paid/real call): contradiction reporting under prompt v2, live injected-output rejection, M8e HTTP 400 cause",
+      "phase7_thresholds": "none agreed",
+      "live_data_copies_retention": "owner decision (M8)"
+    }
   }
 }

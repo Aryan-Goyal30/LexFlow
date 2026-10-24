@@ -12,6 +12,8 @@ runs the same checks on uncommitted work (M9): instead of naming a commit, the
 report lists the SHA-256 of every target file, checks they are unchanged at
 the end, and is written to ``mutation-report-working-tree.md`` and
 ``mutation-output-working-tree.log`` so earlier reports are kept.
+Add ``--label NAME`` (after ``--working-tree``) to write
+``mutation-report-working-tree-NAME.md`` and its log instead.
 
 The tests use only the test database (``lexflow_test`` via ``TEST_DATABASE_URL``,
 which must point at a PostgreSQL server with pgvector) and the fake API of the
@@ -63,6 +65,7 @@ RUNS = "server/lexflow/analysis/runs.py"
 EVIDENCE = "server/lexflow/analysis/evidence.py"
 API = "server/lexflow/api/analysis.py"
 TAB = "src/components/workspace/AnalysisTab.tsx"
+PROMPT = "server/lexflow/analysis/prompt.py"
 V_TESTS = pytest("tests/test_analysis_validation.py")
 O_TESTS = pytest("tests/test_analysis_output.py")
 P_TESTS = pytest("tests/test_analysis_provider.py")
@@ -80,8 +83,8 @@ MUTATIONS = [
         "V-1",
         "a quote must occur in the passage it cites",
         VALIDATION,
-        "        if wanted not in self._normal[passage.id]:",
-        "        if False:",
+        "    start = text.find(pieces[0])\n    if start < 0:\n        return None",
+        "    start = max(text.find(pieces[0]), 0)\n    if False:\n        return None",
         V_TESTS,
     ),
     Mutation(
@@ -104,8 +107,8 @@ MUTATIONS = [
         "V-4",
         "very short quotes cannot support a fact",
         VALIDATION,
-        "        if len(wanted) < QUOTE_MIN:",
-        "        if False:",
+        "        if not pieces or any(len(piece) < QUOTE_MIN for piece in pieces):",
+        "        if not pieces:",
         V_TESTS,
     ),
     Mutation(
@@ -501,10 +504,10 @@ MUTATIONS = [
     ),
     Mutation(
         "M9-13",
-        "contradiction sources must be distinct",
+        "contradiction sources must be distinct (overlapping spans count once)",
         VALIDATION,
-        "    return a.evidence_id == b.evidence_id and (a.quote in b.quote or b.quote in a.quote)",
-        "    return False",
+        "    overlap = a.start < b.end and b.start < a.end",
+        "    overlap = False",
         V_TESTS,
     ),
     Mutation(
@@ -571,6 +574,39 @@ MUTATIONS = [
         "          {false && (",
         UI_TESTS,
     ),
+    # --- M10 closure (2026-10-25): the missed 2015/2017 contradiction -------------------
+    Mutation(
+        "M10-1",
+        "the pieces of a shortened quote must occur in order",
+        VALIDATION,
+        "        found = text.find(piece, end)",
+        "        found = text.find(piece)",
+        V_TESTS,
+    ),
+    Mutation(
+        "M10-2",
+        "a shortened quote has at most three pieces",
+        VALIDATION,
+        "            if len(pieces) <= QUOTE_PIECES_MAX",
+        "            if True",
+        V_TESTS,
+    ),
+    Mutation(
+        "M10-3",
+        "the prompt states the quote rules that validation enforces",
+        PROMPT,
+        "gives: one continuous span of 15 to 200 characters, with no words added,",
+        "gives: a short span, with no words added,",
+        E_TESTS,
+    ),
+    Mutation(
+        "M10-4",
+        "the prompt says what is not a contradiction",
+        PROMPT,
+        "  or numbers that belong to different events are not contradictions, and",
+        "  or numbers may be contradictions, and",
+        E_TESTS,
+    ),
 ]
 
 
@@ -635,7 +671,15 @@ def snapshot(paths: list[str]) -> dict[str, str]:
 def main() -> int:
     if sys.argv[1:] == ["--dry-run"]:
         return dry_run()
-    working_tree = sys.argv[1:] == ["--working-tree"]
+    args = sys.argv[1:]
+    label = ""
+    if args[:1] == ["--working-tree"] and len(args) == 3 and args[1] == "--label":
+        label = args[2]  # e.g. "m10": a separate report file, earlier reports kept
+        if not re.fullmatch(r"[a-z0-9-]{1,20}", label):
+            print("--label: lower-case letters, digits and '-' only")
+            return 2
+        args = args[:1]
+    working_tree = args == ["--working-tree"]
     targets = sorted({m.path for m in MUTATIONS})
     before = snapshot(targets)
     if git_status(targets) and not working_tree:
@@ -716,7 +760,7 @@ def main() -> int:
         return 5
 
     caught = sum(1 for _, code, _, _ in rows if code != 0)
-    suffix = "-working-tree" if working_tree else ""
+    suffix = ("-working-tree" + (f"-{label}" if label else "")) if working_tree else ""
     report_name, log_name = (
         f"mutation-report{suffix}.md",
         f"mutation-output{suffix}.log",

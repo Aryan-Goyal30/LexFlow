@@ -1,6 +1,6 @@
 # LexFlow — Software Requirements Specification
 
-Version: Phase 5 (2026-10-20). Describes the system **as built** through
+Version: Phase 5, closed (2026-10-25). Describes the system **as built** through
 Phase 5 and marks what later phases add. Source of the plan:
 `docs/DEVELOPMENT_BRIEF.md`. Traceability to code and tests:
 `docs/TRACEABILITY.md`. Architecture and UML: `docs/ARCHITECTURE.md`.
@@ -49,7 +49,7 @@ Status: **Done** = implemented and tested; **Later** = a future phase.
 | FR-15 | Research tab in each case connected to judgment search | Done (Phase 4) |
 | FR-16 | Precedent Library: browse, filter, search and read judgments with their source | Done (Phase 4) |
 | FR-17 | Reproducible search evaluation (Recall@K, Precision@K, MRR) | Done (machinery, Phase 4); real-corpus evaluation pending external data |
-| FR-18 | AI case analysis with validated citations: facts with source document and page, issues, precedent comparisons, contradictions; unknown sources removed or rejected; insufficient evidence stated | Done (Phase 5); live use needs migration 0011 (owner-gated) and the owner's Gemini configuration |
+| FR-18 | AI case analysis with validated citations: facts with source document and page, issues, precedent comparisons, contradictions; unknown sources removed or rejected; insufficient evidence stated | Done (Phase 5, closed 2026-10-25); migration 0011 applied to the live database (2026-10-20); analysing real client material needs the D1 privacy review; real judgment sources are a later dataset decision |
 | FR-18a | Starting an analysis: Administrator and the case's advocates; archived cases refused; sample cases only unless client data is allowed; explicit per-run confirmation of what is sent to the provider | Done (Phase 5) |
 | FR-19 | Lawyer review of AI findings; brief export | Later (Phase 6) |
 | FR-20 | Gated outcome assessment | Later (Phase 7) |

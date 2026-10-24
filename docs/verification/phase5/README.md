@@ -3,23 +3,42 @@
 Evidence for Phase 5 (AI case analysis with Google Gemini). Narrative and
 decisions: `docs/PHASE5_EXECUTION_LOG.md`. Machine-readable state:
 `checkpoint.json`. Decision record: `docs/adr/0019-ai-case-analysis.md`.
-Status: M1–M8 recorded; M9 stabilisation implemented and verified but not
-yet committed (see `checkpoint.json`).
+Status: Phase 5 closed (M10, 2026-10-25); see `checkpoint.json`.
 
-## M9 — stabilisation (2026-10-24/25), on the uncommitted working tree
+## M10 — closure (2026-10-25): the latest results
+
+All of these are fresh runs on the closure working tree (before the closure
+commit), with exit code 0.
 
 | File | What |
 |---|---|
-| `pytest-full-m9-review-fixes.log` | full back-end suite after the M9 review fixes (2026-10-25): 950 passed, exit 0 — the latest run |
+| `pytest-full-m10.log` | full back-end suite: 980 passed |
+| `npm-check-m10.log` | `npm run check`: lint, format, typecheck, API types, sample data, 180 Vitest tests, build |
+| `playwright-m10.log` | end-to-end suite: 41 passed (scripted provider, database `lexflow_e2e`) |
+| `mutation-report-working-tree-m10.md`, `mutation-output-working-tree-m10.log` | 65 guards (61 earlier plus 4 for M10); 65 caught; target files listed by SHA-256 |
+| `analysis-eval-2026-10-25.md`, `.json` | offline evaluation on SYNTHETIC scenarios: 81 scenarios, 81 as expected (prompt `case-analysis-v2`, validator `grounding-4`), including the planted 2015/2017 contradiction on the reconstructed live document. It has no pass mark and does **not** measure the legal accuracy of any model. |
+
+ruff, format, mypy (Windows and Linux), the OpenAPI and API-type checks, and
+`alembic check` on the test database have no log file; their commands and
+exit codes are in the execution log, M10.4.
+
+## M9 — stabilisation (2026-10-24/25), historical
+
+| File | What |
+|---|---|
+| `pytest-full-m9-review-fixes.log` | full back-end suite after the M9 review fixes (2026-10-25): 950 passed, exit 0 (the last M9 run) |
 | `pytest-full-m9.log` | full back-end suite at the end of M9 (2026-10-24): 906 passed, exit 0 |
 | `npm-check-m9.log` | `npm run check` at the end of M9: lint, format, typecheck, API types, sample data, 178 Vitest tests, build; exit 0 (the review fixes changed no front-end file) |
 | `playwright-m9.log` | end-to-end suite at the end of M9: 41 passed, exit 0 (scripted provider, database `lexflow_e2e`) |
 | `mutation-report-working-tree.md`, `mutation-output-working-tree.log` | `run_mutation_checks.py --working-tree`: 61 guards (40 from M7 plus 21 for M9); 61 caught; target files listed by SHA-256 |
-| `analysis-eval.md`, `analysis-eval.json` | offline evaluation of validation and error handling on SYNTHETIC scenarios (`server/scripts/evaluate_analysis.py --write`); the latest report is from the review fixes: 71 scenarios, 71 as expected, validator `grounding-3`. It has no pass mark and does **not** measure the legal accuracy of any model. |
+| `analysis-eval.md`, `analysis-eval.json` | offline evaluation of validation and error handling on SYNTHETIC scenarios (`server/scripts/evaluate_analysis.py --write`), from the M9 review fixes: 71 scenarios, 71 as expected, validator `grounding-3`. It has no pass mark and does **not** measure the legal accuracy of any model. |
 
 Commands, exit codes and the checks without a log file (ruff, mypy, OpenAPI
 drift, `alembic check` on the test database) are recorded in the execution
 log, sections M9.8 and M9.10.
+
+In M9 the planted 2015/2017 contradiction was still unreported. It is traced
+and addressed in M10 (log M10.1).
 
 ## M7 — implementation verification (2026-10-20), historical
 

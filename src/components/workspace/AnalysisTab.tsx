@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { Fragment, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, Circle, FileText, Loader2, Sparkles } from 'lucide-react';
 import type { Case } from '../../types';
@@ -405,7 +405,7 @@ function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) 
           ) : (
             <ul className="space-y-4 text-sm text-brand-800">
               {result.facts.map((fact) => (
-                <li key={fact.id}>
+                <li key={fact.id} id={`analysis-fact-${fact.id}`}>
                   <p>
                     <span className="mr-1.5 text-xs font-semibold text-brand-400">{fact.id}</span>
                     {fact.statement}
@@ -433,7 +433,19 @@ function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) 
                 <li key={issue.id}>
                   {issue.question}{' '}
                   <span className="text-xs text-brand-500">
-                    (rests on {issue.factIds.join(', ')})
+                    (rests on{' '}
+                    {issue.factIds.map((factId, i) => (
+                      <Fragment key={factId}>
+                        {i > 0 && ', '}
+                        <a
+                          href={`#analysis-fact-${factId}`}
+                          className="font-medium text-brand-700 underline-offset-2 hover:underline"
+                        >
+                          {factId}
+                        </a>
+                      </Fragment>
+                    ))}
+                    )
                   </span>
                 </li>
               ))}

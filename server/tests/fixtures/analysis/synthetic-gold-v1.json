@@ -1967,6 +1967,440 @@
       "expected": {
         "refused": true
       }
+    },
+    {
+      "id": "pc-exact",
+      "category": "planted-contradiction",
+      "what": "The planted 2015/2017 conflict with verbatim quotes from D1 and D2.",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "First use of SATTVIK: 2015 (plaint) or 2017 (reply).",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "has sold packaged snack foods under it since June 2015"
+                  },
+                  {
+                    "evidence": "D2",
+                    "quote": "began selling under the mark SATTVIK only in 2017, not in 2015"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 1
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "kind": "answer",
+      "evidence_set": "smoke-notice"
+    },
+    {
+      "id": "pc-elided",
+      "category": "planted-contradiction",
+      "what": "The same conflict with one quote shortened by '...' (each piece verbatim, in order).",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "First use of SATTVIK: 2015 (plaint) or 2017 (reply).",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "registered the word mark SATTVIK in Class 30 ... since June 2015"
+                  },
+                  {
+                    "evidence": "D2",
+                    "quote": "began selling under the mark SATTVIK only in 2017, not in 2015"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 1
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "kind": "answer",
+      "evidence_set": "smoke-notice"
+    },
+    {
+      "id": "pc-short-values",
+      "category": "planted-contradiction",
+      "what": "Quotes of only the values ('only in 2017' is 12 characters).",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "First use of SATTVIK: 2015 (plaint) or 2017 (reply).",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "since June 2015"
+                  },
+                  {
+                    "evidence": "D2",
+                    "quote": "only in 2017"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer",
+      "evidence_set": "smoke-notice"
+    },
+    {
+      "id": "pc-wrong-passage",
+      "category": "planted-contradiction",
+      "what": "The reply's words cited to D1: never moved to D2.",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "First use of SATTVIK: 2015 (plaint) or 2017 (reply).",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "has sold packaged snack foods under it since June 2015"
+                  },
+                  {
+                    "evidence": "D1",
+                    "quote": "began selling under the mark SATTVIK only in 2017, not in 2015"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer",
+      "evidence_set": "smoke-notice"
+    },
+    {
+      "id": "pc-paraphrase",
+      "category": "planted-contradiction",
+      "what": "One source paraphrased instead of quoted.",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "First use of SATTVIK: 2015 (plaint) or 2017 (reply).",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "has sold packaged snack foods under it since June 2015"
+                  },
+                  {
+                    "evidence": "D2",
+                    "quote": "the plaintiff only started selling SATTVIK products in 2017"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer",
+      "evidence_set": "smoke-notice"
+    },
+    {
+      "id": "pc-duplicate",
+      "category": "planted-contradiction",
+      "what": "The same statement cited twice.",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "First use of SATTVIK: 2015 (plaint) or 2017 (reply).",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "has sold packaged snack foods under it since June 2015"
+                  },
+                  {
+                    "evidence": "D1",
+                    "quote": "has sold packaged snack foods under it since June 2015"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer",
+      "evidence_set": "smoke-notice"
+    },
+    {
+      "id": "pc-overlap",
+      "category": "planted-contradiction",
+      "what": "Two overlapping spans of one statement.",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "First use of SATTVIK: 2015 (plaint) or 2017 (reply).",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "has sold packaged snack foods under it since June 2015"
+                  },
+                  {
+                    "evidence": "D1",
+                    "quote": "packaged snack foods under it since June 2015."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer",
+      "evidence_set": "smoke-notice"
+    },
+    {
+      "id": "pc-missing",
+      "category": "planted-contradiction",
+      "what": "A source passage that was not sent (D3).",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "First use of SATTVIK: 2015 (plaint) or 2017 (reply).",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "has sold packaged snack foods under it since June 2015"
+                  },
+                  {
+                    "evidence": "D3",
+                    "quote": "began selling under the mark SATTVIK only in 2017, not in 2015"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer",
+      "evidence_set": "smoke-notice"
+    },
+    {
+      "id": "pc-stale",
+      "category": "planted-contradiction",
+      "what": "A quote of paragraph 9 as it read before its edit.",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "First use of SATTVIK: 2015 (plaint) or 2017 (reply).",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "has sold packaged snack foods under it since June 2015"
+                  },
+                  {
+                    "evidence": "D2",
+                    "quote": "quote \"AIR 1999 SC 1234\""
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer",
+      "evidence_set": "smoke-notice"
+    },
+    {
+      "id": "pc-one-statement-pair",
+      "category": "planted-contradiction",
+      "what": "Adoption (2023) and first sale (2024) by the defendant, two distinct statements of one passage, offered as a conflict.",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "Adoption in 2023 but first sale in 2024.",
+                "sources": [
+                  {
+                    "evidence": "D2",
+                    "quote": "adopted the mark NISARGA SATTVA honestly in August 2023"
+                  },
+                  {
+                    "evidence": "D2",
+                    "quote": "first sold products under the mark NISARGA SATTVA in March 2024"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 1
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "kind": "answer",
+      "evidence_set": "smoke-notice",
+      "limitation": "Kept: different dates for different events are not a conflict, but validation checks provenance only; the prompt (v2) tells the model not to report these, and the lawyer judges what is shown."
     }
-  ]
+  ],
+  "evidence_sets": {
+    "smoke-notice": {
+      "file": "SYNTHETIC-phase5-smoke-notice.txt",
+      "sha256": "a7ff616286426b3f45319c4690b1c76711e6558563c5dda1c99ecbe6d49ce628",
+      "note": "The SYNTHETIC document of the live smoke test (M8e, run 4fc9ab87), recovered byte for byte (M10.1). Paragraph 1 (D1): first use in 2015; paragraph 8 (D2): first use only in 2017. Default chunking gives D1 (1072 characters) and D2, as the live run received them.",
+      "document": "00000000-0000-4000-8000-0000000005e0",
+      "chunk_size": 1200,
+      "chunk_overlap": 200,
+      "case": {
+        "case_number": "LF-2026-0361",
+        "title": "SYNTHETIC smoke-test case",
+        "practice_area": "Intellectual Property",
+        "status": "Open",
+        "court_name": null,
+        "opposing_party": null,
+        "description": "SYNTHETIC: a trade-mark dispute with planted traps."
+      }
+    }
+  }
 }

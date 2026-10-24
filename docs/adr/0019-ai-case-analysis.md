@@ -98,3 +98,20 @@ Recorded without rewriting the decision above; details in
 - An offline evaluation (`server/scripts/evaluate_analysis.py`, synthetic
   fixture) checks validation and error handling scenario by scenario; it
   does not measure model quality.
+
+## Amendment — M10 closure (2026-10-25)
+
+- The prompt (`case-analysis-v2`) now states the quote rules that validation
+  enforces, and what is not a contradiction. Version 1 did not, and the
+  likely result was that run `4fc9ab87` lost its planted 2015/2017 conflict
+  at validation. The raw answer is not stored, so the exact failing quote
+  is unknown.
+- Validation (`grounding-4`) accepts a quote shortened with "..." only if
+  every piece (at least 15 characters, at most three pieces) occurs in order
+  in the cited passage. The quote is shown with "…". Overlapping spans of
+  one passage are one contradiction source.
+- Whether two verified statements conflict is still the model's reading.
+  The decision above ("validation proves provenance, not legal
+  correctness") stands.
+- Choosing a real judgment source is a deferred dataset decision, not part
+  of this decision record's scope.

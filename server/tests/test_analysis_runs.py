@@ -101,7 +101,7 @@ def test_setup_says_when_analysis_is_off(as_: As, docs: list[uuid.UUID]) -> None
     assert body["available"] is False and "turned off" in body["unavailableReason"]
     assert body["canRun"] is False and body["provider"] is None
     assert {d["name"]: d["eligible"] for d in body["documents"]}["Notice.pdf"] is True
-    assert body["promptVersion"] == "case-analysis-v1"
+    assert body["promptVersion"] == "case-analysis-v2"
 
 
 def test_setup_with_a_configured_provider(
@@ -278,7 +278,7 @@ def test_a_run_is_queued_audited_and_one_at_a_time(
         "documents": 2,
         "provider": "scripted",
         "model": "scripted-v1",
-        "promptVersion": "case-analysis-v1",
+        "promptVersion": "case-analysis-v2",
     }
     listed = as_("paralegal").get(runs_url()).json()["items"]
     assert [r["id"] for r in listed] == [run["id"]]
@@ -344,7 +344,7 @@ def test_the_scripted_run_ends_ready_with_verified_sources_only(
     (done,) = events(db, "analysis.completed")
     assert done.details["providerCalled"] is True and done.details["removed"] == 1
     assert done.details["schemaVersion"] == "case-analysis-schema-2"
-    assert done.details["validatorVersion"] == "grounding-3"
+    assert done.details["validatorVersion"] == "grounding-4"
     row = db.get(AnalysisRun, uuid.UUID(run_id))
     assert row is not None and row.evidence is not None
     assert row.evidence["pipeline"] == runs.pipeline_record()

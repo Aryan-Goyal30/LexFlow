@@ -3,6 +3,8 @@
     .venv\\Scripts\\python scripts/evaluate_analysis.py            print the report
     .venv\\Scripts\\python scripts/evaluate_analysis.py --write    also write
         docs/verification/phase5/analysis-eval.json and analysis-eval.md
+    ... --write --report-name analysis-eval-2026-10-25
+        writes analysis-eval-2026-10-25.json and .md instead, keeping earlier reports
 
 Each scenario in ``tests/fixtures/analysis/synthetic-gold-v1.json`` (invented
 text, not case law, not part of the judgment collection) is run through the
@@ -10,6 +12,9 @@ real code and compared with its expected outcome:
 
 - answer scenarios: a scripted provider returns prepared answers to
   ``runs.check_answer`` (the worker's provider call, parsing and validation);
+  a scenario with an ``evidence_set`` uses passages made from a SYNTHETIC
+  document by the real extraction and chunking code (for example the live
+  smoke-test document whose 2015/2017 conflict was missed in M8e);
 - provider scenarios: the real ``GeminiProvider`` with a scripted SDK client
   (no network; building a real client is refused) classifies failures;
 - retry scenarios: attempts are replayed through ``check_answer`` and the
@@ -31,6 +36,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 import uuid
 from collections import Counter
@@ -266,9 +272,50 @@ def _summary(outcome: runs.Ready | runs.Failed, calls: int) -> tuple[dict[str, A
     )
 
 
+def build_document_evidence(gold: dict[str, Any], name: str) -> Evidence:
+    """Passages made from a SYNTHETIC document file next to the fixture, by the
+    same extraction and chunking code the worker uses (line endings
+    normalised, so a CRLF checkout gives the same bytes)."""
+    from lexflow.extraction import Limits, extract
+    from lexflow.extraction.chunking import chunk_sections
+
+    spec = gold["evidence_sets"][name]
+    data = (gold["_base"] / spec["file"]).read_bytes().replace(b"\r\n", b"\n")
+    if _sha(data.decode("utf-8")) != spec["sha256"]:
+        raise SystemExit(f"{spec['file']}: content differs from the fixture's SHA-256")
+    sections = extract("text/plain", data, Limits(100, 1_000_000, 10_000_000)).sections
+    document = uuid.UUID(spec["document"])
+    passages = [
+        Passage(
+            id=f"D{n}",
+            document_id=document,
+            document_name=spec["file"],
+            chunk_id=uuid.uuid5(document, str(n)),
+            chunk_number=n,
+            section_number=chunk.section_number,
+            page_number=chunk.page_number,
+            text=chunk.text,
+            content_sha256=chunk.content_sha256,
+        )
+        for n, chunk in enumerate(
+            chunk_sections(sections, spec["chunk_size"], spec["chunk_overlap"]), start=1
+        )
+    ]
+    return Evidence(
+        context=CaseContext(timeline=[], **spec["case"]),
+        passages=passages,
+        judgments=[],
+        documents_selected=1,
+    )
+
+
 def run_answer(gold: dict[str, Any], s: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
     provider = ScriptedAnswers(list(s["answers"]))
-    evidence = build_evidence(gold, s.get("evidence"))
+    evidence = (
+        build_document_evidence(gold, s["evidence_set"])
+        if "evidence_set" in s
+        else build_evidence(gold, s.get("evidence"))
+    )
     outcome = runs.check_answer(provider, evidence, 4096, label=s["id"])
     return _summary(outcome, provider.calls)
 
@@ -333,6 +380,7 @@ def run_config(s: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
 def evaluate(fixture: Path = FIXTURE) -> dict[str, Any]:
     raw = fixture.read_bytes()
     gold = json.loads(raw)
+    gold["_base"] = fixture.parent
     outcomes: list[Outcome] = []
     for s in gold["scenarios"]:
         kind = s["kind"]
@@ -439,7 +487,15 @@ def markdown(report: dict[str, Any]) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
     parser.add_argument("--write", action="store_true", help="write the JSON and Markdown report")
+    parser.add_argument(
+        "--report-name",
+        default="analysis-eval",
+        help="file name (without extension) of the written report; use a dated name to keep "
+        "earlier reports",
+    )
     args = parser.parse_args(argv)
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,80}", args.report_name):
+        parser.error("--report-name: letters, digits, '.', '_' and '-' only")
     # Every provider here gets a scripted client; building a real one is refused.
     genai.Client = _refuse_real_client  # type: ignore[assignment,misc]
     report = evaluate()
@@ -447,11 +503,12 @@ def main(argv: list[str] | None = None) -> int:
     print(text)
     if args.write:
         OUT_DIR.mkdir(parents=True, exist_ok=True)
-        (OUT_DIR / "analysis-eval.json").write_text(
+        target = OUT_DIR / args.report_name
+        target.with_suffix(".json").write_text(
             json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
         )
-        (OUT_DIR / "analysis-eval.md").write_text(text, encoding="utf-8", newline="\n")
-        print(f"wrote {OUT_DIR / 'analysis-eval.json'} and analysis-eval.md")
+        target.with_suffix(".md").write_text(text, encoding="utf-8", newline="\n")
+        print(f"wrote {target.with_suffix('.json')} and {target.with_suffix('.md').name}")
     ok = not report["not_as_expected"] and not report["messages_with_operator_words"]
     return 0 if ok else 1
 

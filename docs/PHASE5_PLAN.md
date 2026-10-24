@@ -1,11 +1,21 @@
 # Phase 5 plan — AI case analysis with Google Gemini
 
-Status (2026-10-24): **M1–M7 committed; M8 done by the owner (migration
-0011 applied to `lexflow` 2026-10-20; real Gemini runs on the sample case);
-M9 stabilisation implemented and verified 2026-10-24 but uncommitted** (owner
-review and commit pending; the synthetic demo-import flag stays provisional).
-Phase 5 is not declared complete until the owner accepts M9. Decisions
-approved (§9, §13); implementation recorded in `docs/PHASE5_EXECUTION_LOG.md`.
+Status (2026-10-25): **Phase 5 complete.**
+- M1–M7 and M9 are committed (M9: `81e8e8c`).
+- M8 was done by the owner: migration 0011 was applied to `lexflow` on
+  2026-10-20, and the owner ran real Gemini analyses on the sample case.
+- M10 closed the open items in the commit "Phase 5: close acceptance
+  criteria":
+  - the missed 2015/2017 contradiction was traced and fixed as far as the
+    records allow;
+  - every acceptance criterion is verified with fresh results.
+- Deferred, not Phase 5 defects (§14):
+  - choosing a real judgment source belongs to the dataset phase;
+  - showing that a real model reports contradictions under prompt v2 needs a
+    real model call, which is the owner's decision.
+- The synthetic demo-import flag stays provisional.
+Decisions approved (§9, §13, §14); implementation recorded in
+`docs/PHASE5_EXECUTION_LOG.md`.
 Planned at `e122d11` (Phase 4 complete).
 Scope from `docs/DEVELOPMENT_BRIEF.md` §4 Phase 5. Machine-readable state:
 `docs/verification/phase5/checkpoint.json`.
@@ -180,7 +190,8 @@ drops only `analysis_runs` (runs can be re-made).
 | M6 | UI | `aiService` HTTP implementation; document selection; data-transmission notice; progress; results with working source links; removed-items count; run history; disclaimer on every result; Vitest | M |
 | M7 | Verification + docs | pytest, `npm run check`, Playwright with the scripted provider (no network), mutation checks on validation/authz/key handling, ADR 0019, SRS/architecture/traceability (adds the *analyse case* sequence), execution log | M |
 | M8 | Live migration 0011 + optional manual smoke | Gated procedure (§4); then **one** manual run on a **synthetic** case with a real key, only after D1–D2 | owner-gated — **done 2026-10-20** (log M8) |
-| M9 | Stabilisation (P5-S2, 2026-10-24) | Provider fails closed; run/provider match; quota not retried; operator detail for Administrators only; schema/validator versions recorded per run; new grounding checks; unexpected errors fail the run; interrupted runs bounded; changed sources reported; synthetic-import guard reviewed and hardened; offline evaluation harness; full verification (§13, log M9) | done, uncommitted |
+| M9 | Stabilisation (P5-S2, 2026-10-24) | Provider fails closed; run/provider match; quota not retried; operator detail for Administrators only; schema/validator versions recorded per run; new grounding checks; unexpected errors fail the run; interrupted runs bounded; changed sources reported; synthetic-import guard reviewed and hardened; offline evaluation harness; full verification (§13, log M9) | done (`81e8e8c`) |
+| M10 | Closure (2026-10-25) | Missed 2015/2017 contradiction traced (lost at validation; prompt v1 never stated the quote rules) and addressed (prompt `case-analysis-v2`, validator `grounding-4`, regression on the reconstructed live document); every acceptance criterion verified with fresh results (contradiction and issue links tested); L2 fixed, L3 documented; judgment source deferred to the dataset phase (§14, log M10) | done |
 
 Total estimate: comparable to Phase 4 (seven to eight milestones).
 
@@ -261,18 +272,19 @@ long-running calls (worker, timeouts); contract churn affecting Phase 6
 `server`: `.venv\Scripts\python -m pytest -q`, `ruff check .`, `ruff format
 --check .`, `mypy .`, `mypy --platform linux .`, `python
 scripts/export_openapi.py --check`, `alembic check`, `python
-scripts/evaluate_analysis.py` (offline, synthetic; `--write` for the report).
+scripts/evaluate_analysis.py` (offline, synthetic; `--write --report-name
+analysis-eval-YYYY-MM-DD` for a new dated report).
 Root: `npm run check`, `npx playwright test`. Mutation:
 `docs/verification/phase5/run_mutation_checks.py` (committed code) or
-`... --working-tree` (uncommitted work; target files listed by SHA-256).
+`... --working-tree [--label NAME]` (uncommitted work; target files listed by
+SHA-256; a label writes a separate report).
 
 ## 12. How to resume
 
 1. Read `docs/verification/phase5/checkpoint.json` (`next_action`) and the
-   newest section of `docs/PHASE5_EXECUTION_LOG.md` (M9).
-2. M9 is implemented and verified in the working tree, uncommitted. The next
-   step is the owner's: stage the M9 diff for review and commit it
-   (`Phase 5 M9: stabilisation`). The owner kept the
+   newest section of `docs/PHASE5_EXECUTION_LOG.md` (M10).
+2. Phase 5 is closed. The next phase (Phase 6, lawyer review) starts only on
+   the owner's instruction. The owner kept the
    `--allow-synthetic-in-database` flag provisionally (2026-10-25).
 3. Never run tests against `lexflow`; the suites use `lexflow_test` and
    `lexflow_e2e`, which they recreate.
@@ -311,3 +323,35 @@ log (M9.1–M9.8).
 - **Test-database names.** One rule (`config.is_test_database_name`): a whole
   name part `test` or `e2e`; the synthetic import checks the database it is
   actually connected to.
+
+## 14. M10 closure decisions (2026-10-25)
+
+Evidence and reasoning: execution log M10.1–M10.5.
+
+- **The missed contradiction.**
+  - *Where it was lost:* the planted 2015/2017 conflict of run `4fc9ab87`
+    was lost at validation (`contradiction-unsupported`), because prompt v1
+    never told the model the quote rules that validation enforces. Which
+    source failed cannot be known, because the raw answer is not stored.
+  - *Prompt `case-analysis-v2`:* states the quote rules and says what is and
+    is not a contradiction.
+  - *Validator `grounding-4`:* accepts a quote shortened with "..." only
+    piece by piece, in order, with each piece of 15 or more characters, and
+    counts overlapping spans of one passage as one source.
+  - *Not changed:* the 15-character minimum, never moving a quote to
+    another passage, and rejecting paraphrases.
+  - *Not proved:* that two verified statements really conflict. That needs
+    semantic judgment, so the lawyer checks both linked sources.
+- **Source links.** Contradiction sources are now covered by a UI test, and
+  the issue ids link to the facts they rest on.
+- **Test-database names.** The test setup and the e2e harness also need a
+  whole name part ("test", "e2e"); L2 is closed. A run interrupted on its
+  last attempt still fails as `interrupted`, which keeps the attempts
+  bounded (L3, by design).
+- **Judgment source:** a deferred dataset-phase decision. No real source is
+  approved and no real import is authorised; the approval requirements are
+  in log M10.3.
+- **Needs a real model call** (owner's decision, non-blocking):
+  - whether Gemini now reports the planted conflict;
+  - live rejection of injected output;
+  - the cause of the M8e HTTP 400s.

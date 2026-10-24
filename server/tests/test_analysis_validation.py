@@ -24,7 +24,14 @@ from lexflow.analysis.validation import (
     validate,
 )
 from lexflow.schemas import AnalysisResultOut
-from tests.analysis_fakes import DOC_A, DOC_B, JUDGMENT, evidence, judgment_passage
+from tests.analysis_fakes import (
+    DOC_A,
+    DOC_B,
+    JUDGMENT,
+    evidence,
+    judgment_passage,
+    smoke_evidence,
+)
 
 QUOTE_A = "fixed the monthly rent at Rs. 40,000"
 QUOTE_B = "the monthly rent was Rs. 45,000"
@@ -339,6 +346,124 @@ def test_outcome_wording_is_removed_wherever_it_appears() -> None:
     assert [i.question for i in result.issues] == ["Which rent figure governs?"]
     assert result.precedents == [] and result.contradictions == []
     assert removed(result) == {"outcome-wording": 6}
+
+
+# --- the planted 2015/2017 conflict of the live smoke test (M8e, M10) ----------------
+
+PLAINT = "has sold packaged snack foods under it since June 2015"
+REPLY = "began selling under the mark SATTVIK only in 2017, not in 2015"
+
+
+def conflict(*sources: tuple[str, str], description: str = "First use: 2015 or 2017.") -> Any:
+    return {
+        "description": description,
+        "sources": [{"evidence": ref, "quote": quote} for ref, quote in sources],
+    }
+
+
+def smoke(*contradictions: Any) -> AnalysisResultOut:
+    return run(ev=smoke_evidence(), contradictions=list(contradictions))
+
+
+def test_the_smoke_document_chunks_as_the_live_run_received_it() -> None:
+    ev = smoke_evidence()
+    assert [len(p.text) for p in ev.passages] == [1072, 977]  # D1 1072 chars (M8e)
+    assert PLAINT in ev.passages[0].text and REPLY in ev.passages[1].text
+
+
+def test_the_planted_conflict_is_kept_with_both_sources_and_their_provenance() -> None:
+    result = smoke(conflict(("D1", PLAINT), ("D2", REPLY)))
+    (kept,) = result.contradictions
+    assert [(s.evidence_id, s.quote) for s in kept.sources] == [("D1", PLAINT), ("D2", REPLY)]
+    ev = smoke_evidence()
+    assert [s.chunk_id for s in kept.sources] == [p.chunk_id for p in ev.passages]
+    assert result.removed.count == 0
+
+
+def test_a_quote_shortened_with_an_ellipsis_is_checked_piece_by_piece() -> None:
+    elided = "registered the word mark SATTVIK in Class 30 ... since June 2015"
+    (kept,) = smoke(conflict(("D1", elided), ("D2", REPLY))).contradictions
+    assert kept.sources[0].quote == "registered the word mark SATTVIK in Class 30 … since June 2015"
+    for bad in (
+        "registered the word mark SATTVIK ... 2015",  # a piece under 15 characters
+        "since June 2015 ... registered the word mark SATTVIK",  # pieces out of order
+        "registered the word mark SATTVIK ... in the year 2016 ... since June 2015",  # not there
+        # four real pieces in order: more than the three allowed
+        "SYNTHETIC LEGAL NOTICE ... Counsel for the fictional plaintiff ... "
+        "registered the word mark SATTVIK ... since June 2015",
+    ):
+        result = smoke(conflict(("D1", bad), ("D2", REPLY)))
+        assert result.contradictions == [], bad
+        assert removed(result) == {"contradiction-unsupported": 1}
+
+
+def test_a_fact_quote_may_be_shortened_the_same_way() -> None:
+    result = run(
+        ev=smoke_evidence(),
+        facts=[fact(1, "D1", "registered the word mark SATTVIK … since June 2015")],
+    )
+    assert [f.source.quote for f in result.facts] == [
+        "registered the word mark SATTVIK … since June 2015"
+    ]
+
+
+def test_two_sources_that_genuinely_conflict_in_one_passage_are_kept() -> None:
+    reply_adopted = "adopted the mark NISARGA SATTVA honestly in August 2023"
+    reply_sold = "first sold products under the mark NISARGA SATTVA in March 2024"
+    result = smoke(
+        conflict(("D2", reply_adopted), ("D2", reply_sold), description="Adoption vs first sale.")
+    )
+    assert len(result.contradictions) == 1  # distinct statements of one passage
+
+
+def test_different_dates_that_do_not_conflict_are_not_rejected_by_validation() -> None:
+    """Validation proves where each quote comes from, not that the two conflict:
+    a model that calls these a contradiction is not overruled (a documented
+    limitation; the prompt tells the model they are not contradictions)."""
+    result = smoke(
+        conflict(
+            ("D1", PLAINT),
+            ("D2", "first sold products under the mark NISARGA SATTVA in March 2024"),
+            description="Different first-use dates.",
+        )
+    )
+    assert len(result.contradictions) == 1
+
+
+def test_duplicate_and_overlapping_references_to_one_source_count_once() -> None:
+    overlapping = "packaged snack foods under it since June 2015."
+    for second in (
+        ("D1", PLAINT),  # the same reference twice
+        ("D1", overlapping),  # an overlapping span of the same passage
+        ("D1", PLAINT[4:]),  # a span inside the first
+    ):
+        result = smoke(conflict(("D1", PLAINT), second))
+        assert result.contradictions == [], second
+        assert removed(result) == {"contradiction-unsupported": 1}
+
+
+def test_missing_stale_or_misattributed_sources_do_not_support_a_conflict() -> None:
+    stale = 'quote "AIR 1999 SC 1234"'  # paragraph 9 before its edit (not in the file)
+    for bad in (
+        ("D3", REPLY),  # a passage that was not sent
+        ("D2", stale),
+        ("D1", REPLY),  # a real quote cited to the other passage: never moved
+        ("D2", "the plaintiff only started selling SATTVIK products in 2017"),  # paraphrase
+    ):
+        result = smoke(conflict(("D1", PLAINT), bad))
+        assert result.contradictions == [], bad
+        assert removed(result) == {"contradiction-unsupported": 1}
+
+
+def test_too_little_evidence_for_a_conflict_is_removed_not_guessed() -> None:
+    for sources in (
+        [("D1", PLAINT)],  # one statement only (the parser drops it as malformed)
+        [("D1", "since June 2015"), ("D2", "only in 2017")],  # 12 characters: too short
+    ):
+        result = smoke(conflict(*sources))
+        assert result.contradictions == []
+        assert result.insufficient_evidence  # nothing verified, said plainly
+    assert removed(smoke(conflict(("D1", PLAINT)))) == {"malformed": 1}
 
 
 # --- the answer as a whole ------------------------------------------------------------

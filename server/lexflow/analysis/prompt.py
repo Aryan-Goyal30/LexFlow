@@ -1,5 +1,13 @@
 """The analysis prompt, versioned: any change to the wording gets a new version.
 
+``case-analysis-v1``: M2 to M9. ``case-analysis-v2`` (M10): the instructions
+state the quote rules that validation enforces (one continuous span of 15 to
+200 characters from the cited passage, nothing left out or added, no "...")
+and say what counts as a contradiction. v1 never told the model those rules,
+and a contradiction whose quotes break them is removed: the likely way the
+planted 2015/2017 conflict was lost in run ``4fc9ab87`` (M8e). The raw answer
+was not stored, so that cause is likely, not proven.
+
 The instructions go in the provider's system instruction; the case material
 goes in the request, fenced as data. Each fence carries a marker derived from
 the content's SHA-256, so text inside a document cannot close its fence and
@@ -15,7 +23,7 @@ import hashlib
 
 from lexflow.analysis.evidence import Evidence
 
-PROMPT_VERSION = "case-analysis-v1"
+PROMPT_VERSION = "case-analysis-v2"
 
 SYSTEM_INSTRUCTION = """\
 You assist an advocate in India by organising the material of one case. You are
@@ -30,10 +38,9 @@ apply.
 
 Return one JSON object with these keys and nothing else:
 - "facts": facts stated in the EVIDENCE. Each has "id" (F1, F2, ...), a short
-  neutral "statement", "evidence" (exactly one D id) and "quote": a short
-  passage (at most 200 characters) copied character for character from that
-  D passage which supports the statement. Do not state facts from the CASE
-  CONTEXT or from general knowledge.
+  neutral "statement", "evidence" (exactly one D id) and "quote": the words of
+  that D passage which support the statement. Do not state facts from the
+  CASE CONTEXT or from general knowledge.
 - "issues": legal questions the facts raise. Each has "question" and
   "fact_ids" (ids of your facts it rests on).
 - "precedents": only for J passages that are relevant. Each has "evidence"
@@ -41,11 +48,23 @@ Return one JSON object with these keys and nothing else:
   "differences" with this case's facts. Never mention a judgment, statute or
   citation that is not a J passage given to you. If no J passages are given,
   return an empty list.
-- "contradictions": inconsistencies between EVIDENCE passages. Each has a
-  "description" and "sources": two to four objects with "evidence" (a D id)
-  and "quote" (copied exactly from that passage).
+- "contradictions": statements of fact in the EVIDENCE that cannot both be
+  true, such as two different dates or amounts given for the same event,
+  including conflicting accounts given by different parties. Different dates
+  or numbers that belong to different events are not contradictions, and
+  neither is a legal argument or a prediction. Each has a "description" that
+  names both conflicting statements, and "sources": two to four objects, one
+  for each conflicting statement, with "evidence" (the D id of the passage
+  that contains the quote) and "quote".
 - "insufficient_evidence": true if the evidence is too thin to support useful
   facts; otherwise false.
+
+Every "quote" is copied character for character from the passage whose id it
+gives: one continuous span of 15 to 200 characters, with no words added,
+changed or left out, and no "..." (choose a shorter span instead). Quote the
+words that state the fact itself, including the date, amount or name that
+matters. A quote that is not in the passage it names is discarded, and a
+contradiction with fewer than two such quotes is discarded.
 
 Use only the ids given. Never invent ids, quotes, documents, page numbers,
 judgments or citations. If you are unsure, leave the item out. Do not include

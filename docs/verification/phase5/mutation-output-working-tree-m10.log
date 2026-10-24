@@ -1,0 +1,1108 @@
+Phase 5 mutation checks at commit 81e8e8c, started 2026-10-24 19:53:47 UTC
+Redacted: local home paths, database role names and row ids (see REDACTIONS).
+
+=== V-1 CAUGHT: a quote must occur in the passage it cites
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+            result = smoke(conflict(("D1", PLAINT), bad))
+>           assert result.contradictions == [], bad
+E           AssertionError: ('D2', 'quote "AIR 1999 SC 1234"')
+E           assert [AnalysisCont... SC 1234"')])] == []
+E             
+E             Left contains one more item: AnalysisContradictionOut(id='C1', description='First use: 2015 or 2017.', sources=[AnalysisSourceOut(evidence_id='D1',...d=UUID('<uuid>'), section_number=1, page_number=None, quote='quote "AIR 1999 SC 1234"')])
+E             Use -v to get more diff
+tests\test_analysis_validation.py:454: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_a_quote_from_another_passage_or_invented_is_removed
+FAILED tests/test_analysis_validation.py::test_missing_stale_or_misattributed_sources_do_not_support_a_conflict
+2 failed, 58 passed in 0.72s
+
+=== V-2 CAUGHT: a fact citing an unknown passage is removed (not re-pointed)
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+E         {'quote-not-found': 1}
+E         Right contains 1 more item:
+E         {'unknown-evidence': 1}
+E         Use -v to get more diff
+tests\test_analysis_validation.py:510: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_a_fact_citing_an_unknown_passage_is_removed
+FAILED tests/test_analysis_validation.py::test_facts_must_cite_a_case_passage_not_a_judgment
+FAILED tests/test_analysis_validation.py::test_issues_keep_only_references_to_surviving_facts
+FAILED tests/test_analysis_validation.py::test_nothing_verifiable_means_insufficient_evidence_not_a_guess
+FAILED tests/test_analysis_validation.py::test_injected_instructions_cannot_add_evidence
+5 failed, 55 passed in 0.75s
+
+=== V-3 CAUGHT: an output citing an unknown judgment is rejected
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+>       assert result.facts == [] and result.precedents == []
+E       AssertionError: assert ([] == []
+E         
+E         Use -v to get more diff and [AnalysisPrec...rences=['b'])] == []
+E         
+E         Left contains one more item: AnalysisPrecedentOut(id='P1', evidence_id='J1', judgment_id=UUID('<uuid>'), title='Asha ...-b3fc943234f0'), section_number=2, page_number=2), summary='SYNTHETIC summary.', similarities=['a'], differences=['b'])
+E         Use -v to get more diff)
+tests\test_analysis_validation.py:509: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_an_output_citing_an_unknown_judgment_is_rejected
+FAILED tests/test_analysis_validation.py::test_injected_instructions_cannot_add_evidence
+2 failed, 58 passed in 0.67s
+
+=== V-4 CAUGHT: very short quotes cannot support a fact
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+            result = smoke(conflict(*sources))
+>           assert result.contradictions == []
+E           AssertionError: assert [AnalysisCont...y in 2017')])] == []
+E             
+E             Left contains one more item: AnalysisContradictionOut(id='C1', description='First use: 2015 or 2017.', sources=[AnalysisSourceOut(evidence_id='D1',...xt', chunk_id=UUID('<uuid>'), section_number=1, page_number=None, quote='only in 2017')])
+E             Use -v to get more diff
+tests\test_analysis_validation.py:464: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_a_too_short_quote_cannot_support_a_fact
+FAILED tests/test_analysis_validation.py::test_a_quote_shortened_with_an_ellipsis_is_checked_piece_by_piece
+FAILED tests/test_analysis_validation.py::test_too_little_evidence_for_a_conflict_is_removed_not_guessed
+3 failed, 57 passed in 0.68s
+
+=== V-5 CAUGHT: issues keep only references to surviving facts
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+                {"question": "Which rent applies?", "fact_ids": ["F1", "F2", "F1"]},
+                {"question": "Was F2 admitted?", "fact_ids": ["F2"]},
+                {"question": "Unanchored?", "fact_ids": []},
+            ],
+        )
+>       (issue,) = result.issues
+        ^^^^^^^^
+E       ValueError: too many values to unpack (expected 1)
+tests\test_analysis_validation.py:180: ValueError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_issues_keep_only_references_to_surviving_facts
+1 failed, 59 passed in 0.66s
+
+=== V-6 CAUGHT: a contradiction needs two verified sources
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+E             
+E             Left contains one more item: AnalysisContradictionOut(id='C1', description='First use: 2015 or 2017.', sources=[AnalysisSourceOut(evidence_id='D1',..., chunk_id=UUID('<uuid>'), section_number=1, page_number=None, quote='since June 2015')])
+E             Use -v to get more diff
+tests\test_analysis_validation.py:464: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_a_contradiction_needs_two_verified_sources
+FAILED tests/test_analysis_validation.py::test_two_quotes_of_the_same_text_are_not_a_contradiction
+FAILED tests/test_analysis_validation.py::test_a_quote_shortened_with_an_ellipsis_is_checked_piece_by_piece
+FAILED tests/test_analysis_validation.py::test_duplicate_and_overlapping_references_to_one_source_count_once
+FAILED tests/test_analysis_validation.py::test_missing_stale_or_misattributed_sources_do_not_support_a_conflict
+FAILED tests/test_analysis_validation.py::test_too_little_evidence_for_a_conflict_is_removed_not_guessed
+6 failed, 54 passed in 0.74s
+
+=== V-7 CAUGHT: invented law-report citations are removed
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+>       assert [f.id for f in result.facts] == ["F3"]
+E       AssertionError: assert ['F1', 'F2', 'F3'] == ['F3']
+E         
+E         At index 0 diff: 'F1' != 'F3'
+E         Left contains 2 more items, first extra item: 'F2'
+E         Use -v to get more diff
+tests\test_analysis_validation.py:244: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_an_invented_citation_in_a_statement_is_removed
+FAILED tests/test_analysis_validation.py::test_a_precedent_with_an_invented_citation_in_its_prose_is_removed
+FAILED tests/test_analysis_validation.py::test_an_invented_neutral_citation_is_removed
+3 failed, 57 passed in 0.68s
+
+=== V-8 CAUGHT: a returned outcome assessment is counted as removed
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+        assert "Plaintiff wins" not in dumped and "likelyOutcome" not in dumped
+        assert len(result.facts) == 1
+>       assert removed(result) == {"outcome-discarded": 1}
+E       AssertionError: assert {} == {'outcome-discarded': 1}
+E         
+E         Right contains 1 more item:
+E         {'outcome-discarded': 1}
+E         Use -v to get more diff
+tests\test_analysis_validation.py:481: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_an_outcome_assessment_is_never_kept
+1 failed, 59 passed in 0.70s
+
+=== V-9 CAUGHT: precedent titles come from the collection, not the model
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+        result = run(precedents=[item, precedent("J1")])
+        (kept,) = result.precedents
+        assert kept.judgment_id == JUDGMENT
+>       assert kept.title == "Asha Rao v. Bharat Traders (SYNTHETIC)"
+E       AssertionError: assert 'SYNTHETIC summary.' == 'Asha Rao v. ...s (SYNTHETIC)'
+E         
+E         - Asha Rao v. Bharat Traders (SYNTHETIC)
+E         + SYNTHETIC summary.
+tests\test_analysis_validation.py:150: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_a_retrieved_judgment_is_described_from_the_collection_not_the_model
+1 failed, 59 passed in 0.68s
+
+=== V-10 CAUGHT: nothing verifiable means insufficient evidence
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+_______ test_nothing_verifiable_means_insufficient_evidence_not_a_guess _______
+    def test_nothing_verifiable_means_insufficient_evidence_not_a_guess() -> None:
+        result = run(facts=[fact(1, "D9", QUOTE_A)])
+>       assert result.insufficient_evidence and result.insufficient_reason == NOTHING_VERIFIED
+E       assert (False)
+E        +  where False = AnalysisResultOut(facts=[], issues=[], precedents=[], contradictions=[], insufficient_evidence=False, insufficient_rea...easonOut(code='unknown-evidence', message="Cited a passage that was not part of this analysis's evidence.", count=1)])).insufficient_evidence
+tests\test_analysis_validation.py:491: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_a_fact_citing_an_unknown_passage_is_removed
+FAILED tests/test_analysis_validation.py::test_too_little_evidence_for_a_conflict_is_removed_not_guessed
+FAILED tests/test_analysis_validation.py::test_nothing_verifiable_means_insufficient_evidence_not_a_guess
+3 failed, 57 passed in 0.69s
+
+=== O-1 CAUGHT: the answer must be a JSON object
+file: server/lexflow/analysis/output.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_output.py
+exit code: 1
+        if False:
+            raise InvalidOutputError("invalid-output", "The answer was not a JSON object.")
+        out = ParsedOutput()
+        out.outcome_discarded = any(key in data for key in OUTCOME_KEYS)
+>       out.facts = _items(data.get("facts"), ModelFact, MAX_FACTS, out, "facts")
+                           ^^^^^^^^
+E       AttributeError: 'str' object has no attribute 'get'
+lexflow\analysis\output.py:147: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_output.py::test_unusable_answers_are_rejected_as_a_whole[[1, 2]]
+FAILED tests/test_analysis_output.py::test_unusable_answers_are_rejected_as_a_whole["facts"]
+2 failed, 21 passed in 0.41s
+
+=== O-2 CAUGHT: outcome keys are noticed
+file: server/lexflow/analysis/output.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_output.py
+exit code: 1
+    def test_an_outcome_assessment_is_noted_for_discarding(key: str) -> None:
+        parsed = parse(json.dumps({key: {"likely": "win"}, "facts": [FACT]}))
+>       assert parsed.outcome_discarded and len(parsed.facts) == 1
+E       AssertionError: assert (False)
+E        +  where False = ParsedOutput(facts=[ModelFact(id='F1', statement='The lease began in 2019.', evidence='D1', quote='xxxxxxxxxxxxxxxxxxx...=[], precedents=[], contradictions=[], insufficient_evidence=False, malformed=0, over_limit=0, outcome_discarded=False).outcome_discarded
+tests\test_analysis_output.py:74: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_output.py::test_an_outcome_assessment_is_noted_for_discarding[outcome_assessment]
+FAILED tests/test_analysis_output.py::test_an_outcome_assessment_is_noted_for_discarding[outcomeAssessment]
+FAILED tests/test_analysis_output.py::test_an_outcome_assessment_is_noted_for_discarding[outcome]
+FAILED tests/test_analysis_output.py::test_an_outcome_assessment_is_noted_for_discarding[prediction]
+4 failed, 19 passed in 0.40s
+
+=== P-1 CAUGHT: provider error text is never passed on
+file: server/lexflow/analysis/provider.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_provider.py
+exit code: 1
+FAILED tests/test_analysis_provider.py::test_malformed_or_unexpected_values_are_discarded[body25-expected25]
+FAILED tests/test_analysis_provider.py::test_malformed_or_unexpected_values_are_discarded[PROVIDER-ECHO AIzaFAKE-test-key-0123456789-not-real DOCUMENT-TEXT registered trade mark SATTVIK-expected26]
+FAILED tests/test_analysis_provider.py::test_malformed_or_unexpected_values_are_discarded[body27-expected27]
+FAILED tests/test_analysis_provider.py::test_malformed_or_unexpected_values_are_discarded[body28-expected28]
+FAILED tests/test_analysis_provider.py::test_an_exhausted_daily_quota_is_not_retried_but_a_rate_limit_is[GenerateRequestsPerDayPerProjectPerModel-FreeTier-provider-quota-exhausted-False]
+FAILED tests/test_analysis_provider.py::test_an_exhausted_daily_quota_is_not_retried_but_a_rate_limit_is[GenerateContentDailyInputTokens-provider-quota-exhausted-False]
+FAILED tests/test_analysis_provider.py::test_an_exhausted_daily_quota_is_not_retried_but_a_rate_limit_is[RequestsPerMonthPerProject-provider-quota-exhausted-False]
+FAILED tests/test_analysis_provider.py::test_an_exhausted_daily_quota_is_not_retried_but_a_rate_limit_is[GenerateRequestsPerMinutePerProjectPerModel-FreeTier-provider-rate-limited-True]
+FAILED tests/test_analysis_provider.py::test_an_exhausted_daily_quota_is_not_retried_but_a_rate_limit_is[GenerateContentInputTokensPerModelPerMinute-provider-rate-limited-True]
+FAILED tests/test_analysis_provider.py::test_quota_classification_reads_only_valid_structured_fields
+FAILED tests/test_analysis_provider.py::test_provider_messages_are_safe_for_every_staff_member[failure5]
+45 failed, 30 passed in 0.86s
+
+=== P-2 CAUGHT: the SDK makes no retries of its own
+file: server/lexflow/analysis/provider.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_provider.py
+exit code: 1
+        monkeypatch.setattr(genai, "Client", Recorder)
+        GeminiProvider(SecretStr(FAKE_KEY), "m", timeout_seconds=30).generate(request())
+        (kwargs,) = built
+        assert kwargs["api_key"] == FAKE_KEY
+        assert kwargs["http_options"].timeout == 30_000
+>       assert kwargs["http_options"].retry_options is None
+E       assert HttpRetryOptions() is None
+E        +  where HttpRetryOptions() = HttpOptions(\n  retry_options=HttpRetryOptions(),\n  timeout=30000\n).retry_options
+tests\test_analysis_provider.py:300: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_provider.py::test_the_default_client_uses_the_key_and_no_sdk_retries
+1 failed, 74 passed in 0.54s
+
+=== P-3 CAUGHT: the timeout is given in milliseconds
+file: server/lexflow/analysis/provider.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_provider.py
+exit code: 1
+        monkeypatch.setattr(genai, "Client", Recorder)
+        GeminiProvider(SecretStr(FAKE_KEY), "m", timeout_seconds=30).generate(request())
+        (kwargs,) = built
+        assert kwargs["api_key"] == FAKE_KEY
+>       assert kwargs["http_options"].timeout == 30_000
+E       assert 30 == 30000
+E        +  where 30 = HttpOptions(\n  timeout=30\n).timeout
+tests\test_analysis_provider.py:299: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_provider.py::test_a_request_carries_the_schema_instructions_and_limits
+FAILED tests/test_analysis_provider.py::test_the_default_client_uses_the_key_and_no_sdk_retries
+2 failed, 73 passed in 0.52s
+
+=== P-4 CAUGHT: blocked answers fail
+file: server/lexflow/analysis/provider.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_provider.py
+exit code: 1
+            (response("   "), "provider-empty"),
+        ],
+    )
+    def test_blocked_and_empty_answers_fail(answer: Any, code: str) -> None:
+        provider, _ = gemini(answer)
+>       with pytest.raises(ProviderError) as caught:
+E       Failed: DID NOT RAISE ProviderError
+tests\test_analysis_provider.py:280: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_provider.py::test_blocked_and_empty_answers_fail[answer1-provider-blocked]
+FAILED tests/test_analysis_provider.py::test_blocked_and_empty_answers_fail[answer2-provider-blocked]
+2 failed, 73 passed in 0.52s
+
+=== P-5 CAUGHT: a cut-off answer is marked truncated
+file: server/lexflow/analysis/provider.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_provider.py
+exit code: 1
+    def test_an_answer_cut_off_at_the_token_limit_is_marked() -> None:
+        provider, _ = gemini(response('{"facts": [', finish="MAX_TOKENS"))
+>       assert provider.generate(request()).truncated
+E       assert False
+E        +  where False = Response(text='{"facts": [', truncated=False, usage={'promptTokens': 1200, 'outputTokens': 300, 'thinkingTokens': 50, 'totalTokens': 1550}).truncated
+E        +    where Response(text='{"facts": [', truncated=False, usage={'promptTokens': 1200, 'outputTokens': 300, 'thinkingTokens': 50, 'totalTokens': 1550}) = generate(Request(system_instruction='You assist an advocate in India by organising the material of one case. You are\ndecision ...0000000000000000000000000000000065')], documents_selected=2, documents_without_text=[], characters=0, truncated=False)))
+E        +      where generate = GeminiProvider(model='test-model-1').generate
+E        +      and   Request(system_instruction='You assist an advocate in India by organising the material of one case. You are\ndecision ...0000000000000000000000000000000065')], documents_selected=2, documents_without_text=[], characters=0, truncated=False)) = request()
+tests\test_analysis_provider.py:84: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_provider.py::test_an_answer_cut_off_at_the_token_limit_is_marked
+1 failed, 74 passed in 0.54s
+
+=== C-1 CAUGHT: the scripted double is refused outside test/e2e databases
+file: server/lexflow/config.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_config.py tests/test_analysis_provider.py
+exit code: 1
+    )
+    def test_the_scripted_double_needs_a_real_test_database_name(url: str) -> None:
+>       with pytest.raises(ValidationError, match="is a test double"):
+E       Failed: DID NOT RAISE ValidationError
+tests\test_analysis_config.py:72: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_config.py::test_the_scripted_double_is_refused_outside_test_and_e2e_databases
+FAILED tests/test_analysis_config.py::test_the_scripted_double_needs_a_real_test_database_name[postgresql+psycopg://<user>:***@127.0.0.1/lexflow_latest]
+FAILED tests/test_analysis_config.py::test_the_scripted_double_needs_a_real_test_database_name[postgresql+psycopg://<user>:***@127.0.0.1/contest]
+FAILED tests/test_analysis_config.py::test_the_scripted_double_needs_a_real_test_database_name[postgresql+psycopg://<user>:***@127.0.0.1/lexflow_test?dbname=lexflow]
+FAILED tests/test_analysis_config.py::test_the_scripted_double_needs_a_real_test_database_name[postgresql+psycopg://<user>:***@127.0.0.1/lexflow_e2e?service=live]
+5 failed, 80 passed in 0.63s
+
+=== C-2 CAUGHT: a blank key counts as missing
+file: server/lexflow/config.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_config.py tests/test_analysis_provider.py
+exit code: 1
+        off = provider_for(settings())
+        assert isinstance(off, Unavailable) and off.code == "analysis-disabled"
+        no_key = provider_for(settings(LEXFLOW_AI_PROVIDER="gemini", GEMINI_MODEL="m-1"))
+>       assert isinstance(no_key, Unavailable) and no_key.code == "provider-not-configured"
+E       AssertionError: assert (False)
+E        +  where False = isinstance(GeminiProvider(model='m-1'), Unavailable)
+tests\test_analysis_provider.py:320: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_config.py::test_analysis_is_off_by_default - Asser...
+FAILED tests/test_analysis_config.py::test_a_blank_key_counts_as_missing - As...
+FAILED tests/test_analysis_provider.py::test_provider_for_reports_what_is_missing
+3 failed, 82 passed in 0.62s
+
+=== C-3 CAUGHT: a missing key is reported (the setting named to administrators only)
+file: server/lexflow/analysis/provider.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_config.py tests/test_analysis_provider.py
+exit code: 1
+        assert isinstance(off, Unavailable) and off.code == "analysis-disabled"
+        no_key = provider_for(settings(LEXFLOW_AI_PROVIDER="gemini", GEMINI_MODEL="m-1"))
+>       assert isinstance(no_key, Unavailable) and no_key.code == "provider-not-configured"
+E       AssertionError: assert (True and 'provider-unsupported' == 'provider-not-configured'
+E        +  where True = isinstance(Unavailable(code='provider-unsupported', reason='AI analysis is not available. An administrator needs to check the AI configuration of this server.', detail=None), Unavailable)
+E         
+E         - provider-not-configured
+E         + provider-unsupported)
+tests\test_analysis_provider.py:320: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_provider.py::test_provider_for_reports_what_is_missing
+1 failed, 84 passed in 0.62s
+
+=== E-1 CAUGHT: evidence comes only from the case's own documents
+file: server/lexflow/analysis/evidence.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_evidence.py
+exit code: 1
+        evidence = assemble(db, case, [notice, reply, deleted, elsewhere], WIDE)
+        used = {p.document_id for p in evidence.passages}
+>       assert used == {notice, reply}
+E       AssertionError: assert {UUID('40a5b9...41a3134f7ec')} == {UUID('40a5b9...41a3134f7ec')}
+E         
+E         Extra items in the left set:
+E         UUID('<uuid>')
+E         Use -v to get more diff
+tests\test_analysis_evidence.py:85: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_evidence.py::test_passages_come_only_from_selected_live_ready_documents_of_the_case
+1 failed, 10 passed in 2.65s
+
+=== E-2 CAUGHT: deleted documents are never evidence
+file: server/lexflow/analysis/evidence.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_evidence.py
+exit code: 1
+        evidence = assemble(db, case, [notice, reply, deleted, elsewhere], WIDE)
+        used = {p.document_id for p in evidence.passages}
+>       assert used == {notice, reply}
+E       AssertionError: assert {UUID('259e81...4a3aeeea74e')} == {UUID('259e81...4a3aeeea74e')}
+E         
+E         Extra items in the left set:
+E         UUID('<uuid>')
+E         Use -v to get more diff
+tests\test_analysis_evidence.py:85: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_evidence.py::test_passages_come_only_from_selected_live_ready_documents_of_the_case
+1 failed, 10 passed in 2.40s
+
+=== R-1 CAUGHT: only advocates on the case and administrators start runs
+file: server/lexflow/authz.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+    ) -> None:
+        configure()
+        refused = start(as_("paralegal"), docs)
+>       assert refused.status_code == 403
+E       assert 202 == 403
+E        +  where 202 = <Response [202 Accepted]>.status_code
+tests\test_analysis_runs.py:165: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_setup_with_a_configured_provider - a...
+FAILED tests/test_analysis_runs.py::test_case_permissions_say_who_may_run_an_analysis
+FAILED tests/test_analysis_runs.py::test_paralegals_may_read_but_not_start - ...
+3 failed, 37 passed in 9.98s
+
+=== R-2 CAUGHT: the user must confirm the transmission
+file: server/lexflow/api/analysis.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+    def test_a_run_needs_explicit_confirmation_and_valid_input(
+        as_: As, docs: list[uuid.UUID], configure: Callable[..., Settings]
+    ) -> None:
+        configure()
+        unconfirmed = start(as_("lead"), docs, confirmTransmission=False)
+>       assert unconfirmed.status_code == 422 and unconfirmed.json()["code"] == "confirmation-required"
+E       assert (202 == 422)
+E        +  where 202 = <Response [202 Accepted]>.status_code
+tests\test_analysis_runs.py:219: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_a_run_needs_explicit_confirmation_and_valid_input
+1 failed, 39 passed in 9.83s
+
+=== R-3 CAUGHT: only sample cases are accepted unless client data is allowed (API)
+file: server/lexflow/api/analysis.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+        case = db.get(Case, SATTVIK)
+        assert case is not None
+        case.is_sample = False
+        db.commit()
+        refused = start(as_("lead"), docs)
+>       assert refused.status_code == 403 and refused.json()["code"] == "client-data-not-allowed"
+E       assert (202 == 403)
+E        +  where 202 = <Response [202 Accepted]>.status_code
+tests\test_analysis_runs.py:257: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_client_cases_are_refused_unless_the_owner_allows_client_data
+1 failed, 39 passed in 9.99s
+
+=== R-4 CAUGHT: the worker re-checks the sample-case gate before sending
+file: server/lexflow/analysis/runs.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+            "client-data-not-allowed",
+        )
+E       AssertionError: assert (<lexflow.models.AnalysisRun object at 0x000001EF4AD158E0> is not None and ('failed', 'provider-error') == ('failed', 'c...-not-allowed')
+E         
+E         At index 1 diff: 'provider-error' != 'client-data-not-allowed'
+E         Use -v to get more diff)
+tests\test_analysis_runs.py:649: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    lexflow.analysis:runs.py:399 analysis <uuid>: provider raised IndexError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_the_worker_checks_the_case_again_before_sending_anything
+1 failed, 39 passed in 9.93s
+
+=== R-5 CAUGHT: only ready documents of this case may be selected
+file: server/lexflow/api/analysis.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+        assert gone is not None
+        gone.deleted_at = datetime.now(UTC)
+        db.commit()
+        for bad in (elsewhere, deleted, uuid.uuid4()):
+            refused = start(as_("lead"), [docs[0], bad])
+>           assert refused.status_code == 422 and refused.json()["code"] == "document-not-eligible"
+E           assert (202 == 422)
+E            +  where 202 = <Response [202 Accepted]>.status_code
+tests\test_analysis_runs.py:241: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_only_ready_live_documents_of_this_case_may_be_selected
+1 failed, 39 passed in 9.62s
+
+=== R-6 CAUGHT: the hourly limit per person
+file: server/lexflow/api/analysis.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+                status="failed", reason_code="x", reason="x", finished_at=datetime.now(UTC)
+            )
+        )
+        db.commit()
+        limited = start(as_("lead"), docs)
+>       assert limited.status_code == 429 and limited.json()["code"] == "rate-limited"
+E       assert (202 == 429)
+E        +  where 202 = <Response [202 Accepted]>.status_code
+tests\test_analysis_runs.py:299: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_the_hourly_limit_per_person - assert...
+1 failed, 39 passed in 9.76s
+
+=== R-7 CAUGHT: a result is stored only by the worker holding the run
+file: server/lexflow/analysis/runs.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+            "w1",
+            now=lambda: datetime.now(UTC),
+        )
+>       assert status == "discarded"
+E       AssertionError: assert 'ready' == 'discarded'
+E         
+E         - discarded
+E         + ready
+tests\test_analysis_runs.py:678: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_a_result_is_discarded_when_the_run_is_no_longer_held
+1 failed, 39 passed in 9.75s
+
+=== R-8 CAUGHT: starting a run is audited
+file: server/lexflow/api/analysis.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+        assert (run["status"], run["provider"], run["model"]) == ("queued", "scripted", "scripted-v1")
+        assert run["documentCount"] == 2 and run["result"] is None
+        assert run["requestedBy"]["name"] == "Aryan Goyal"
+        again = start(as_("associate"), docs)
+        assert again.status_code == 409 and again.json()["code"] == "analysis-running"
+>       (event,) = events(db, "analysis.requested")
+        ^^^^^^^^
+E       ValueError: not enough values to unpack (expected 1, got 0)
+tests\test_analysis_runs.py:276: ValueError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_a_run_is_queued_audited_and_one_at_a_time
+1 failed, 39 passed in 9.67s
+
+=== R-9 CAUGHT: a run is read only through its own case
+file: server/lexflow/api/analysis.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+        configure()
+        run_id = start(as_("lead"), docs).json()["id"]
+        admin = as_("admin")
+>       assert admin.get(f"/api/cases/{OTHER_CASE}/analysis-runs/{run_id}").status_code == 404
+E       AssertionError: assert 200 == 404
+E        +  where 200 = <Response [200 OK]>.status_code
+E        +    where <Response [200 OK]> = get('/api/cases/<uuid>/analysis-runs/<uuid>')
+E        +      where get = <starlette.testclient.TestClient object at 0x0000020330301EE0>.get
+tests\test_analysis_runs.py:309: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_a_run_of_another_case_is_not_found_through_this_case
+1 failed, 39 passed in 9.68s
+
+=== R-10 CAUGHT: a busy provider is retried only after a pause
+file: server/lexflow/analysis/runs.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+        db.refresh(run)
+        assert (run.status, run.attempts) == ("queued", 1)
+>       assert run.available_at > datetime.now(UTC) + timedelta(seconds=20)
+E       AssertionError: assert datetime.datetime(2026, 10, 24, 19, 56, 20, 749970, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')) > (datetime.datetime(2026, 10, 24, 19, 56, 20, 756917, tzinfo=datetime.timezone.utc) + datetime.timedelta(seconds=20))
+E        +  where datetime.datetime(2026, 10, 24, 19, 56, 20, 749970, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')) = <lexflow.models.AnalysisRun object at 0x0000020D2351FA10>.available_at
+E        +  and   datetime.datetime(2026, 10, 24, 19, 56, 20, 756917, tzinfo=datetime.timezone.utc) = <built-in method now of type object at 0x00007FFDA5D99330>(datetime.timezone.utc)
+E        +    where <built-in method now of type object at 0x00007FFDA5D99330> = datetime.now
+E        +  and   datetime.timedelta(seconds=20) = timedelta(seconds=20)
+tests\test_analysis_runs.py:378: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_a_busy_provider_is_retried_later_then_the_run_fails
+1 failed, 39 passed in 9.73s
+
+=== R-11 CAUGHT: no provider call when there is no text
+file: server/lexflow/analysis/runs.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+        work(db, never, settings)
+>       assert never.requests == []
+E       AssertionError: assert [Request(syst...cated=False))] == []
+E         
+E         Left contains one more item: Request(system_instruction='You assist an advocate in India by organising the material of one case. You are\ndecision ...883b33a-c5dd-41c4-82a3-674d58b84c03'), UUID('<uuid>')], characters=817, truncated=False))
+E         Use -v to get more diff
+tests\test_analysis_runs.py:627: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    lexflow.analysis:runs.py:399 analysis <uuid>: provider raised IndexError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_without_text_at_run_time_no_provider_is_called
+1 failed, 39 passed in 9.85s
+
+=== R-12 CAUGHT: the worker skips analysis without migration 0011
+file: server/lexflow/worker.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+        monkeypatch.setattr(runs, "table_exists", lambda session: False)
+>       assert worker.analysis_provider(ai(), sessions) is None
+E       AssertionError: assert <lexflow.analysis.scripted.ScriptedProvider object at 0x0000021783E194C0> is None
+E        +  where <lexflow.analysis.scripted.ScriptedProvider object at 0x0000021783E194C0> = <function analysis_provider at 0x0000021781D4B240>(Settings(env='test', database_url='postgresql+psycopg://<user>:***@127.0..._precedents=8, ai_max_output_tokens=16384, ai_runs_per_user_per_hour=10, ai_max_attempts=3, ai_allow_client_data=False), <function shared_sessions.<locals>.scope at 0x0000021783F02D40>)
+E        +    where <function analysis_provider at 0x0000021781D4B240> = worker.analysis_provider
+E        +    and   Settings(env='test', database_url='postgresql+psycopg://<user>:***@127.0..._precedents=8, ai_max_output_tokens=16384, ai_runs_per_user_per_hour=10, ai_max_attempts=3, ai_allow_client_data=False) = ai()
+tests\test_analysis_runs.py:827: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  lexflow.worker:worker.py:196 AI analysis runs are skipped: AI analysis is not fully configured on this server. An administrator needs to check the AI configuration of this server. GEMINI_MODEL is missing from server/.env.
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_the_worker_leaves_analysis_alone_when_it_is_unavailable
+1 failed, 39 passed in 9.74s
+
+=== U-1 CAUGHT: nothing is sent without explicit confirmation
+file: src/components/workspace/AnalysisTab.tsx
+command (cwd .): npx vitest run src/pages/analysis.test.tsx
+exit code: 1
+  <button
+  class="inline-flex items-center justify-center gap-2 rounded-md font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 bg-brand-800 text-white hover:bg-brand-900 shadow-sm px-4 py-2 text-sm "
+  type="button"
+/>
+ ❯ src/pages/analysis.test.tsx:118:21
+    116| 
+    117|     const analyse = screen.getByRole('button', { name: /Analyse case/ …
+    118|     expect(analyse).toBeDisabled();
+       |                     ^
+    119|     expect(analyse).toHaveAccessibleDescription(/Confirm what will be …
+    120|   });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+=== U-2 CAUGHT: a run of another case is never shown
+file: src/hooks/useCaseAnalysis.ts
+command (cwd .): npx vitest run src/pages/analysis.test.tsx
+exit code: 1
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/pages/analysis.test.tsx > Runs that fail or do not match > rejects a run that belongs to another case
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/pages/analysis.test.tsx:355:3
+    353|   });
+    354| 
+    355|   it('rejects a run that belongs to another case', async () => {
+       |   ^
+    356|     mockAnalysisAvailable();
+    357|     const [first] = readyDocuments();
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+=== U-3 CAUGHT: fact links open the cited page
+file: src/components/workspace/AnalysisTab.tsx
+command (cwd .): npx vitest run src/pages/analysis.test.tsx
+exit code: 1
+Expected the element to have attribute:
+  href="/app/cases/case-1005/documents/d-21/text?section=2"
+Received:
+  href="/app/cases/case-1005/documents/d-21/text"
+ ❯ src/pages/analysis.test.tsx:274:20
+    272|     // Page 2 is cited by the fact and by the contradiction: every lin…
+    273|     for (const link of screen.getAllByRole('link', { name: `${first.na…
+    274|       expect(link).toHaveAttribute('href', `${base}?section=2`);
+       |                    ^
+    275|     }
+    276|     expect(screen.getAllByRole('link', { name: `${first.name}, page 2`…
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+=== U-4 CAUGHT: the disclaimer is shown with every result
+file: src/components/workspace/AnalysisTab.tsx
+command (cwd .): npx vitest run src/pages/analysis.test.tsx
+exit code: 1
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/pages/analysis.test.tsx > A finished analysis > counts what was removed, with the reasons, and always shows the disclaimer
+AssertionError: expected 1 to be greater than 1
+ ❯ src/pages/analysis.test.tsx:298:77
+    296|       screen.getByText(/Cited a judgment that was not retrieved for th…
+    297|     ).toBeVisible();
+    298|     expect(screen.getAllByText(/decision support for the advocate/).le…
+       |                                                                             ^
+    299|     expect(screen.queryByText(/outcome/i)).not.toBeInTheDocument();
+    300|   });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+=== U-5 CAUGHT: documents without text cannot be chosen
+file: src/components/workspace/AnalysisTab.tsx
+command (cwd .): npx vitest run src/pages/analysis.test.tsx
+exit code: 1
+  <input
+  class="mt-0.5"
+  type="checkbox"
+/>
+ ❯ src/pages/analysis.test.tsx:152:17
+    150|     const { queryClient } = renderApp(TAB, { as: ARYAN_EMAIL });
+    151|     const box = await screen.findByRole('checkbox', { name: new RegExp…
+    152|     expect(box).toBeDisabled();
+       |                 ^
+    153| 
+    154|     mockReadyText(first.id, ['SYNTHETIC text, extracted after the tab …
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+=== U-6 CAUGHT: no precedents available is said plainly
+file: src/components/workspace/AnalysisTab.tsx
+command (cwd .): npx vitest run src/pages/analysis.test.tsx
+exit code: 1
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/pages/analysis.test.tsx:304:19
+    302|   it('says plainly when no precedents were available', async () => {
+    303|     await openFinished((r) => ({ ...r, precedents: [], precedentsAvail…
+    304|     expect(screen.getByText(/No precedents were available for comparis…
+       |                   ^
+    305|     expect(screen.queryByRole('article')).not.toBeInTheDocument();
+    306|   });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+=== M9-1 CAUGHT: an unknown provider fails closed
+file: server/lexflow/analysis/provider.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_provider.py
+exit code: 1
+        assert isinstance(refused, Unavailable) and refused.code == "provider-unsupported"
+>       assert unavailable_reason(forced) == refused
+E       AssertionError: assert None == Unavailable(code='provider-unsupported', reason='AI analysis is not available. An administrator needs to check the AI configuration of this server.', detail=None)
+E        +  where None = unavailable_reason(Settings(env='test', database_url='postgresql+psycopg://<user>:***@127.0.0.1/lexflow_test', upload_dir=WindowsPath('<home> ai_max_output_tokens=16384, ai_runs_per_user_per_hour=10, ai_max_attempts=3, ai_allow_client_data=False))
+tests\test_analysis_provider.py:352: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_provider.py::test_an_unknown_provider_fails_closed_and_never_reaches_gemini[local]
+FAILED tests/test_analysis_provider.py::test_an_unknown_provider_fails_closed_and_never_reaches_gemini[openai]
+FAILED tests/test_analysis_provider.py::test_an_unknown_provider_fails_closed_and_never_reaches_gemini[Gemini]
+FAILED tests/test_analysis_provider.py::test_an_unknown_provider_fails_closed_and_never_reaches_gemini[]
+FAILED tests/test_analysis_provider.py::test_an_unknown_provider_fails_closed_and_never_reaches_gemini[gemini ]
+5 failed, 70 passed in 0.56s
+
+=== M9-2 CAUGHT: a run confirmed for another provider sends nothing
+file: server/lexflow/analysis/runs.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+        assert work(db, other, settings)
+>       assert other.requests == []
+E       AssertionError: assert [Request(syst...cated=False))] == []
+E         
+E         Left contains one more item: Request(system_instruction='You assist an advocate in India by organising the material of one case. You are\ndecision ...79473bad88d85c54d')], judgments=[], documents_selected=2, documents_without_text=[], characters=1058, truncated=False))
+E         Use -v to get more diff
+tests\test_analysis_runs.py:486: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    lexflow.analysis:runs.py:399 analysis <uuid>: provider raised IndexError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_a_run_confirmed_for_another_provider_sends_nothing
+1 failed, 39 passed in 9.78s
+
+=== M9-3 CAUGHT: a used-up daily quota is not retried
+file: server/lexflow/analysis/provider.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_provider.py
+exit code: 1
+>       assert (both.code, both.retry) == ("provider-quota-exhausted", False)
+E       AssertionError: assert ('provider-ra...imited', True) == ('provider-qu...usted', False)
+E         
+E         At index 0 diff: 'provider-rate-limited' != 'provider-quota-exhausted'
+E         Use -v to get more diff
+tests\test_analysis_provider.py:444: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_provider.py::test_an_exhausted_daily_quota_is_not_retried_but_a_rate_limit_is[GenerateRequestsPerDayPerProjectPerModel-FreeTier-provider-quota-exhausted-False]
+FAILED tests/test_analysis_provider.py::test_an_exhausted_daily_quota_is_not_retried_but_a_rate_limit_is[GenerateContentDailyInputTokens-provider-quota-exhausted-False]
+FAILED tests/test_analysis_provider.py::test_an_exhausted_daily_quota_is_not_retried_but_a_rate_limit_is[RequestsPerMonthPerProject-provider-quota-exhausted-False]
+FAILED tests/test_analysis_provider.py::test_quota_classification_reads_only_valid_structured_fields
+4 failed, 71 passed in 0.54s
+
+=== M9-4 CAUGHT: provider messages do not name settings
+file: server/lexflow/analysis/provider.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_provider.py
+exit code: 1
+        ],
+    )
+    def test_provider_messages_are_safe_for_every_staff_member(failure: BaseException) -> None:
+        message = captured(failure).message
+>       assert message and not any(word in message for word in OPERATOR_WORDS)
+E       AssertionError: assert ('Check GEMINI_API_KEY in server/.env (403). An administrator needs to check the AI configuration of this server.' and not True)
+E        +  where True = any(<generator object test_provider_messages_are_safe_for_every_staff_member.<locals>.<genexpr> at 0x0000022F08F09D80>)
+tests\test_analysis_provider.py:464: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_provider.py::test_provider_messages_are_safe_for_every_staff_member[failure0]
+FAILED tests/test_analysis_provider.py::test_provider_messages_are_safe_for_every_staff_member[failure1]
+2 failed, 73 passed in 0.53s
+
+=== M9-5 CAUGHT: only administrators see which setting is missing
+file: server/lexflow/api/analysis.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+    ) -> None:
+        lead = as_("lead").get(f"/api/cases/{SATTVIK}/analysis/setup").json()
+>       assert lead["unavailableReason"] == "AI analysis is turned off on this server."
+E       AssertionError: assert 'AI analysis ...server/.env.)' == 'AI analysis ... this server.'
+E         
+E         - AI analysis is turned off on this server.
+E         + AI analysis is turned off on this server. (LEXFLOW_AI_PROVIDER=disabled in server/.env.)
+tests\test_analysis_runs.py:209: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_a_run_needs_configuration - assert (...
+FAILED tests/test_analysis_runs.py::test_an_off_server_does_not_name_its_settings_to_advocates
+2 failed, 38 passed in 9.60s
+
+=== M9-6 CAUGHT: an unexpected provider error fails the run, not the worker
+file: server/lexflow/analysis/runs.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+request = Request(system_instruction='You assist an advocate in India by organising the material of one case. You are\ndecision ...79473bad88d85c54d')], judgments=[], documents_selected=2, documents_without_text=[], characters=1058, truncated=False))
+    def generate(self, request: Any) -> Any:
+        from lexflow.analysis.provider import Response
+        self.requests.append(request)
+        item = self.answers.pop(0)
+        if isinstance(item, BaseException):
+>           raise item
+E           RuntimeError: SDK-ECHO AIzaFAKE-test-key-0123456789-not-real SATTVIK
+tests\analysis_fakes.py:222: RuntimeError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_an_unexpected_provider_error_fails_the_run_without_crashing_the_worker
+1 failed, 39 passed in 9.64s
+
+=== M9-7 CAUGHT: an answer that could not be checked is never stored
+file: server/lexflow/analysis/runs.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+lexflow\analysis\runs.py:409: in check_answer
+    result = validation.validate(parsed, evidence)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+args = (ParsedOutput(facts=[ModelFact(id='F1', statement='[Scripted] Passage D1 of "Notice.pdf" begins as quoted.', evidence=...79473bad88d85c54d')], judgments=[], documents_selected=2, documents_without_text=[], characters=1058, truncated=False))
+    def broken(*args: Any) -> Any:
+>       raise ValueError("validator bug")
+E       ValueError: validator bug
+tests\test_analysis_runs.py:742: ValueError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_an_error_while_checking_the_answer_never_stores_a_result
+1 failed, 39 passed in 9.78s
+
+=== M9-8 CAUGHT: an interrupted run fails after its last attempt
+file: server/lexflow/analysis/runs.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+        run = db.get(AnalysisRun, run_id)
+        assert run is not None
+        db.refresh(run)
+>       assert (run.status, run.attempts, run.worker_id) == (status, 1, None)
+E       AssertionError: assert ('queued', 1, None) == ('failed', 1, None)
+E         
+E         At index 0 diff: 'queued' != 'failed'
+E         Use -v to get more diff
+tests\test_analysis_runs.py:773: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_an_interrupted_run_is_handed_back_until_its_last_attempt[1-failed]
+1 failed, 39 passed in 9.65s
+
+=== M9-9 CAUGHT: sources changed since the run are reported
+file: server/lexflow/api/analysis.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+            "D9": {"kind": "document", "chunkId": str(uuid.uuid4()), "contentSha256": "a" * 64},
+        }
+>       assert analysis_api._changed(db, items) == ["D9", "D10", "J2"]
+E       AssertionError: assert [] == ['D9', 'D10', 'J2']
+E         
+E         Right contains 3 more items, first extra item: 'D9'
+E         Use -v to get more diff
+tests\test_analysis_runs.py:814: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_a_result_says_which_sources_changed_since_the_run
+FAILED tests/test_analysis_runs.py::test_missing_or_unreadable_judgment_references_count_as_changed
+2 failed, 38 passed in 9.67s
+
+=== M9-10 CAUGHT: the pipeline versions are stored with a run
+file: server/lexflow/analysis/runs.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_runs.py
+exit code: 1
+        assert done.details["providerCalled"] is True and done.details["removed"] == 1
+        assert done.details["schemaVersion"] == "case-analysis-schema-2"
+        assert done.details["validatorVersion"] == "grounding-4"
+        row = db.get(AnalysisRun, uuid.UUID(run_id))
+        assert row is not None and row.evidence is not None
+>       assert row.evidence["pipeline"] == runs.pipeline_record()
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'pipeline'
+tests\test_analysis_runs.py:350: KeyError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_runs.py::test_the_scripted_run_ends_ready_with_verified_sources_only
+1 failed, 39 passed in 9.69s
+
+=== M9-11 CAUGHT: a provider-schema change needs a new schema version
+file: server/lexflow/analysis/output.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_output.py
+exit code: 1
+E           assert ('At most' in 'Two to five sources.' or 'Two to four' in 'Two to five sources.')
+E            +  where 'Two to five sources.' = str('Two to five sources.')
+E            +    where 'Two to five sources.' = <built-in method get of dict object at 0x000002792F9893C0>('description')
+E            +      where <built-in method get of dict object at 0x000002792F9893C0> = {'type': 'array', 'description': 'Two to five sources.', 'items': {'type': 'object', 'properties': {'evidence': {'type': 'string'}, 'quote': {'type': 'string', 'description': 'At most 300 characters.'}}, 'required': ['evidence', 'quote']}}.get
+E            +  and   'Two to five sources.' = str('Two to five sources.')
+E            +    where 'Two to five sources.' = <built-in method get of dict object at 0x000002792F9893C0>('description')
+E            +      where <built-in method get of dict object at 0x000002792F9893C0> = {'type': 'array', 'description': 'Two to five sources.', 'items': {'type': 'object', 'properties': {'evidence': {'type': 'string'}, 'quote': {'type': 'string', 'description': 'At most 300 characters.'}}, 'required': ['evidence', 'quote']}}.get
+tests\test_analysis_output.py:138: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_output.py::test_the_schema_version_names_exactly_this_schema
+FAILED tests/test_analysis_output.py::test_the_provider_schema_has_no_array_size_keywords_but_states_the_limits
+2 failed, 21 passed in 0.41s
+
+=== M9-12 CAUGHT: the "outcome" key is discarded
+file: server/lexflow/analysis/output.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_output.py
+exit code: 1
+        from lexflow.analysis.output import OUTCOME_KEYS
+>       assert {"outcome_assessment", "outcomeAssessment", "outcome", "prediction"} == OUTCOME_KEYS
+E       AssertionError: assert {'outcome', '... 'prediction'} == frozenset({'o...'prediction'})
+E         
+E         Extra items in the left set:
+E         'outcome'
+E         Use -v to get more diff
+tests\test_analysis_output.py:98: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_output.py::test_an_outcome_assessment_is_noted_for_discarding[outcome]
+FAILED tests/test_analysis_output.py::test_every_outcome_key_is_covered - Ass...
+2 failed, 21 passed in 0.39s
+
+=== M9-13 CAUGHT: contradiction sources must be distinct (overlapping spans count once)
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+        ):
+            result = smoke(conflict(("D1", PLAINT), second))
+>           assert result.contradictions == [], second
+E           AssertionError: ('D1', 'packaged snack foods under it since June 2015.')
+E           assert [AnalysisCont...une 2015.')])] == []
+E             
+E             Left contains one more item: AnalysisContradictionOut(id='C1', description='First use: 2015 or 2017.', sources=[AnalysisSourceOut(evidence_id='D1',...56c0-b637-0458517cec48'), section_number=1, page_number=None, quote='packaged snack foods under it since June 2015.')])
+E             Use -v to get more diff
+tests\test_analysis_validation.py:441: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_duplicate_and_overlapping_references_to_one_source_count_once
+1 failed, 59 passed in 0.70s
+
+=== M9-14 CAUGHT: invented case names are removed
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+            precedents=[precedent("J1", "Unlike Kavita Sharma versus Union of India, ...")],
+        )
+>       assert [f.id for f in result.facts] == ["F2", "F3"]
+E       AssertionError: assert ['F1', 'F2', 'F3', 'F4'] == ['F2', 'F3']
+E         
+E         At index 0 diff: 'F1' != 'F2'
+E         Left contains 2 more items, first extra item: 'F3'
+E         Use -v to get more diff
+tests\test_analysis_validation.py:265: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_an_invented_case_name_is_removed_but_known_parties_are_not
+1 failed, 59 passed in 0.67s
+
+=== M9-15 CAUGHT: outcome wording is removed
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+FAILED tests/test_analysis_validation.py::test_a_prediction_of_the_case_outcome_is_removed[The suit is likely to fail.]
+FAILED tests/test_analysis_validation.py::test_a_prediction_of_the_case_outcome_is_removed[The appeal will probably be dismissed.]
+FAILED tests/test_analysis_validation.py::test_a_prediction_of_the_case_outcome_is_removed[The court will grant an injunction against the defendant.]
+FAILED tests/test_analysis_validation.py::test_a_prediction_of_the_case_outcome_is_removed[The court will award damages of Rs. 5 lakh.]
+FAILED tests/test_analysis_validation.py::test_a_prediction_of_the_case_outcome_is_removed[The court is likely to dismiss the suit.]
+FAILED tests/test_analysis_validation.py::test_a_prediction_of_the_case_outcome_is_removed[The court will rule in favour of the plaintiff.]
+FAILED tests/test_analysis_validation.py::test_a_prediction_of_the_case_outcome_is_removed[The court will side with the plaintiff.]
+FAILED tests/test_analysis_validation.py::test_a_prediction_of_the_case_outcome_is_removed[The plaintiff's prospects of success are strong.]
+FAILED tests/test_analysis_validation.py::test_a_prediction_of_the_case_outcome_is_removed[There is a good likelihood of winning the case.]
+FAILED tests/test_analysis_validation.py::test_a_prediction_of_the_case_outcome_is_removed[The plaintiff should win the appeal.]
+FAILED tests/test_analysis_validation.py::test_outcome_wording_is_removed_wherever_it_appears
+15 failed, 45 passed in 0.83s
+
+=== M9-16 CAUGHT: invented neutral citations are removed
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+            ]
+        )
+>       assert [f.id for f in result.facts] == ["F3"]
+E       AssertionError: assert ['F1', 'F3'] == ['F3']
+E         
+E         At index 0 diff: 'F1' != 'F3'
+E         Left contains one more item: 'F3'
+E         Use -v to get more diff
+tests\test_analysis_validation.py:244: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_an_invented_neutral_citation_is_removed
+1 failed, 59 passed in 0.66s
+
+=== M9-17 CAUGHT: synthetic imports check the database actually connected
+file: server/lexflow/cli/judgments.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgment_import.py
+exit code: 1
+            (),
+            ("--allow-synthetic-in-database", "lexflow"),
+            ("--allow-synthetic-in-database", "lexflow_test"),
+        ):
+>           with pytest.raises(cli.CommandError, match="connected to database 'lexflow'"):
+E           AssertionError: Regex pattern did not match.
+E             Expected regex: "connected to database 'lexflow'"
+E             Actual message: "Synthetic judgments are never imported into this database (only into databases whose name contains 'test' or 'e2e'). A deliberate demo import also needs --allow-synthetic-in-database NAME, naming this database exactly."
+tests\test_judgment_import.py:408: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_judgment_import.py::test_the_checks_use_the_database_actually_connected_not_the_url
+1 failed, 47 passed in 5.32s
+
+=== M9-18 CAUGHT: a demo import must name the database exactly
+file: server/lexflow/cli/judgments.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgment_import.py
+exit code: 1
+                "--allow-synthetic-in-database",
+                "lexflow",
+                settings=live,
+            )
+        # Anything but the exact name is refused, including other test-looking names.
+        for wrong in ("other", "Lexflow", "lexflow ", "lexflow_test", "e2e", ""):
+>           with pytest.raises(cli.CommandError, match="must name this database exactly"):
+E           Failed: DID NOT RAISE CommandError
+tests\test_judgment_import.py:434: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_judgment_import.py::test_a_demo_import_into_a_non_test_database_must_name_it_exactly
+1 failed, 47 passed in 5.42s
+
+=== M9-19 CAUGHT: a test database is named by a whole name part
+file: server/lexflow/config.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_judgment_import.py
+exit code: 1
+>       assert is_test_database_name(name) is is_test
+E       AssertionError: assert True is False
+E        +  where True = is_test_database_name('e2etest')
+tests\test_judgment_import.py:389: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_judgment_import.py::test_synthetic_sources_are_refused_outside_test_databases
+FAILED tests/test_judgment_import.py::test_a_test_database_is_named_by_a_whole_name_part[LEXFLOW-TEST-True]
+FAILED tests/test_judgment_import.py::test_a_test_database_is_named_by_a_whole_name_part[lexflow_latest-False]
+FAILED tests/test_judgment_import.py::test_a_test_database_is_named_by_a_whole_name_part[contest-False]
+FAILED tests/test_judgment_import.py::test_a_test_database_is_named_by_a_whole_name_part[lexflowtest-False]
+FAILED tests/test_judgment_import.py::test_a_test_database_is_named_by_a_whole_name_part[e2etest-False]
+6 failed, 42 passed in 5.49s
+
+=== M9-20 CAUGHT: the scripted double refuses URLs that connect elsewhere (?dbname=)
+file: server/lexflow/config.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_config.py tests/test_analysis_provider.py
+exit code: 1
+            "postgresql+psycopg://<user>:***@127.0.0.1/lexflow_test?dbname=lexflow",  # connects to lexflow
+            "postgresql+psycopg://<user>:***@127.0.0.1/lexflow_e2e?service=live",
+        ],
+    )
+    def test_the_scripted_double_needs_a_real_test_database_name(url: str) -> None:
+>       with pytest.raises(ValidationError, match="is a test double"):
+E       Failed: DID NOT RAISE ValidationError
+tests\test_analysis_config.py:72: Failed
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_config.py::test_the_scripted_double_needs_a_real_test_database_name[postgresql+psycopg://<user>:***@127.0.0.1/lexflow_test?dbname=lexflow]
+FAILED tests/test_analysis_config.py::test_the_scripted_double_needs_a_real_test_database_name[postgresql+psycopg://<user>:***@127.0.0.1/lexflow_e2e?service=live]
+2 failed, 83 passed in 0.61s
+
+=== M9-21 CAUGHT: changed sources are shown in the result
+file: src/components/workspace/AnalysisTab.tsx
+command (cwd .): npx vitest run src/pages/analysis.test.tsx
+exit code: 1
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/pages/analysis.test.tsx:310:27
+    308|   it('says which sources changed after the run, and keeps the verified…
+    309|     await openFinished(undefined, ['D2', 'J1']);
+    310|     const notice = screen.getByRole('status');
+       |                           ^
+    311|     expect(notice).toHaveTextContent(/Some sources changed after this …
+    312|     expect(screen.getByText(/“SYNTHETIC page two\.”/)).toBeVisible();
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+=== M10-1 CAUGHT: the pieces of a shortened quote must occur in order
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+        ):
+            result = smoke(conflict(("D1", bad), ("D2", REPLY)))
+>           assert result.contradictions == [], bad
+E           AssertionError: since June 2015 ... registered the word mark SATTVIK
+E           assert [AnalysisCont...t in 2015')])] == []
+E             
+E             Left contains one more item: AnalysisContradictionOut(id='C1', description='First use: 2015 or 2017.', sources=[AnalysisSourceOut(evidence_id='D1',...04ff57'), section_number=1, page_number=None, quote='began selling under the mark SATTVIK only in 2017, not in 2015')])
+E             Use -v to get more diff
+tests\test_analysis_validation.py:396: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_a_quote_shortened_with_an_ellipsis_is_checked_piece_by_piece
+1 failed, 59 passed in 0.70s
+
+=== M10-2 CAUGHT: a shortened quote has at most three pieces
+file: server/lexflow/analysis/validation.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_validation.py
+exit code: 1
+        ):
+            result = smoke(conflict(("D1", bad), ("D2", REPLY)))
+>           assert result.contradictions == [], bad
+E           AssertionError: SYNTHETIC LEGAL NOTICE ... Counsel for the fictional plaintiff ... registered the word mark SATTVIK ... since June 2015
+E           assert [AnalysisCont...t in 2015')])] == []
+E             
+E             Left contains one more item: AnalysisContradictionOut(id='C1', description='First use: 2015 or 2017.', sources=[AnalysisSourceOut(evidence_id='D1',...04ff57'), section_number=1, page_number=None, quote='began selling under the mark SATTVIK only in 2017, not in 2015')])
+E             Use -v to get more diff
+tests\test_analysis_validation.py:396: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_validation.py::test_a_quote_shortened_with_an_ellipsis_is_checked_piece_by_piece
+1 failed, 59 passed in 0.68s
+
+=== M10-3 CAUGHT: the prompt states the quote rules that validation enforces
+file: server/lexflow/analysis/prompt.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_evidence.py
+exit code: 1
+================================== FAILURES ===================================
+_______ test_the_instructions_state_the_quote_rules_validation_enforces _______
+    def test_the_instructions_state_the_quote_rules_validation_enforces() -> None:
+        """v1 never told the model the rules a quote must meet, so a contradiction
+        could be removed for a quote it had no reason to avoid (M8e)."""
+        text = " ".join(prompt.SYSTEM_INSTRUCTION.split())
+>       assert "one continuous span of 15 to 200 characters" in text
+E       AssertionError: assert 'one continuous span of 15 to 200 characters' in 'You assist an advocate in India by organising the material of one case. You are decision support for a qualified lawy...ou are unsure, leave the item out. Do not include any assessment of who is likely to win or of the chances of success.'
+tests\test_analysis_evidence.py:201: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_evidence.py::test_the_instructions_state_the_quote_rules_validation_enforces
+1 failed, 10 passed in 2.60s
+
+=== M10-4 CAUGHT: the prompt says what is not a contradiction
+file: server/lexflow/analysis/prompt.py
+command (cwd server): "server/.venv/Scripts/python.exe" -m pytest -q -p no:cacheprovider tests/test_analysis_evidence.py
+exit code: 1
+        text = " ".join(prompt.SYSTEM_INSTRUCTION.split())
+        assert "one continuous span of 15 to 200 characters" in text
+        assert 'no "..."' in text
+        assert "the D id of the passage that contains the quote" in text
+>       assert (
+            "Different dates or numbers that belong to different events are not contradictions" in text
+        )
+E       AssertionError: assert 'Different dates or numbers that belong to different events are not contradictions' in 'You assist an advocate in India by organising the material of one case. You are decision support for a qualified lawy...ou are unsure, leave the item out. Do not include any assessment of who is likely to win or of the chances of success.'
+tests\test_analysis_evidence.py:204: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_evidence.py::test_the_instructions_state_the_quote_rules_validation_enforces
+1 failed, 10 passed in 2.53s
+

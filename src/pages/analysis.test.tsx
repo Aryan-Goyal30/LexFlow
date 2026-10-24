@@ -227,7 +227,53 @@ describe('A finished analysis', () => {
       'href',
       `/app/cases/${CASE_ID}/documents/${encodeURIComponent(first.id)}/text?section=2`,
     );
-    expect(screen.getByText(/rests on F1/)).toBeVisible();
+  });
+
+  it('links each issue to the verified facts it rests on', async () => {
+    await openFinished();
+    const issue = screen.getByText(/Which rent applies\?/).closest('li');
+    expect(issue).not.toBeNull();
+    const factLink = within(issue as HTMLElement).getByRole('link', { name: 'F1' });
+    expect(factLink).toHaveAttribute('href', '#analysis-fact-F1');
+    const fact = document.getElementById('analysis-fact-F1');
+    expect(fact).not.toBeNull();
+    expect(within(fact as HTMLElement).getByRole('link', { name: /page 2/ })).toBeVisible();
+  });
+
+  it('links both sources of a contradiction to their document pages', async () => {
+    const { first } = await openFinished((r) => ({
+      ...r,
+      contradictions: [
+        {
+          id: 'C1',
+          description: 'SYNTHETIC: the first use is given as 2015 and as 2017.',
+          sources: [
+            {
+              ...r.facts[0].source,
+              evidenceId: 'D1',
+              sectionNumber: 1,
+              pageNumber: 1,
+              quote: 'SYNTHETIC page one.',
+            },
+            { ...r.facts[0].source, quote: 'SYNTHETIC page two (reply).' },
+          ],
+        },
+      ],
+    }));
+    expect(screen.getByText(/Contradictions \(1\)/)).toBeVisible();
+    expect(screen.getByText(/the first use is given as 2015 and as 2017/)).toBeVisible();
+    expect(screen.getByText(/“SYNTHETIC page one\.”/)).toBeVisible();
+    expect(screen.getByText(/“SYNTHETIC page two \(reply\)\.”/)).toBeVisible();
+    const base = `/app/cases/${CASE_ID}/documents/${encodeURIComponent(first.id)}/text`;
+    expect(screen.getByRole('link', { name: `${first.name}, page 1` })).toHaveAttribute(
+      'href',
+      base, // section 1 is the document's first page: no query
+    );
+    // Page 2 is cited by the fact and by the contradiction: every link opens it.
+    for (const link of screen.getAllByRole('link', { name: `${first.name}, page 2` })) {
+      expect(link).toHaveAttribute('href', `${base}?section=2`);
+    }
+    expect(screen.getAllByRole('link', { name: `${first.name}, page 2` })).toHaveLength(2);
   });
 
   it('links each precedent to the judgment passage, labelled synthetic, with no score', async () => {

@@ -17,7 +17,7 @@ Where each constraint lives (decided in M9, 2026-10-24):
   was relaxed in the application when the provider schema was simplified.
 
 Versions: ``prompt.PROMPT_VERSION`` names the instructions and evidence
-layout (unchanged, ``case-analysis-v1``). ``RESPONSE_SCHEMA_VERSION`` names
+layout (``case-analysis-v2`` from M10). ``RESPONSE_SCHEMA_VERSION`` names
 this schema: ``case-analysis-schema-1`` had ``minItems``/``maxItems`` (runs
 before 2026-10-20), ``case-analysis-schema-2`` states sizes in descriptions.
 Runs record the versions they used from M9 on; older runs have no record and

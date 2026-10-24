@@ -28,6 +28,7 @@ CATEGORIES = {
     "provider-failure",
     "retry",
     "configuration",
+    "planted-contradiction",
 }
 
 
@@ -55,6 +56,7 @@ def test_every_synthetic_scenario_behaves_as_stated(harness: ModuleType) -> None
     assert {item["id"] for item in report["limitations"]} == {
         "ct-non-contradiction",
         "oc-paraphrase",
+        "pc-one-statement-pair",
     }
 
 
@@ -64,13 +66,17 @@ def test_a_changed_behaviour_is_reported(harness: ModuleType, tmp_path: Path) ->
     by_id["qf-exact"]["expected"]["kept"]["facts"] = 0
     by_id["pf-429-daily"]["expected"]["retry"] = True
     by_id["rt-timeout-then-ok"]["expected"]["trail"] = ["ready"]
+    by_id["pc-exact"]["expected"]["kept"]["contradictions"] = 0
     changed = tmp_path / "gold.json"
     changed.write_text(json.dumps(data), encoding="utf-8")
+    for spec in data["evidence_sets"].values():  # the documents the scenarios chunk
+        (tmp_path / spec["file"]).write_bytes((FIXTURE.parent / spec["file"]).read_bytes())
     report = harness.evaluate(changed)
     assert [m["id"] for m in report["not_as_expected"]] == [
         "qf-exact",
         "pf-429-daily",
         "rt-timeout-then-ok",
+        "pc-exact",
     ]
 
 
@@ -79,6 +85,9 @@ def test_the_fixture_is_synthetic_and_kept_apart_from_the_collection() -> None:
     assert "SYNTHETIC" in data["notice"] and "not part of the judgment collection" in data["notice"]
     texts = [p["text"] for p in data["passages"]] + [j["text"] for j in data["judgments"]]
     assert all(text.startswith("SYNTHETIC.") for text in texts)
+    for spec in data["evidence_sets"].values():
+        document = (FIXTURE.parent / spec["file"]).read_text(encoding="utf-8")
+        assert document.startswith("SYNTHETIC TEST DOCUMENT") and "fictional" in document
     assert all("SYNTHETIC" in j["title"] for j in data["judgments"])
     assert "SYNTHETIC" in data["case"]["title"]
     # Not a judgment manifest: without a "source" the importer refuses it.

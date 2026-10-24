@@ -6,9 +6,11 @@ Nothing here contacts a provider: ``FakeGeminiClient`` stands in for
 
 from __future__ import annotations
 
+import hashlib
 import uuid
 from dataclasses import dataclass, field
 from datetime import date
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -85,6 +87,54 @@ def evidence(*, judgments: bool = True, passages: bool = True) -> Evidence:
         judgments=[judgment_passage()] if judgments else [],
         documents_selected=2,
     )
+
+
+# The SYNTHETIC document of the live smoke test (M8e, run 4fc9ab87), byte for
+# byte as uploaded (recovered from the session transcript, M10.1). Line endings
+# are normalised so a CRLF checkout gives the same bytes.
+SMOKE_NOTICE = Path(__file__).parent / "fixtures" / "analysis" / "SYNTHETIC-phase5-smoke-notice.txt"
+SMOKE_NOTICE_SHA256 = "a7ff616286426b3f45319c4690b1c76711e6558563c5dda1c99ecbe6d49ce628"
+SMOKE_DOC = uuid.UUID("00000000-0000-4000-8000-0000000005e0")
+
+
+def smoke_notice_bytes() -> bytes:
+    return SMOKE_NOTICE.read_bytes().replace(b"\r\n", b"\n")
+
+
+def smoke_evidence() -> Evidence:
+    """D1 and D2 exactly as the live run received them: the real extraction and
+    chunking code with the default chunk size (1200) and overlap (200)."""
+    from lexflow.extraction import Limits, extract
+    from lexflow.extraction.chunking import chunk_sections
+
+    data = smoke_notice_bytes()
+    assert hashlib.sha256(data).hexdigest() == SMOKE_NOTICE_SHA256
+    sections = extract("text/plain", data, Limits(100, 1_000_000, 10_000_000)).sections
+    passages = [
+        Passage(
+            id=f"D{n}",
+            document_id=SMOKE_DOC,
+            document_name="SYNTHETIC-phase5-smoke-notice.txt",
+            chunk_id=uuid.uuid5(SMOKE_DOC, str(n)),
+            chunk_number=n,
+            section_number=chunk.section_number,
+            page_number=chunk.page_number,
+            text=chunk.text,
+            content_sha256=chunk.content_sha256,
+        )
+        for n, chunk in enumerate(chunk_sections(sections, 1200, 200), start=1)
+    ]
+    context = CaseContext(
+        case_number="LF-2026-0361",
+        title="SYNTHETIC smoke-test case",
+        practice_area="Intellectual Property",
+        status="Open",
+        court_name=None,
+        opposing_party=None,
+        description="SYNTHETIC: a trade-mark dispute with planted traps.",
+        timeline=[],
+    )
+    return Evidence(context=context, passages=passages, judgments=[], documents_selected=1)
 
 
 def candidate(text: str, *, finish: str = "STOP", thought: str | None = None) -> Any:

@@ -1310,3 +1310,345 @@ Earlier entries and checkpoint values were not rewritten.
   replaced atomically.
 
 Checkpoint: docs/verification/phase5/checkpoint.json — M9 done (uncommitted); next_action = owner stages and commits M9, then decides on the 2015/2017 contradiction investigation and a real judgment source; 2026-10-25.
+
+
+---
+
+## M10 — Phase 5 closure (session of 2026-10-25)
+
+Appended record; earlier sections are historical and are not rewritten.
+
+### M10.0 — Preflight and scope (2026-10-25)
+
+- **Start state (verified):** branch `master`, HEAD
+  `81e8e8c80d5e2935a0fc2e3abe686f1e13cb3036` ("Phase 5 M9: stabilisation"),
+  working tree clean, no remote. `docs/DEVELOPMENT_BRIEF.md` SHA-256
+  `274ecaed93400f51dd47c42337fbd6e101aa6be366b80d977d1522359b34c2ec`
+  (matches). Docker: `lexflow-db-1` healthy; ports 5173/5174/8000/8001 free
+  (the API, worker and Vite are not running).
+- **Scope (owner instruction 2026-10-25):** close Phase 5. Investigate the
+  missed 2015/2017 contradiction and fix it or record a justified limitation
+  with regression coverage; verify every Phase 5 acceptance criterion with
+  evidence; settle the known low findings; record the judgment-source
+  decision; run fresh verification; reconcile the records; make one closure
+  commit, `Phase 5: close acceptance criteria`.
+  - **Not authorised:** pushing, paid or real LLM calls, changing
+    application records, migrations or schema changes, importing real
+    judgments, changing remotes or history, Phase 6, dataset acquisition,
+    UI redesign, local LLM.
+- **Brief, Phase 5 "done when" (read-only):**
+  1. every displayed claim has a working source link;
+  2. a test proves that an output citing an unknown judgment is rejected;
+  3. the decision-support note is shown with every result.
+  Curating judgments "after checking each source's terms of use" is Phase 4
+  and dataset work. Phase 7 is gated on evaluation thresholds agreed with
+  the owner.
+- **The planted contradiction (evidence gathered read-only):**
+  - The synthetic file `SYNTHETIC-phase5-smoke-notice.txt` was recovered
+    verbatim from this project's session transcript, where it was written
+    on 2026-10-20 with one later edit; the live upload was not read.
+  - Paragraph 1 says the plaintiff "registered the word mark SATTVIK … on
+    2 February 2015 and has sold packaged snack foods under it since June
+    2015". Paragraph 8 (the reply) says the plaintiff "began selling under
+    the mark SATTVIK only in 2017, not in 2015".
+  - Run `4fc9ab87` (M8e) sent both chunks of the file (D1, D2; hashes
+    matched), returned 4 facts and 0 contradictions, and recorded one
+    removal, `contradiction-unsupported` (fewer than two verified sources).
+    The raw answer was not stored.
+
+### M10.1 — The missed 2015/2017 contradiction: trace, cause, fix (2026-10-25)
+
+**Reconstruction (offline).**
+- The synthetic file was rebuilt by replaying, in order, the Write and Edit
+  operations recorded in the session transcript. The result is **1,850
+  bytes**, as M8e records.
+- LexFlow's own extraction and chunking code (size 1200, overlap 200) gives
+  **D1 of 1,072 characters**, again as recorded, and D2 of 977 characters.
+- D1 holds paragraph 1, "has sold packaged snack foods under it since June
+  2015". D2 holds paragraph 8, "began selling under the mark SATTVIK only in
+  2017, not in 2015". So the planted conflict spans two passages.
+- The file is now a test fixture:
+  `server/tests/fixtures/analysis/SYNTHETIC-phase5-smoke-notice.txt`,
+  SHA-256 `a7ff6162…e49ce628` with LF line endings; the tests normalise CRLF.
+
+**Trace of the path.**
+1. *Evidence selection:* both chunks were sent (M8e: D1 and D2 existed and
+   their hashes matched), so nothing was lost here.
+2. *Identity:* each passage keeps its own D id, chunk id and hash.
+3. *Prompt and limits:* v1 asked contradiction quotes only to be "copied
+   exactly". It never stated the 15-character minimum, that a quote must be
+   one continuous span without "...", or that it must come from the passage
+   whose id it gives. Fact quotes had a 200-character maximum but no minimum.
+4. *Parsing:* sources with up to 300 characters are accepted. A malformed
+   item is counted `malformed`, not `contradiction-unsupported`, so the
+   recorded removal shows the item parsed.
+5. *Validation:* the run's single removal was `contradiction-unsupported`,
+   meaning at most one source verified.
+6. *Persistence and display:* only validated items are stored and shown, so
+   nothing further could be lost there.
+7. *Evaluation:* `ct-planted` used an invented D1/D2/D3 corpus, not the
+   live document.
+
+**Plausible answer shapes, tested against the reconstructed D1/D2.**
+- Verbatim quotes, quotes with paragraph numbers and curly apostrophes are
+  **kept**.
+- Each of these gives exactly the recorded signature, with the
+  contradiction removed as `contradiction-unsupported`:
+  - quoting only the values ("only in 2017" has 12 characters);
+  - a quote shortened with "...";
+  - the reply's words cited to D1;
+  - a paraphrase.
+
+**Cause.** The contradiction was lost at **validation**, because at least
+one of its sources failed the verbatim-quote rules, and those rules were
+**never stated to the model** (prompt v1). Which source failed, and how,
+**cannot be established**: the raw answer was not stored (by design, and it
+stays that way). The model may also have failed to see the conflict at all;
+the records cannot exclude that either.
+
+**Fix (no schema, API or database change):**
+- **Prompt `case-analysis-v2`** (`prompt.py`):
+  - it states the quote rules validation enforces: copied character for
+    character, one continuous span of 15 to 200 characters, nothing added or
+    left out, no "...", from the passage whose id it gives;
+  - it says that unverifiable quotes and contradictions with fewer than two
+    quotes are discarded;
+  - it defines a contradiction as statements of fact that cannot both be
+    true (two dates or amounts for the same event, including conflicting
+    accounts by different parties). Different dates for different events,
+    legal arguments and predictions are not contradictions;
+  - each source must quote one conflicting statement.
+- **Validator `grounding-4`** (`validation.py`):
+  1. A quote shortened with "...", "…", "[...]" or "(...)" is accepted only
+     if every piece has at least 15 characters, there are at most 3 pieces,
+     and they occur **in order in the cited passage**. It is shown with "…".
+     This applies to facts and contradiction sources, and every shown
+     character is in the passage.
+  2. Two quotes of the same passage whose spans **overlap** count as one
+     contradiction source. Before, only identical or contained quotes did.
+  - Unchanged on purpose:
+    - the 15-character minimum is not lowered;
+    - a quote is never moved to another passage than the one cited;
+    - paraphrases are still rejected.
+- **Not done, and why:**
+  - No deterministic test decides whether two verified statements conflict.
+    Dates, numbers or names differ in many statements that do not conflict,
+    and any such rule would either invent conflicts or hide real ones.
+  - Validation proves provenance only. Whether the sources conflict stays
+    the model's reading, shown with both sources for the lawyer to check.
+  - Whether v2 makes Gemini report this conflict can be shown only by a
+    real model run, which is not authorised (no paid or real calls); it is
+    recorded as open.
+
+**Tests:**
+- `test_analysis_validation.py` adds 9 tests on the real reconstructed
+  passages:
+  1. chunking as the live run received it;
+  2. the planted conflict kept with both sources and their chunk ids;
+  3. shortened quotes checked piece by piece (4 failing variants: a short
+     piece, out of order, a piece not in the passage, four pieces);
+  4. a shortened fact quote;
+  5. two genuinely conflicting statements of one passage, kept;
+  6. different dates that do not conflict: kept, a documented limitation;
+  7. duplicate, overlapping and contained references, counted once;
+  8. missing, stale, misattributed and paraphrased sources, removed;
+  9. too little evidence (one source, or 12-character value quotes),
+     removed and reported as insufficient.
+- `test_analysis_evidence.py`: the prompt states the quote and
+  contradiction rules, and the version is v2.
+- `test_analysis_runs.py`: v2 and `grounding-4` are recorded on new runs.
+- **Offline evaluation:** a new category `planted-contradiction` with 10
+  scenarios on the real document (`evidence_set: smoke-notice`, chunked by
+  the real code):
+  - exact and elided quotes: kept;
+  - short values, wrong passage, paraphrase, duplicate, overlap, missing
+    passage and stale quote: removed;
+  - a pair of distinct statements that do not conflict: kept, labelled as a
+    limitation.
+
+  Against HEAD's `grounding-3` (loaded in memory), `pc-elided` was removed
+  and `pc-overlap` kept. Under `grounding-4` it is the opposite, so the new
+  scenarios distinguish the rules.
+- **Mutation runner:** anchors V-1, V-4 and M9-13 moved to the new code. New
+  mutations: M10-1 (pieces in order), M10-2 (at most 3 pieces), M10-3 (the
+  prompt states the quote rules) and M10-4 (the prompt says what is not a
+  contradiction). The dry run finds all 65 snippets exactly once.
+
+**Results (fresh, 2026-10-25):**
+
+| Command (from `server/`) | Result | Exit |
+|---|---|---|
+| `pytest -q tests/test_analysis_evaluation.py tests/test_analysis_validation.py tests/test_analysis_evidence.py tests/test_analysis_output.py tests/test_analysis_provider.py` | 172 passed | 0 |
+| `pytest -q tests/test_analysis_runs.py tests/test_analysis_config.py` (disposable `lexflow_test`) | 50 passed | 0 |
+| `python scripts/evaluate_analysis.py` (no `--write`) | 81 scenarios, 81 as expected, 0 unsafe messages | 0 |
+| `ruff check`, `ruff format`, `mypy` (137 files) | clean | 0 |
+
+The dated report and the full verification follow in C4 and C5.
+
+### M10.2 — Acceptance criteria, low findings, live-only items (2026-10-25)
+
+**Brief and plan criteria, checked against code and tests.** The fresh
+results are in M10.4.
+
+| Criterion | Implementation | Evidence (tests) |
+|---|---|---|
+| `AiService` is a client of a backend endpoint | `src/services/ai/aiService.ts` → `/api/cases/{id}/analysis-runs` | `src/pages/analysis.test.tsx` "sends only the chosen documents…"; `e2e/analysis.spec.ts` |
+| Retrieve the case's chunks and candidate precedents; structured JSON | `analysis/evidence.py`, `prompt.py`, `output.py` (schema, defensive parser) | `test_analysis_evidence.py`, `test_analysis_output.py` |
+| Reject output citing a document or judgment not retrieved | `validation.py` (`unknown-evidence`, `unknown-judgment`) | `test_an_output_citing_an_unknown_judgment_is_rejected`, `test_a_fact_citing_an_unknown_passage_is_removed`, evaluation `fc-unknown-judgment`, `er-foreign`; mutations V-2, V-3 |
+| Drop facts without a source | parser (`malformed`) and validation | `test_malformed_items_are_counted_with_the_removals`, evaluation `er-missing` |
+| Say when evidence is insufficient | `validation.insufficient`, `NOTHING_VERIFIED` | `test_nothing_verifiable_means_insufficient_evidence_not_a_guess`, the Vitest test "states insufficient evidence…", the evaluation category `insufficient-evidence`; mutation V-10 |
+| Store each run (model, prompt version, inputs, timestamp) | `analysis_runs` (0011), evidence record with hashes, `pipeline` versions | `test_a_run_is_queued_audited_and_one_at_a_time`, the pipeline assertions in `test_the_scripted_run_ends_ready_with_verified_sources_only`; mutation M9-10 |
+| Each fact links to its document and page | `AnalysisTab.tsx` `SourceLine` | Vitest "links every fact to its document page…"; e2e (link clicked) |
+| **Done when:** every displayed claim has a working source link | facts, contradiction sources and precedents link to their source; issues link to the facts they rest on | facts and precedents: Vitest and e2e. **Gap found and closed:** no test covered contradiction links, so a new Vitest test checks both sources link to their pages. Issues showed "rests on F1" as plain text; the ids now link to the fact (`#analysis-fact-F1`), tested in Vitest |
+| **Done when:** a test proves an output citing an unknown judgment is rejected | as above | `test_an_output_citing_an_unknown_judgment_is_rejected`; mutation V-3 |
+| **Done when:** the decision-support note is shown with every result | `DecisionSupportNote` | Vitest "…always shows the disclaimer"; e2e; mutation U-4 |
+
+All criteria are met in code and tests. Fresh runs: M10.4.
+
+**Low findings from the M9 review:**
+- **L2 (fixed).** `tests/conftest.py` now needs "test" as a whole name part
+  (`is_test_name`), and its `_guard` also refuses `dbname`/`service` URLs.
+  `scripts/e2e.py` needs "e2e" as a whole part. The existing disposable
+  names (`lexflow_test`, `lexflow_migration_test`, `lexflow_seed_test`,
+  `lexflow_e2e`) still qualify, and the migration and seed tests that create
+  their own databases still pass.
+  - New `tests/test_database_name_guards.py`: 11 setup-name cases, 2
+    redirecting URLs and 7 e2e-name cases, with no database connection.
+- **L3 (kept by design, documented).** If the worker is stopped while a run
+  is on its last attempt, the run fails as `interrupted` and the user starts
+  it again.
+  - *Rationale:* failing on the last attempt is what bounds a run that keeps
+    stopping the worker (M9.5). Since M9, provider and validation errors no
+    longer reach this path, which is now reached only by an interruption or
+    a database error.
+  - Refunding an attempt when the operator stops the worker would need the
+    worker to tell an operator stop from a crash. That adds complexity for a
+    rare case whose remedy, starting again, is one click.
+  - Not a Phase 5 acceptance item.
+
+**Items that need a real model call (not authorised; non-blocking):**
+- *Injected-output rejection live:* in the live run the model did not
+  produce J99, a fake citation or a win prediction, so the live rejection
+  was not exercised. Rejection is covered by:
+  - unit tests;
+  - the offline evaluation (`er-injected-id`, `fc-*`, `oc-*`);
+  - mutations V-2, V-3, V-7 and M9-14 to M9-16.
+  The prompt fence and validation do not depend on the model's cooperation.
+- *HTTP 400 root cause (M8e):* still not established. The response schema
+  is now versioned and pinned by hash (`case-analysis-schema-2`) and
+  recorded on each run, so a recurrence can be tied to a schema version.
+- *Contradiction detection by a real model:* see M10.1. A real run with
+  prompt v2 is the owner's choice.
+
+### M10.3 — Judgment-source decision (2026-10-25)
+
+- **Finding:** the brief's Phase 5 scope and "done when" do not require a
+  real judgment source. Curating judgments "after checking each source's
+  terms of use" is Phase 4 (judgment collection) and dataset work. Phase 7
+  is gated on evaluation thresholds agreed with the owner, and none are
+  agreed. So approving a real source is a **deferred dataset decision, not a
+  Phase 5 defect**.
+- **Recorded:**
+  - No real source is approved and no real-judgment import is authorised.
+  - The live collection held only three judgments labelled SYNTHETIC DEMO in
+    the 2026-10-20 observation, which was not re-queried.
+  - Precedent comparison is verified with synthetic judgments only.
+  - `--allow-synthetic-in-database NAME` stays provisionally retained, with
+    the M9.6 safeguards.
+- **Before any real source is approved (for the dataset phase):**
+  1. it is an authoritative publisher of the judgments (court or official
+     reporter);
+  2. its terms-of-use URL is recorded;
+  3. reuse permission is verified, not assumed, by a named person on a
+     recorded date (the importer already records the terms URL, the date
+     checked and who checked);
+  4. each judgment keeps its source URL and provenance;
+  5. duplicates are detected by file, citation and id (implemented);
+  6. real judgments are kept apart from the SYNTHETIC demo judgments and the
+     evaluation fixtures: a separate source key, synthetic labels kept, and
+     the demo judgments removed with `remove --source` before a real
+     collection is relied on;
+  7. relevance is evaluated on a lawyer-labelled set before any Phase 7
+     threshold is proposed.
+  No source, licence or permission was invented.
+
+### M10.4 — Fresh verification (2026-10-25)
+
+All runs below are fresh, on the closure working tree (HEAD `81e8e8c` plus
+the M10 changes).
+- Databases: `lexflow_test`, recreated by the suite (URL checked: test name,
+  no query parameters); `lexflow_migration_test` and `lexflow_seed_test`,
+  created and dropped by their tests; `lexflow_e2e`, recreated by
+  `e2e.py prepare`. **`lexflow` was not used.**
+- No real or paid model call was made: the tests use fakes, the e2e suite
+  and the harness use scripted providers, and building a real client is
+  refused.
+
+| Check | Command | Result | Exit |
+|---|---|---|---|
+| Backend tests | `server: python -m pytest -q -p no:cacheprovider` | **980 passed** (950 + 9 planted-contradiction + 1 prompt-rule + 20 database-name guard tests), 0 skipped (`pytest-full-m10.log`) | 0 |
+| Lint | `server: ruff check .` | clean | 0 |
+| Format | `server: ruff format --check .` | 152 files formatted | 0 |
+| Types | `server: mypy` / `mypy --platform linux .` | 138 / 149 files, no issues | 0 / 0 |
+| API contract | `server: python scripts/export_openapi.py --check`; root `npm run api:check` | up to date (no API change in M10) | 0 / 0 |
+| Migrations vs models | `alembic check` on `lexflow_test` only (URL asserted) | no new upgrade operations | 0 |
+| Offline evaluation | `server: python scripts/evaluate_analysis.py --write --report-name analysis-eval-2026-10-25` | **81 scenarios, 81 as expected**; 89 messages, 0 with operator words; fixture SHA-256 `c9035a58b4bece938ebb10efc7f81056ad880f5b79653a25fe81c27284d18238`; prompt v2, validator `grounding-4`. The earlier `analysis-eval.*` files are unchanged (their SHA-256 values were checked) | 0 |
+| Front end | `npm run check` | 17 files / **180 Vitest tests passed**; build OK (`npm-check-m10.log`) | 0 |
+| End to end | `npx playwright test` | **41 passed** (`playwright-m10.log`) | 0 |
+| Mutation | `python docs/verification/phase5/run_mutation_checks.py --working-tree --label m10` | **65 of 65 caught**, all files restored and unchanged (`mutation-report-working-tree-m10.md`). The M9 report is kept | 0 |
+
+- **Tooling changes:**
+  - `evaluate_analysis.py` gained `--report-name`, so a dated report sits
+    beside the earlier ones.
+  - `run_mutation_checks.py` gained `--label` for the same reason.
+- **Log hygiene:** the new logs were scanned and contain no home path, real
+  key or database URL.
+- **What the evaluation does not measure:** the legal accuracy or the
+  recall of any model. It shows that LexFlow's checks and error handling
+  behave as each synthetic scenario states. There is no pass mark, and
+  none was invented.
+
+### M10.5 — Records reconciled; Phase 5 closed (2026-10-25)
+
+- **Updated:**
+  - `docs/PHASE5_PLAN.md`: status line, M10 row, §11 commands, §12 resume
+    steps, new §14 with the closure decisions;
+  - `docs/adr/0019-ai-case-analysis.md`: appended M10 amendment;
+  - `docs/SRS.md`: version line and FR-18 status;
+  - `docs/TRACEABILITY.md`: FR-18 and NFR-6 rows;
+  - `docs/verification/phase5/README.md`: M10 results, with M9 and M7
+    marked historical;
+  - the checkpoint.
+- **Closure gate:**
+  1. The contradiction is investigated, a supported fix is in place, the
+     remaining limitation is stated, and regression tests cover it (M10.1).
+  2. Every Phase 5 acceptance criterion is met with test evidence (M10.2).
+     The deferred items are not Phase 5 criteria and each has a named
+     owner:
+     - the judgment source belongs to the dataset phase (M10.3);
+     - real-model checks are the owner's decision.
+  3. The evaluation and the full verification are fresh and recorded
+     (M10.4).
+  4. The database-identity safeguards and the synthetic-import decision are
+     recorded accurately (M9.6, M10.2, M10.3).
+  5. The plan, SRS, traceability, ADR, README, log and checkpoint agree.
+  6. The brief's hash matches.
+  7. Only closure changes are in the working tree; checked before the
+     commit.
+- **Phase 5 status: COMPLETE**, as of the closure commit "Phase 5: close
+  acceptance criteria", whose parent is `81e8e8c`.
+- **Remaining limitations (non-blocking, documented):**
+  - validation proves provenance, not legal correctness or that two
+    statements conflict;
+  - the outcome and case-name checks are patterns;
+  - a run interrupted on its last attempt fails as `interrupted` (L3);
+  - live rejection of injected output, the M8e HTTP 400 cause and contradiction
+    reporting by a real model under prompt v2 all need a real model call,
+    which is the owner's decision;
+  - only sample cases may be analysed until the D1 privacy review.
+- **Deferred:**
+  - the real judgment source (dataset phase; requirements in M10.3);
+  - Phase 7 evaluation thresholds (none agreed);
+  - retention of the live-data copies from M8 (owner).
+
+Checkpoint: docs/verification/phase5/checkpoint.json — Phase 5 COMPLETE (M10 closure, 2026-10-25; closure commit "Phase 5: close acceptance criteria" on 81e8e8c); next_action = owner decides when to start Phase 6 (and, optionally, a real Gemini check of prompt v2 and the dataset-phase judgment source).
