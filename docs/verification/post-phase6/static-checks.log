@@ -1,0 +1,13 @@
+# static checks 2026-10-24T23:13Z on HEAD eada4ef
+ruff check exit=0
+162 files already formatted
+ruff format exit=0
+Success: no issues found in 147 source files
+mypy exit=0
+Success: no issues found in 159 source files
+mypy linux exit=0
+server/openapi.json is up to date
+openapi exit=0
+No new upgrade operations detected.
+alembic check on lexflow_test: no new upgrade operations
+alembic check exit=0

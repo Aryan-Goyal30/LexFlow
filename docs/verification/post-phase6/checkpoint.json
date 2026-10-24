@@ -1,0 +1,28 @@
+{
+  "task": "post-Phase-6 verification and Phase 7 readiness (no Phase 7 implementation)",
+  "updated": "2026-10-25",
+  "head": "eada4ef5c1ad77efa5d3b50f05d40cb25fe0cae9",
+  "branch": "master",
+  "working_tree_at_start": "clean",
+  "brief_sha256": "274ecaed93400f51dd47c42337fbd6e101aa6be366b80d977d1522359b34c2ec (match)",
+  "batches": {
+    "V0 baseline": "complete",
+    "V1 evidence + fresh checks": "complete (pytest 1028, static all exit 0, npm check 193+build, Playwright 42, mutation 19/19)",
+    "V2 local app/db readiness": "complete (lexflow at 0012; data unchanged apart from 2 new empty tables; API health OK; anonymous review/brief 401; no sign-in)",
+    "V3 functional smoke + race probe": "complete (12 behaviours mapped to fresh tests; race probe 9 runs: second first-decision always refused; 1 run failed only the timing observation)",
+    "V4 risk register": "complete (README.md R1-R10)",
+    "V5 Phase 7 readiness plan": "complete (docs/PHASE7_PROPOSAL.md, draft, not approved)"
+  },
+  "database_checks": [
+    "lexflow (127.0.0.1:5432, no URL query): read-only alembic current 0012; row-level comparison vs pre-0012 state: only alembic_version + 2 new empty tables differ",
+    "lexflow_test: recreated by the pytest setup; race probe with committed_engine (truncated afterwards)",
+    "lexflow_e2e: recreated by e2e.py prepare",
+    "backup lexflow-20261025-043125-pre-0012.dump sha256 matches; lexflow_pre0012_verify present (both kept)"
+  ],
+  "next_action": "Owner: review docs/verification/post-phase6/README.md and docs/PHASE7_PROPOSAL.md and decide the items in PHASE7_PROPOSAL.md section 10; optionally approve adding the race probe as a regression test (R1). No implementation is pending in this review.",
+  "blocking_phase7": [
+    "R4 real judgment source",
+    "R5 Phase 4/5 lawyer-labelled evaluation + agreed thresholds",
+    "R6 D1 privacy review (real cases)"
+  ]
+}
