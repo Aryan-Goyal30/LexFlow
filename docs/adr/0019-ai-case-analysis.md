@@ -69,3 +69,32 @@ says so (D5).
   verifies every point (Phase 6 adds per-item review).
 - Migration 0011 must be applied to the live database (owner-gated) before
   analysis can run there.
+
+## Amendment — M9 stabilisation (2026-10-24)
+
+Recorded without rewriting the decision above; details in
+`docs/PHASE5_EXECUTION_LOG.md` (M9) and `docs/PHASE5_PLAN.md` §13.
+
+- Provider selection fails closed (`provider-unsupported`); a run is sent
+  only to the provider its requester confirmed (`provider-mismatch`).
+- A used-up daily or monthly quota (structured `QuotaFailure`) is not
+  retried (`provider-quota-exhausted`); rate limits still are.
+- Staff-facing messages name no settings, files or keys; Administrators see
+  which setting to fix.
+- Response schema `case-analysis-schema-2` (sizes in descriptions, enforced
+  by the application) and validator `grounding-3` are versioned separately
+  from the prompt and recorded with each new run. Validation now also
+  removes invented neutral citations, case names whose parties appear
+  nowhere in the evidence, and wording that predicts a litigation outcome
+  (factual statements such as "likely to lose goodwill" are kept), and needs
+  distinct sources for a contradiction. These are patterns with documented
+  gaps.
+- Unexpected provider or validation errors fail the run without storing a
+  result; interrupted runs are bounded by the attempt limit; a result lists
+  sources that changed after the run.
+- The live judgment collection is no longer empty: it holds three
+  labelled SYNTHETIC demo judgments (owner, 2026-10-20), so precedent
+  comparison there shows synthetic material only.
+- An offline evaluation (`server/scripts/evaluate_analysis.py`, synthetic
+  fixture) checks validation and error handling scenario by scenario; it
+  does not measure model quality.

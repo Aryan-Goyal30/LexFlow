@@ -1,0 +1,1048 @@
+{
+  "fixture": "tests/fixtures/analysis/synthetic-gold-v1.json",
+  "fixture_sha256": "cdfd191042b72a13761c3cf1bd2440b4f4ebc018b50598d47922144840e7e815",
+  "pipeline": {
+    "promptVersion": "case-analysis-v1",
+    "schemaVersion": "case-analysis-schema-2",
+    "schemaSha256": "2b283e9b5b8a33f0cd3babe354fb10878548c2a7f1063733412dea7f2b223a86",
+    "validatorVersion": "grounding-3"
+  },
+  "scenarios": 71,
+  "as_expected": 71,
+  "not_as_expected": [],
+  "messages_checked": 75,
+  "messages_with_operator_words": [],
+  "by_category": {
+    "quote-fidelity": {
+      "scenarios": 5,
+      "as_expected": 5,
+      "not_as_expected": 0
+    },
+    "fabricated-citation": {
+      "scenarios": 5,
+      "as_expected": 5,
+      "not_as_expected": 0
+    },
+    "evidence-reference": {
+      "scenarios": 5,
+      "as_expected": 5,
+      "not_as_expected": 0
+    },
+    "contradiction": {
+      "scenarios": 5,
+      "as_expected": 5,
+      "not_as_expected": 0
+    },
+    "outcome": {
+      "scenarios": 6,
+      "as_expected": 6,
+      "not_as_expected": 0
+    },
+    "malformed-output": {
+      "scenarios": 11,
+      "as_expected": 11,
+      "not_as_expected": 0
+    },
+    "insufficient-evidence": {
+      "scenarios": 3,
+      "as_expected": 3,
+      "not_as_expected": 0
+    },
+    "provider-failure": {
+      "scenarios": 16,
+      "as_expected": 16,
+      "not_as_expected": 0
+    },
+    "retry": {
+      "scenarios": 6,
+      "as_expected": 6,
+      "not_as_expected": 0
+    },
+    "configuration": {
+      "scenarios": 9,
+      "as_expected": 9,
+      "not_as_expected": 0
+    }
+  },
+  "removal_reasons_observed": {
+    "contradiction-unsupported": 3,
+    "issue-without-facts": 1,
+    "malformed": 1,
+    "outcome-discarded": 1,
+    "outcome-wording": 2,
+    "quote-not-found": 3,
+    "quote-too-short": 1,
+    "unknown-evidence": 4,
+    "unknown-judgment": 1,
+    "unverified-citation": 3
+  },
+  "limitations": [
+    {
+      "id": "ct-non-contradiction",
+      "kept_as_expected": true,
+      "why": "Kept: the validator proves both quotes are in the evidence, not that they conflict. Whether a contradiction is real is for the lawyer."
+    },
+    {
+      "id": "oc-paraphrase",
+      "kept_as_expected": true,
+      "why": "Kept: outcome wording is caught by patterns; paraphrases pass."
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "qf-exact",
+      "category": "quote-fidelity",
+      "what": "An exact quote supports its fact.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      }
+    },
+    {
+      "id": "qf-normalised",
+      "category": "quote-fidelity",
+      "what": "Whitespace and typographic apostrophes do not matter.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 2,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      }
+    },
+    {
+      "id": "qf-altered",
+      "category": "quote-fidelity",
+      "what": "One changed word (2014 for 2015) is not the source.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "quote-not-found": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "qf-too-short",
+      "category": "quote-fidelity",
+      "what": "A 7-character quote is too short to verify.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "quote-too-short": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "qf-wrong-passage",
+      "category": "quote-fidelity",
+      "what": "A real quote attributed to another passage.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "quote-not-found": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "fc-law-report",
+      "category": "fabricated-citation",
+      "what": "An invented law-report citation in a fact.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unverified-citation": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "fc-neutral",
+      "category": "fabricated-citation",
+      "what": "An invented neutral citation.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unverified-citation": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "fc-case-name",
+      "category": "fabricated-citation",
+      "what": "An invented case name in prose.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unverified-citation": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "fc-known",
+      "category": "fabricated-citation",
+      "what": "The retrieved judgment's own title and citation may be named.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 1,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      }
+    },
+    {
+      "id": "fc-unknown-judgment",
+      "category": "fabricated-citation",
+      "what": "A precedent citing a judgment that was not retrieved.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unknown-judgment": 1
+        },
+        "insufficient": null
+      }
+    },
+    {
+      "id": "er-missing",
+      "category": "evidence-reference",
+      "what": "A fact without an evidence reference.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "malformed": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "er-foreign",
+      "category": "evidence-reference",
+      "what": "A passage id that was not sent (D9).",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unknown-evidence": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "er-stale",
+      "category": "evidence-reference",
+      "what": "A quote of the passage's earlier text (before re-extraction).",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "quote-not-found": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "er-judgment-as-fact",
+      "category": "evidence-reference",
+      "what": "A fact citing a judgment passage.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unknown-evidence": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "er-injected-id",
+      "category": "evidence-reference",
+      "what": "A combined id smuggled in (D1;J1).",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unknown-evidence": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "ct-planted",
+      "category": "contradiction",
+      "what": "The planted conflict: first use 2015 (plaint) versus 2017 (written statement).",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 1
+        },
+        "removed": {},
+        "insufficient": null
+      }
+    },
+    {
+      "id": "ct-one-source",
+      "category": "contradiction",
+      "what": "Only one source verifies.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "ct-same-quote",
+      "category": "contradiction",
+      "what": "The same quote twice is not a contradiction.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "ct-nested-quote",
+      "category": "contradiction",
+      "what": "A quote and a part of itself.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "ct-non-contradiction",
+      "category": "contradiction",
+      "what": "Two verified quotes that do not conflict (registration 2015; sales from 2024).",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 1
+        },
+        "removed": {},
+        "insufficient": null
+      }
+    },
+    {
+      "id": "oc-key",
+      "category": "outcome",
+      "what": "An outcome key in the answer.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "outcome-discarded": 1
+        },
+        "insufficient": null
+      }
+    },
+    {
+      "id": "oc-wording",
+      "category": "outcome",
+      "what": "Chances of success asked as an issue.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "outcome-wording": 1
+        },
+        "insufficient": null
+      }
+    },
+    {
+      "id": "oc-paraphrase",
+      "category": "outcome",
+      "what": "A paraphrased prediction without the listed words.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      }
+    },
+    {
+      "id": "oc-court-remedy",
+      "category": "outcome",
+      "what": "A predicted court remedy.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "outcome-wording": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "oc-fact-goodwill",
+      "category": "outcome",
+      "what": "A factual harm statement with outcome words (likely to lose goodwill).",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      }
+    },
+    {
+      "id": "oc-fact-tender",
+      "category": "outcome",
+      "what": "A factual statement about winning a tender, not the case.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      }
+    },
+    {
+      "id": "mo-not-json",
+      "category": "malformed-output",
+      "what": "Prose instead of JSON, twice.",
+      "observed": {
+        "status": "failed",
+        "calls": 2,
+        "code": "invalid-output"
+      }
+    },
+    {
+      "id": "mo-cut-json",
+      "category": "malformed-output",
+      "what": "JSON cut off mid-string, twice.",
+      "observed": {
+        "status": "failed",
+        "calls": 2,
+        "code": "invalid-output"
+      }
+    },
+    {
+      "id": "mo-truncated-then-ok",
+      "category": "malformed-output",
+      "what": "Stopped at the token limit, then a complete answer.",
+      "observed": {
+        "status": "ready",
+        "calls": 2,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      }
+    },
+    {
+      "id": "mo-truncated-twice",
+      "category": "malformed-output",
+      "what": "Stopped at the token limit twice.",
+      "observed": {
+        "status": "failed",
+        "calls": 2,
+        "code": "invalid-output"
+      }
+    },
+    {
+      "id": "mo-array",
+      "category": "malformed-output",
+      "what": "A JSON array instead of an object.",
+      "observed": {
+        "status": "failed",
+        "calls": 2,
+        "code": "invalid-output"
+      }
+    },
+    {
+      "id": "mo-wrong-type",
+      "category": "malformed-output",
+      "what": "'facts' is a string.",
+      "observed": {
+        "status": "failed",
+        "calls": 2,
+        "code": "invalid-output"
+      }
+    },
+    {
+      "id": "mo-bad-flag",
+      "category": "malformed-output",
+      "what": "'insufficient_evidence' is \"yes\".",
+      "observed": {
+        "status": "failed",
+        "calls": 2,
+        "code": "invalid-output"
+      }
+    },
+    {
+      "id": "mo-fenced",
+      "category": "malformed-output",
+      "what": "Valid JSON inside a Markdown fence.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      }
+    },
+    {
+      "id": "mo-extra-keys",
+      "category": "malformed-output",
+      "what": "Unknown keys inside an item are ignored (never shown).",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      }
+    },
+    {
+      "id": "mo-empty-object",
+      "category": "malformed-output",
+      "what": "An empty object.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "mo-provider-bug",
+      "category": "malformed-output",
+      "what": "The provider raises an unexpected error.",
+      "observed": {
+        "status": "failed",
+        "calls": 1,
+        "code": "provider-error"
+      }
+    },
+    {
+      "id": "ei-no-passages",
+      "category": "insufficient-evidence",
+      "what": "No passage had text: nothing is sent.",
+      "observed": {
+        "status": "ready",
+        "calls": 0,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": "no-passages"
+      }
+    },
+    {
+      "id": "ei-model-flag",
+      "category": "insufficient-evidence",
+      "what": "The model says the evidence is not enough.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": "model"
+      }
+    },
+    {
+      "id": "ei-issue-without-facts",
+      "category": "insufficient-evidence",
+      "what": "An issue resting only on a removed fact.",
+      "observed": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "issue-without-facts": 1,
+          "unknown-evidence": 1
+        },
+        "insufficient": "nothing-verified"
+      }
+    },
+    {
+      "id": "pf-429-plain",
+      "category": "provider-failure",
+      "what": "A 429 without quota details.",
+      "observed": {
+        "code": "provider-rate-limited",
+        "retry": true
+      }
+    },
+    {
+      "id": "pf-429-minute",
+      "category": "provider-failure",
+      "what": "A per-minute quota.",
+      "observed": {
+        "code": "provider-rate-limited",
+        "retry": true
+      }
+    },
+    {
+      "id": "pf-429-daily",
+      "category": "provider-failure",
+      "what": "A daily quota used up.",
+      "observed": {
+        "code": "provider-quota-exhausted",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-400",
+      "category": "provider-failure",
+      "what": "A rejected request.",
+      "observed": {
+        "code": "provider-rejected",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-401",
+      "category": "provider-failure",
+      "what": "Credentials refused.",
+      "observed": {
+        "code": "provider-auth-failed",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-403",
+      "category": "provider-failure",
+      "what": "Permission refused.",
+      "observed": {
+        "code": "provider-auth-failed",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-404",
+      "category": "provider-failure",
+      "what": "Unknown model.",
+      "observed": {
+        "code": "provider-model-not-found",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-500",
+      "category": "provider-failure",
+      "what": "Server error.",
+      "observed": {
+        "code": "provider-unavailable",
+        "retry": true
+      }
+    },
+    {
+      "id": "pf-503",
+      "category": "provider-failure",
+      "what": "Overloaded.",
+      "observed": {
+        "code": "provider-unavailable",
+        "retry": true
+      }
+    },
+    {
+      "id": "pf-timeout",
+      "category": "provider-failure",
+      "what": "No answer in time.",
+      "observed": {
+        "code": "provider-timeout",
+        "retry": true
+      }
+    },
+    {
+      "id": "pf-unreachable",
+      "category": "provider-failure",
+      "what": "No connection.",
+      "observed": {
+        "code": "provider-unreachable",
+        "retry": true
+      }
+    },
+    {
+      "id": "pf-blocked-prompt",
+      "category": "provider-failure",
+      "what": "The prompt was blocked.",
+      "observed": {
+        "code": "provider-blocked",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-blocked-finish",
+      "category": "provider-failure",
+      "what": "The answer was stopped for safety.",
+      "observed": {
+        "code": "provider-blocked",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-no-candidates",
+      "category": "provider-failure",
+      "what": "No answer at all.",
+      "observed": {
+        "code": "provider-empty",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-blank",
+      "category": "provider-failure",
+      "what": "A blank answer.",
+      "observed": {
+        "code": "provider-empty",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-max-tokens",
+      "category": "provider-failure",
+      "what": "Cut off at the output limit (marked, not an error).",
+      "observed": {
+        "truncated": true
+      }
+    },
+    {
+      "id": "rt-rate-limit-exhausted",
+      "category": "retry",
+      "what": "Rate-limited on every attempt.",
+      "observed": {
+        "trail": [
+          "queued",
+          "queued",
+          "failed"
+        ],
+        "code": "provider-rate-limited"
+      }
+    },
+    {
+      "id": "rt-daily-quota",
+      "category": "retry",
+      "what": "A used-up daily quota is not retried.",
+      "observed": {
+        "trail": [
+          "failed"
+        ],
+        "code": "provider-quota-exhausted"
+      }
+    },
+    {
+      "id": "rt-timeout-then-ok",
+      "category": "retry",
+      "what": "A timeout, then an answer.",
+      "observed": {
+        "trail": [
+          "queued",
+          "ready"
+        ],
+        "code": null
+      }
+    },
+    {
+      "id": "rt-auth",
+      "category": "retry",
+      "what": "Refused credentials are not retried.",
+      "observed": {
+        "trail": [
+          "failed"
+        ],
+        "code": "provider-auth-failed"
+      }
+    },
+    {
+      "id": "rt-unavailable-then-quota",
+      "category": "retry",
+      "what": "A server error, then a used-up quota.",
+      "observed": {
+        "trail": [
+          "queued",
+          "failed"
+        ],
+        "code": "provider-quota-exhausted"
+      }
+    },
+    {
+      "id": "rt-unreadable-twice",
+      "category": "retry",
+      "what": "Unreadable twice within one attempt; not queued again.",
+      "observed": {
+        "trail": [
+          "failed"
+        ],
+        "code": "invalid-output"
+      }
+    },
+    {
+      "id": "cf-disabled",
+      "category": "configuration",
+      "what": "Analysis turned off.",
+      "observed": {
+        "unavailable": "analysis-disabled"
+      }
+    },
+    {
+      "id": "cf-unknown",
+      "category": "configuration",
+      "what": "An unknown provider name.",
+      "observed": {
+        "unavailable": "provider-unsupported"
+      }
+    },
+    {
+      "id": "cf-unknown-case",
+      "category": "configuration",
+      "what": "A provider name in the wrong case.",
+      "observed": {
+        "unavailable": "provider-unsupported"
+      }
+    },
+    {
+      "id": "cf-no-key",
+      "category": "configuration",
+      "what": "Gemini without a key.",
+      "observed": {
+        "unavailable": "provider-not-configured"
+      }
+    },
+    {
+      "id": "cf-no-model",
+      "category": "configuration",
+      "what": "Gemini without a model.",
+      "observed": {
+        "unavailable": "provider-not-configured"
+      }
+    },
+    {
+      "id": "cf-gemini",
+      "category": "configuration",
+      "what": "Gemini fully configured (built, never called).",
+      "observed": {
+        "provider": "gemini"
+      }
+    },
+    {
+      "id": "cf-scripted-test",
+      "category": "configuration",
+      "what": "The scripted double with a test database.",
+      "observed": {
+        "provider": "scripted"
+      }
+    },
+    {
+      "id": "cf-scripted-live",
+      "category": "configuration",
+      "what": "The scripted double with a non-test database.",
+      "observed": {
+        "refused": true
+      }
+    },
+    {
+      "id": "cf-scripted-dbname",
+      "category": "configuration",
+      "what": "A test-looking URL that connects elsewhere (?dbname=).",
+      "observed": {
+        "refused": true
+      }
+    }
+  ]
+}

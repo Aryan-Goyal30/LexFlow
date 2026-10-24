@@ -5,10 +5,28 @@ Whatever comes back is parsed here regardless: a provider's adherence to a
 schema is never trusted. The whole answer must be a JSON object with the
 expected lists; within the lists, an item that does not fit its shape is
 dropped and counted (``malformed``), not allowed to sink the other items.
+
+Where each constraint lives (decided in M9, 2026-10-24):
+
+- the **provider schema** carries types, required keys and the shape of each
+  item, the subset every structured-output API accepts. Limits (list sizes,
+  string lengths, id formats) are stated there in ``description`` text only,
+  because a size keyword was the suspect in a provider rejection (M8e);
+- the **application** enforces every limit here (the pydantic models and the
+  per-list maxima) and, in ``validation.py``, every grounding rule. Nothing
+  was relaxed in the application when the provider schema was simplified.
+
+Versions: ``prompt.PROMPT_VERSION`` names the instructions and evidence
+layout (unchanged, ``case-analysis-v1``). ``RESPONSE_SCHEMA_VERSION`` names
+this schema: ``case-analysis-schema-1`` had ``minItems``/``maxItems`` (runs
+before 2026-10-20), ``case-analysis-schema-2`` states sizes in descriptions.
+Runs record the versions they used from M9 on; older runs have no record and
+are not reinterpreted.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass, field
@@ -142,23 +160,29 @@ def parse(text: str) -> ParsedOutput:
 
 
 def _string(max_length: int) -> dict[str, Any]:
-    # Lengths go in the description: providers support different subsets of
-    # JSON Schema, and the parser above enforces the limits anyway.
+    # Lengths and item counts go in the description, not in keywords: providers
+    # support different subsets of JSON Schema (an array-size keyword made the
+    # schema a suspect for a provider rejection), and the parser above enforces
+    # every limit anyway.
     return {"type": "string", "description": f"At most {max_length} characters."}
 
 
 def _strings(max_items: int, max_length: int) -> dict[str, Any]:
-    return {"type": "array", "maxItems": max_items, "items": _string(max_length)}
+    return {
+        "type": "array",
+        "description": f"At most {max_items} items.",
+        "items": _string(max_length),
+    }
 
 
-# A plain JSON Schema (no $ref, no string lengths), within the subset that
-# structured-output APIs accept.
+# A plain JSON Schema (no $ref, no string lengths, no array sizes), within the
+# subset that structured-output APIs accept.
 RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "facts": {
             "type": "array",
-            "maxItems": MAX_FACTS,
+            "description": f"At most {MAX_FACTS} facts.",
             "items": {
                 "type": "object",
                 "properties": {
@@ -175,7 +199,7 @@ RESPONSE_SCHEMA: dict[str, Any] = {
         },
         "issues": {
             "type": "array",
-            "maxItems": MAX_ISSUES,
+            "description": f"At most {MAX_ISSUES} issues.",
             "items": {
                 "type": "object",
                 "properties": {
@@ -187,7 +211,7 @@ RESPONSE_SCHEMA: dict[str, Any] = {
         },
         "precedents": {
             "type": "array",
-            "maxItems": MAX_PRECEDENTS,
+            "description": f"At most {MAX_PRECEDENTS} precedents.",
             "items": {
                 "type": "object",
                 "properties": {
@@ -201,15 +225,14 @@ RESPONSE_SCHEMA: dict[str, Any] = {
         },
         "contradictions": {
             "type": "array",
-            "maxItems": MAX_CONTRADICTIONS,
+            "description": f"At most {MAX_CONTRADICTIONS} contradictions.",
             "items": {
                 "type": "object",
                 "properties": {
                     "description": _string(STATEMENT_MAX),
                     "sources": {
                         "type": "array",
-                        "minItems": 2,
-                        "maxItems": 4,
+                        "description": "Two to four sources.",
                         "items": {
                             "type": "object",
                             "properties": {
@@ -227,3 +250,12 @@ RESPONSE_SCHEMA: dict[str, Any] = {
     },
     "required": ["facts", "issues", "precedents", "contradictions", "insufficient_evidence"],
 }
+
+RESPONSE_SCHEMA_VERSION = "case-analysis-schema-2"
+
+
+def schema_sha256() -> str:
+    """A fingerprint of ``RESPONSE_SCHEMA`` (canonical JSON), stored with each
+    run so a silent schema change under the same version name is detectable."""
+    canonical = json.dumps(RESPONSE_SCHEMA, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

@@ -296,7 +296,15 @@ function RunView({
   return <AnalysisResults caseId={caseId} run={run} />;
 }
 
-function SourceLine({ caseId, source }: { caseId: string; source: AnalysisSource }) {
+function SourceLine({
+  caseId,
+  source,
+  changed,
+}: {
+  caseId: string;
+  source: AnalysisSource;
+  changed: boolean;
+}) {
   return (
     <div className="mt-1.5 border-l-2 border-brand-200 pl-3">
       <blockquote className="text-sm italic text-brand-600">
@@ -309,6 +317,11 @@ function SourceLine({ caseId, source }: { caseId: string; source: AnalysisSource
         <FileText className="h-3.5 w-3.5" aria-hidden="true" />
         {source.documentName}, {place(source.pageNumber, source.sectionNumber)}
       </Link>
+      {changed && (
+        <span className="ml-1.5 text-xs font-medium text-amber-800">
+          (changed since this analysis)
+        </span>
+      )}
     </div>
   );
 }
@@ -322,6 +335,7 @@ function SourceLine({ caseId, source }: { caseId: string; source: AnalysisSource
 function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) {
   const result = run.result!;
   const evidence = run.evidence;
+  const changed = new Set(evidence?.changed ?? []);
   return (
     <>
       <Card>
@@ -344,6 +358,17 @@ function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) 
               {evidence.judgmentPassages} judgment passages (
               {evidence.characters.toLocaleString('en-IN')} characters).
               {evidence.truncated && ' Limits left some passages out.'}
+            </p>
+          )}
+          {changed.size > 0 && (
+            <p
+              role="status"
+              className="rounded-md bg-amber-50 px-3 py-2 text-amber-900 ring-1 ring-inset ring-amber-600/30"
+            >
+              <strong>Some sources changed after this analysis ran</strong> (
+              {[...changed].join(', ')}): a document was re-extracted or deleted, or a judgment was
+              removed. Quotes are shown as they were verified at the time; their links may open
+              different text, or none.
             </p>
           )}
           {result.insufficientEvidence && (
@@ -385,7 +410,11 @@ function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) 
                     <span className="mr-1.5 text-xs font-semibold text-brand-400">{fact.id}</span>
                     {fact.statement}
                   </p>
-                  <SourceLine caseId={caseId} source={fact.source} />
+                  <SourceLine
+                    caseId={caseId}
+                    source={fact.source}
+                    changed={changed.has(fact.source.evidenceId)}
+                  />
                 </li>
               ))}
             </ul>
@@ -444,6 +473,7 @@ function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) 
                       key={`${source.evidenceId}-${source.quote}`}
                       caseId={caseId}
                       source={source}
+                      changed={changed.has(source.evidenceId)}
                     />
                   ))}
                 </li>

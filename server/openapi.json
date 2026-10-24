@@ -3679,6 +3679,14 @@
             "type": "boolean",
             "title": "Truncated",
             "description": "True when limits left some passages out."
+          },
+          "changed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Changed",
+            "description": "Evidence ids (D1, J2) whose passage has been re-extracted, changed or removed since the run. Their quotes are shown as they were sent; a link may now open different text."
           }
         },
         "type": "object",
@@ -3687,7 +3695,8 @@
           "passages",
           "judgmentPassages",
           "characters",
-          "truncated"
+          "truncated",
+          "changed"
         ],
         "title": "AnalysisEvidenceSummaryOut"
       },

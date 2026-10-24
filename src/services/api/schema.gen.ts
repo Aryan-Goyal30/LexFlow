@@ -1230,6 +1230,11 @@ export interface components {
              * @description True when limits left some passages out.
              */
             truncated: boolean;
+            /**
+             * Changed
+             * @description Evidence ids (D1, J2) whose passage has been re-extracted, changed or removed since the run. Their quotes are shown as they were sent; a link may now open different text.
+             */
+            changed: string[];
         };
         /** AnalysisFactOut */
         AnalysisFactOut: {

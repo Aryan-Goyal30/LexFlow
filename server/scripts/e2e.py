@@ -67,6 +67,9 @@ def e2e_database_url() -> URL:
     if "e2e" not in name:
         raise SystemExit(f"Refusing to use database {name!r}: its name must contain 'e2e'.")
     base = make_url(Settings().database_url)  # DATABASE_URL from the environment or .env
+    if {"dbname", "service"} & set(base.query):
+        # Either would make psycopg connect to another database than the name set here.
+        raise SystemExit("Refusing a DATABASE_URL with a dbname or service parameter.")
     return base.set(database=name)
 
 

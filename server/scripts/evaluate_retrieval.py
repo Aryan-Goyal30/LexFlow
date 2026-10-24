@@ -54,7 +54,12 @@ def eval_url() -> URL:
     )
     if not raw:
         raise SystemExit("TEST_DATABASE_URL is not set (see server/.env.example)")
-    url = make_url(raw).set(database=DATABASE)
+    url = make_url(raw)
+    if {"dbname", "service"} & set(url.query):
+        # Either would make psycopg connect to another database than the throwaway
+        # one named below, and the evaluation would migrate it and write test data there.
+        raise SystemExit("Refusing a TEST_DATABASE_URL with a dbname or service parameter.")
+    url = url.set(database=DATABASE)
     if "test" not in (url.database or ""):  # pragma: no cover - constant name
         raise SystemExit("refusing: the evaluation database name must contain 'test'")
     return url
@@ -133,12 +138,12 @@ def main() -> int:
         "--out", type=Path, default=SERVER_ROOT.parent / "docs" / "verification" / "embeddings"
     )
     args = parser.parse_args()
+    url = eval_url()  # first: refuse a URL that would connect elsewhere
     settings = get_settings()
     corpus = json.loads(CORPUS.read_text(encoding="utf-8"))
     provider = LocalBgeProvider(
         model_path(settings), threads=settings.embedding_threads, batch_size=8
     )
-    url = eval_url()
     recreate(url)
     try:
         migrate(url)

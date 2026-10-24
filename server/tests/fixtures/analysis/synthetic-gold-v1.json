@@ -1,0 +1,1972 @@
+{
+  "name": "synthetic-gold-v1",
+  "notice": "SYNTHETIC evaluation fixture. Every name, date and text is invented for testing LexFlow's validation and error handling; none of it is real case law or client material. It is not part of the judgment collection.",
+  "case": {
+    "case_number": "LF-EVAL-0001",
+    "title": "Sattvik Foods v. Annapurna Snacks (SYNTHETIC)",
+    "practice_area": "Intellectual Property",
+    "status": "Open",
+    "court_name": null,
+    "opposing_party": "Annapurna Snacks (SYNTHETIC)",
+    "description": "SYNTHETIC evaluation case: a dispute about prior use of a mark."
+  },
+  "passages": [
+    {
+      "id": "D1",
+      "document": "00000000-0000-4000-8000-0000000000d1",
+      "document_name": "SYNTHETIC Plaint.pdf",
+      "number": 1,
+      "section": 1,
+      "page": 1,
+      "text": "SYNTHETIC. The plaintiff, Sattvik Foods, registered the mark SATTVIK for snack foods in 2015 and has used it continuously since then."
+    },
+    {
+      "id": "D2",
+      "document": "00000000-0000-4000-8000-0000000000d2",
+      "document_name": "SYNTHETIC Written Statement.pdf",
+      "number": 1,
+      "section": 1,
+      "page": 1,
+      "text": "SYNTHETIC. The defendant states that it adopted its mark honestly in 2023 and that the plaintiff first used SATTVIK only in 2017."
+    },
+    {
+      "id": "D3",
+      "document": "00000000-0000-4000-8000-0000000000d2",
+      "document_name": "SYNTHETIC Written Statement.pdf",
+      "number": 2,
+      "section": 2,
+      "page": 2,
+      "text": "SYNTHETIC. The defendant's invoices show sales under the disputed mark from March 2024 onwards.",
+      "earlier_text": "SYNTHETIC. The defendant's invoices show sales under the disputed mark from January 2024 onwards."
+    }
+  ],
+  "judgments": [
+    {
+      "id": "J1",
+      "judgment": "00000000-0000-4000-8000-0000000000e1",
+      "title": "Asha Rao v. Bharat Traders (SYNTHETIC)",
+      "court": "SYNTHETIC High Court (evaluation fixture)",
+      "citation": "(SYN) 2019 TEST 101",
+      "year": 2019,
+      "section": 3,
+      "page": 3,
+      "text": "SYNTHETIC. Prior continuous use of a mark is weighed against the date on which the defendant adopted its mark."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "qf-exact",
+      "category": "quote-fidelity",
+      "what": "An exact quote supports its fact.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "The plaintiff registered SATTVIK in 2015.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "qf-normalised",
+      "category": "quote-fidelity",
+      "what": "Whitespace and typographic apostrophes do not matter.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "SYNTHETIC statement.",
+                "evidence": "D1",
+                "quote": "registered the mark  SATTVIK\nfor snack foods in 2015"
+              },
+              {
+                "id": "F2",
+                "statement": "SYNTHETIC statement.",
+                "evidence": "D3",
+                "quote": "The defendant’s invoices show sales"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 2,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "qf-altered",
+      "category": "quote-fidelity",
+      "what": "One changed word (2014 for 2015) is not the source.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "SYNTHETIC statement.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2014"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "quote-not-found": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "qf-too-short",
+      "category": "quote-fidelity",
+      "what": "A 7-character quote is too short to verify.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "SYNTHETIC statement.",
+                "evidence": "D1",
+                "quote": "in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "quote-too-short": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "qf-wrong-passage",
+      "category": "quote-fidelity",
+      "what": "A real quote attributed to another passage.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "SYNTHETIC statement.",
+                "evidence": "D1",
+                "quote": "the plaintiff first used SATTVIK only in 2017"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "quote-not-found": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "fc-law-report",
+      "category": "fabricated-citation",
+      "what": "An invented law-report citation in a fact.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "Registered in 2015, as in AIR 1999 SC 123.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unverified-citation": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "fc-neutral",
+      "category": "fabricated-citation",
+      "what": "An invented neutral citation.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "Registered in 2015; see 2021 INSC 77.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unverified-citation": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "fc-case-name",
+      "category": "fabricated-citation",
+      "what": "An invented case name in prose.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "As in Kavita Sharma v. Mohan Lal, use counts.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unverified-citation": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "fc-known",
+      "category": "fabricated-citation",
+      "what": "The retrieved judgment's own title and citation may be named.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "The plaintiff registered SATTVIK in 2015.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ],
+            "precedents": [
+              {
+                "evidence": "J1",
+                "summary": "Asha Rao v. Bharat Traders, (SYN) 2019 TEST 101, weighs prior use.",
+                "similarities": [
+                  "Both concern prior use."
+                ],
+                "differences": [
+                  "Different goods."
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 1,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "fc-unknown-judgment",
+      "category": "fabricated-citation",
+      "what": "A precedent citing a judgment that was not retrieved.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "The plaintiff registered SATTVIK in 2015.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ],
+            "precedents": [
+              {
+                "evidence": "J7",
+                "summary": "SYNTHETIC.",
+                "similarities": [],
+                "differences": []
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unknown-judgment": 1
+        },
+        "insufficient": null
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "er-missing",
+      "category": "evidence-reference",
+      "what": "A fact without an evidence reference.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "SYNTHETIC.",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "malformed": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "er-foreign",
+      "category": "evidence-reference",
+      "what": "A passage id that was not sent (D9).",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "SYNTHETIC statement.",
+                "evidence": "D9",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unknown-evidence": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "er-stale",
+      "category": "evidence-reference",
+      "what": "A quote of the passage's earlier text (before re-extraction).",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "SYNTHETIC statement.",
+                "evidence": "D3",
+                "quote": "from January 2024 onwards"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "quote-not-found": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "er-judgment-as-fact",
+      "category": "evidence-reference",
+      "what": "A fact citing a judgment passage.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "SYNTHETIC statement.",
+                "evidence": "J1",
+                "quote": "Prior continuous use of a mark is weighed"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unknown-evidence": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "er-injected-id",
+      "category": "evidence-reference",
+      "what": "A combined id smuggled in (D1;J1).",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "SYNTHETIC statement.",
+                "evidence": "D1;J1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unknown-evidence": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "ct-planted",
+      "category": "contradiction",
+      "what": "The planted conflict: first use 2015 (plaint) versus 2017 (written statement).",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "First use: 2015 or 2017.",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "registered the mark SATTVIK for snack foods in 2015"
+                  },
+                  {
+                    "evidence": "D2",
+                    "quote": "the plaintiff first used SATTVIK only in 2017"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 1
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "ct-one-source",
+      "category": "contradiction",
+      "what": "Only one source verifies.",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "x",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "registered the mark SATTVIK for snack foods in 2015"
+                  },
+                  {
+                    "evidence": "D9",
+                    "quote": "the plaintiff first used SATTVIK only in 2017"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "ct-same-quote",
+      "category": "contradiction",
+      "what": "The same quote twice is not a contradiction.",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "x",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "registered the mark SATTVIK for snack foods in 2015"
+                  },
+                  {
+                    "evidence": "D1",
+                    "quote": "registered the mark SATTVIK for snack foods in 2015"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "ct-nested-quote",
+      "category": "contradiction",
+      "what": "A quote and a part of itself.",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "x",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "registered the mark SATTVIK for snack foods in 2015"
+                  },
+                  {
+                    "evidence": "D1",
+                    "quote": "the mark SATTVIK for snack foods"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "contradiction-unsupported": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "ct-non-contradiction",
+      "category": "contradiction",
+      "what": "Two verified quotes that do not conflict (registration 2015; sales from 2024).",
+      "answers": [
+        {
+          "json": {
+            "contradictions": [
+              {
+                "description": "The dates conflict.",
+                "sources": [
+                  {
+                    "evidence": "D1",
+                    "quote": "registered the mark SATTVIK for snack foods in 2015"
+                  },
+                  {
+                    "evidence": "D3",
+                    "quote": "show sales under the disputed mark from March 2024 onwards"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 1
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "limitation": "Kept: the validator proves both quotes are in the evidence, not that they conflict. Whether a contradiction is real is for the lawyer.",
+      "kind": "answer"
+    },
+    {
+      "id": "oc-key",
+      "category": "outcome",
+      "what": "An outcome key in the answer.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "The plaintiff registered SATTVIK in 2015.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ],
+            "outcome": "The plaintiff wins."
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "outcome-discarded": 1
+        },
+        "insufficient": null
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "oc-wording",
+      "category": "outcome",
+      "what": "Chances of success asked as an issue.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "The plaintiff registered SATTVIK in 2015.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ],
+            "issues": [
+              {
+                "question": "What are the chances of success for the plaintiff?",
+                "fact_ids": [
+                  "F1"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "outcome-wording": 1
+        },
+        "insufficient": null
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "oc-paraphrase",
+      "category": "outcome",
+      "what": "A paraphrased prediction without the listed words.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "The plaintiff's position on prior use looks the stronger one.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "limitation": "Kept: outcome wording is caught by patterns; paraphrases pass.",
+      "kind": "answer"
+    },
+    {
+      "id": "oc-court-remedy",
+      "category": "outcome",
+      "what": "A predicted court remedy.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "The court will grant an injunction against the defendant.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "outcome-wording": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "oc-fact-goodwill",
+      "category": "outcome",
+      "what": "A factual harm statement with outcome words (likely to lose goodwill).",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "The plaintiff is likely to lose goodwill if the mark continues in use.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "oc-fact-tender",
+      "category": "outcome",
+      "what": "A factual statement about winning a tender, not the case.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "An event probably occurred before a tenant could win a tender.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "mo-not-json",
+      "category": "malformed-output",
+      "what": "Prose instead of JSON, twice.",
+      "answers": [
+        {
+          "text": "Here is my analysis: the plaintiff used the mark first."
+        },
+        {
+          "text": "Here is my analysis: the plaintiff used the mark first."
+        }
+      ],
+      "expected": {
+        "status": "failed",
+        "calls": 2,
+        "code": "invalid-output"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "mo-cut-json",
+      "category": "malformed-output",
+      "what": "JSON cut off mid-string, twice.",
+      "answers": [
+        {
+          "text": "{\"facts\": [{\"id\": \"F1\", \"statement\": \"SYNTHETIC"
+        },
+        {
+          "text": "{\"facts\": [{\"id\": \"F1\", \"statement\": \"SYNTHETIC"
+        }
+      ],
+      "expected": {
+        "status": "failed",
+        "calls": 2,
+        "code": "invalid-output"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "mo-truncated-then-ok",
+      "category": "malformed-output",
+      "what": "Stopped at the token limit, then a complete answer.",
+      "answers": [
+        {
+          "truncated": "{\"facts\": ["
+        },
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "The plaintiff registered SATTVIK in 2015.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 2,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "mo-truncated-twice",
+      "category": "malformed-output",
+      "what": "Stopped at the token limit twice.",
+      "answers": [
+        {
+          "truncated": "{\"facts\": ["
+        },
+        {
+          "truncated": "{\"facts\": ["
+        }
+      ],
+      "expected": {
+        "status": "failed",
+        "calls": 2,
+        "code": "invalid-output"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "mo-array",
+      "category": "malformed-output",
+      "what": "A JSON array instead of an object.",
+      "answers": [
+        {
+          "text": "[]"
+        },
+        {
+          "text": "[]"
+        }
+      ],
+      "expected": {
+        "status": "failed",
+        "calls": 2,
+        "code": "invalid-output"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "mo-wrong-type",
+      "category": "malformed-output",
+      "what": "'facts' is a string.",
+      "answers": [
+        {
+          "json": {
+            "facts": "none"
+          }
+        },
+        {
+          "json": {
+            "facts": "none"
+          }
+        }
+      ],
+      "expected": {
+        "status": "failed",
+        "calls": 2,
+        "code": "invalid-output"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "mo-bad-flag",
+      "category": "malformed-output",
+      "what": "'insufficient_evidence' is \"yes\".",
+      "answers": [
+        {
+          "json": {
+            "insufficient_evidence": "yes"
+          }
+        },
+        {
+          "json": {
+            "insufficient_evidence": "yes"
+          }
+        }
+      ],
+      "expected": {
+        "status": "failed",
+        "calls": 2,
+        "code": "invalid-output"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "mo-fenced",
+      "category": "malformed-output",
+      "what": "Valid JSON inside a Markdown fence.",
+      "answers": [
+        {
+          "fenced": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "The plaintiff registered SATTVIK in 2015.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "mo-extra-keys",
+      "category": "malformed-output",
+      "what": "Unknown keys inside an item are ignored (never shown).",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "The plaintiff registered SATTVIK in 2015.",
+                "evidence": "D1",
+                "quote": "registered the mark SATTVIK for snack foods in 2015",
+                "confidence": 0.9,
+                "citation": "AIR 1999 SC 1"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 1,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": null
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "mo-empty-object",
+      "category": "malformed-output",
+      "what": "An empty object.",
+      "answers": [
+        {
+          "json": {}
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "mo-provider-bug",
+      "category": "malformed-output",
+      "what": "The provider raises an unexpected error.",
+      "answers": [
+        {
+          "raise": "RuntimeError"
+        }
+      ],
+      "expected": {
+        "status": "failed",
+        "calls": 1,
+        "code": "provider-error"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "ei-no-passages",
+      "category": "insufficient-evidence",
+      "what": "No passage had text: nothing is sent.",
+      "answers": [],
+      "expected": {
+        "status": "ready",
+        "calls": 0,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": "no-passages"
+      },
+      "evidence": {
+        "passages": []
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "ei-model-flag",
+      "category": "insufficient-evidence",
+      "what": "The model says the evidence is not enough.",
+      "answers": [
+        {
+          "json": {
+            "insufficient_evidence": true
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {},
+        "insufficient": "model"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "ei-issue-without-facts",
+      "category": "insufficient-evidence",
+      "what": "An issue resting only on a removed fact.",
+      "answers": [
+        {
+          "json": {
+            "facts": [
+              {
+                "id": "F1",
+                "statement": "SYNTHETIC statement.",
+                "evidence": "D9",
+                "quote": "registered the mark SATTVIK for snack foods in 2015"
+              }
+            ],
+            "issues": [
+              {
+                "question": "Which use came first?",
+                "fact_ids": [
+                  "F1"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "status": "ready",
+        "calls": 1,
+        "kept": {
+          "facts": 0,
+          "issues": 0,
+          "precedents": 0,
+          "contradictions": 0
+        },
+        "removed": {
+          "unknown-evidence": 1,
+          "issue-without-facts": 1
+        },
+        "insufficient": "nothing-verified"
+      },
+      "kind": "answer"
+    },
+    {
+      "id": "pf-429-plain",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "A 429 without quota details.",
+      "item": {
+        "http": 429,
+        "body": {
+          "error": {
+            "code": 429,
+            "message": "PROVIDER-ECHO not to be shown",
+            "status": "RESOURCE_EXHAUSTED"
+          }
+        }
+      },
+      "expected": {
+        "code": "provider-rate-limited",
+        "retry": true
+      }
+    },
+    {
+      "id": "pf-429-minute",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "A per-minute quota.",
+      "item": {
+        "http": 429,
+        "body": {
+          "error": {
+            "code": 429,
+            "message": "PROVIDER-ECHO not to be shown",
+            "status": "RESOURCE_EXHAUSTED",
+            "details": [
+              {
+                "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                "violations": [
+                  {
+                    "quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "code": "provider-rate-limited",
+        "retry": true
+      }
+    },
+    {
+      "id": "pf-429-daily",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "A daily quota used up.",
+      "item": {
+        "http": 429,
+        "body": {
+          "error": {
+            "code": 429,
+            "message": "PROVIDER-ECHO not to be shown",
+            "status": "RESOURCE_EXHAUSTED",
+            "details": [
+              {
+                "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                "violations": [
+                  {
+                    "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expected": {
+        "code": "provider-quota-exhausted",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-400",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "A rejected request.",
+      "item": {
+        "http": 400,
+        "body": {
+          "error": {
+            "code": 400,
+            "message": "PROVIDER-ECHO not to be shown",
+            "status": "INVALID_ARGUMENT"
+          }
+        }
+      },
+      "expected": {
+        "code": "provider-rejected",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-401",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "Credentials refused.",
+      "item": {
+        "http": 401,
+        "body": {
+          "error": {
+            "code": 401,
+            "message": "PROVIDER-ECHO not to be shown"
+          }
+        }
+      },
+      "expected": {
+        "code": "provider-auth-failed",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-403",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "Permission refused.",
+      "item": {
+        "http": 403,
+        "body": {
+          "error": {
+            "code": 403,
+            "message": "PROVIDER-ECHO not to be shown"
+          }
+        }
+      },
+      "expected": {
+        "code": "provider-auth-failed",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-404",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "Unknown model.",
+      "item": {
+        "http": 404,
+        "body": {
+          "error": {
+            "code": 404,
+            "message": "PROVIDER-ECHO not to be shown"
+          }
+        }
+      },
+      "expected": {
+        "code": "provider-model-not-found",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-500",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "Server error.",
+      "item": {
+        "http": 500,
+        "body": {
+          "error": {
+            "code": 500,
+            "message": "PROVIDER-ECHO not to be shown"
+          }
+        }
+      },
+      "expected": {
+        "code": "provider-unavailable",
+        "retry": true
+      }
+    },
+    {
+      "id": "pf-503",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "Overloaded.",
+      "item": {
+        "http": 503,
+        "body": {
+          "error": {
+            "code": 503,
+            "message": "PROVIDER-ECHO not to be shown",
+            "status": "UNAVAILABLE"
+          }
+        }
+      },
+      "expected": {
+        "code": "provider-unavailable",
+        "retry": true
+      }
+    },
+    {
+      "id": "pf-timeout",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "No answer in time.",
+      "item": {
+        "timeout": true
+      },
+      "expected": {
+        "code": "provider-timeout",
+        "retry": true
+      }
+    },
+    {
+      "id": "pf-unreachable",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "No connection.",
+      "item": {
+        "connect": true
+      },
+      "expected": {
+        "code": "provider-unreachable",
+        "retry": true
+      }
+    },
+    {
+      "id": "pf-blocked-prompt",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "The prompt was blocked.",
+      "item": {
+        "response": {
+          "block": "SAFETY"
+        }
+      },
+      "expected": {
+        "code": "provider-blocked",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-blocked-finish",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "The answer was stopped for safety.",
+      "item": {
+        "response": {
+          "finish": "SAFETY",
+          "text": "{}"
+        }
+      },
+      "expected": {
+        "code": "provider-blocked",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-no-candidates",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "No answer at all.",
+      "item": {
+        "response": {
+          "candidates": []
+        }
+      },
+      "expected": {
+        "code": "provider-empty",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-blank",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "A blank answer.",
+      "item": {
+        "response": {
+          "text": "   "
+        }
+      },
+      "expected": {
+        "code": "provider-empty",
+        "retry": false
+      }
+    },
+    {
+      "id": "pf-max-tokens",
+      "category": "provider-failure",
+      "kind": "provider",
+      "what": "Cut off at the output limit (marked, not an error).",
+      "item": {
+        "response": {
+          "text": "{\"facts\": [",
+          "finish": "MAX_TOKENS"
+        }
+      },
+      "expected": {
+        "truncated": true
+      }
+    },
+    {
+      "id": "rt-rate-limit-exhausted",
+      "category": "retry",
+      "kind": "retry",
+      "what": "Rate-limited on every attempt.",
+      "max_attempts": 3,
+      "items": [
+        {
+          "http": 429,
+          "body": {
+            "error": {
+              "code": 429,
+              "message": "PROVIDER-ECHO not to be shown",
+              "status": "RESOURCE_EXHAUSTED"
+            }
+          }
+        },
+        {
+          "http": 429,
+          "body": {
+            "error": {
+              "code": 429,
+              "message": "PROVIDER-ECHO not to be shown",
+              "status": "RESOURCE_EXHAUSTED"
+            }
+          }
+        },
+        {
+          "http": 429,
+          "body": {
+            "error": {
+              "code": 429,
+              "message": "PROVIDER-ECHO not to be shown",
+              "status": "RESOURCE_EXHAUSTED"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "trail": [
+          "queued",
+          "queued",
+          "failed"
+        ],
+        "code": "provider-rate-limited"
+      }
+    },
+    {
+      "id": "rt-daily-quota",
+      "category": "retry",
+      "kind": "retry",
+      "what": "A used-up daily quota is not retried.",
+      "max_attempts": 3,
+      "items": [
+        {
+          "http": 429,
+          "body": {
+            "error": {
+              "code": 429,
+              "message": "PROVIDER-ECHO not to be shown",
+              "status": "RESOURCE_EXHAUSTED",
+              "details": [
+                {
+                  "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                  "violations": [
+                    {
+                      "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "expected": {
+        "trail": [
+          "failed"
+        ],
+        "code": "provider-quota-exhausted"
+      }
+    },
+    {
+      "id": "rt-timeout-then-ok",
+      "category": "retry",
+      "kind": "retry",
+      "what": "A timeout, then an answer.",
+      "max_attempts": 3,
+      "items": [
+        {
+          "timeout": true
+        },
+        {
+          "response": {
+            "text": "{\"facts\": [{\"id\": \"F1\", \"statement\": \"The plaintiff registered SATTVIK in 2015.\", \"evidence\": \"D1\", \"quote\": \"registered the mark SATTVIK for snack foods in 2015\"}]}"
+          }
+        }
+      ],
+      "expected": {
+        "trail": [
+          "queued",
+          "ready"
+        ],
+        "code": null
+      }
+    },
+    {
+      "id": "rt-auth",
+      "category": "retry",
+      "kind": "retry",
+      "what": "Refused credentials are not retried.",
+      "max_attempts": 3,
+      "items": [
+        {
+          "http": 401,
+          "body": {
+            "error": {
+              "code": 401,
+              "message": "PROVIDER-ECHO not to be shown"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "trail": [
+          "failed"
+        ],
+        "code": "provider-auth-failed"
+      }
+    },
+    {
+      "id": "rt-unavailable-then-quota",
+      "category": "retry",
+      "kind": "retry",
+      "what": "A server error, then a used-up quota.",
+      "max_attempts": 3,
+      "items": [
+        {
+          "http": 503,
+          "body": {
+            "error": {
+              "code": 503,
+              "message": "PROVIDER-ECHO not to be shown",
+              "status": "UNAVAILABLE"
+            }
+          }
+        },
+        {
+          "http": 429,
+          "body": {
+            "error": {
+              "code": 429,
+              "message": "PROVIDER-ECHO not to be shown",
+              "status": "RESOURCE_EXHAUSTED",
+              "details": [
+                {
+                  "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                  "violations": [
+                    {
+                      "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "expected": {
+        "trail": [
+          "queued",
+          "failed"
+        ],
+        "code": "provider-quota-exhausted"
+      }
+    },
+    {
+      "id": "rt-unreadable-twice",
+      "category": "retry",
+      "kind": "retry",
+      "what": "Unreadable twice within one attempt; not queued again.",
+      "max_attempts": 3,
+      "items": [
+        {
+          "response": {
+            "text": "not json"
+          }
+        },
+        {
+          "response": {
+            "text": "not json"
+          }
+        }
+      ],
+      "expected": {
+        "trail": [
+          "failed"
+        ],
+        "code": "invalid-output"
+      }
+    },
+    {
+      "id": "cf-disabled",
+      "category": "configuration",
+      "kind": "config",
+      "what": "Analysis turned off.",
+      "settings": {
+        "LEXFLOW_AI_PROVIDER": "disabled"
+      },
+      "expected": {
+        "unavailable": "analysis-disabled"
+      }
+    },
+    {
+      "id": "cf-unknown",
+      "category": "configuration",
+      "kind": "config",
+      "what": "An unknown provider name.",
+      "settings": {
+        "LEXFLOW_AI_PROVIDER": "gemini",
+        "GEMINI_API_KEY": "AIzaFAKE-eval-key-0000000000-not-real",
+        "GEMINI_MODEL": "m-1"
+      },
+      "expected": {
+        "unavailable": "provider-unsupported"
+      },
+      "force_provider": "local"
+    },
+    {
+      "id": "cf-unknown-case",
+      "category": "configuration",
+      "kind": "config",
+      "what": "A provider name in the wrong case.",
+      "settings": {
+        "LEXFLOW_AI_PROVIDER": "gemini",
+        "GEMINI_API_KEY": "AIzaFAKE-eval-key-0000000000-not-real",
+        "GEMINI_MODEL": "m-1"
+      },
+      "expected": {
+        "unavailable": "provider-unsupported"
+      },
+      "force_provider": "Gemini"
+    },
+    {
+      "id": "cf-no-key",
+      "category": "configuration",
+      "kind": "config",
+      "what": "Gemini without a key.",
+      "settings": {
+        "LEXFLOW_AI_PROVIDER": "gemini",
+        "GEMINI_API_KEY": "",
+        "GEMINI_MODEL": "m-1"
+      },
+      "expected": {
+        "unavailable": "provider-not-configured"
+      }
+    },
+    {
+      "id": "cf-no-model",
+      "category": "configuration",
+      "kind": "config",
+      "what": "Gemini without a model.",
+      "settings": {
+        "LEXFLOW_AI_PROVIDER": "gemini",
+        "GEMINI_API_KEY": "AIzaFAKE-eval-key-0000000000-not-real",
+        "GEMINI_MODEL": ""
+      },
+      "expected": {
+        "unavailable": "provider-not-configured"
+      }
+    },
+    {
+      "id": "cf-gemini",
+      "category": "configuration",
+      "kind": "config",
+      "what": "Gemini fully configured (built, never called).",
+      "settings": {
+        "LEXFLOW_AI_PROVIDER": "gemini",
+        "GEMINI_API_KEY": "AIzaFAKE-eval-key-0000000000-not-real",
+        "GEMINI_MODEL": "m-1"
+      },
+      "expected": {
+        "provider": "gemini"
+      }
+    },
+    {
+      "id": "cf-scripted-test",
+      "category": "configuration",
+      "kind": "config",
+      "what": "The scripted double with a test database.",
+      "settings": {
+        "LEXFLOW_AI_PROVIDER": "scripted"
+      },
+      "expected": {
+        "provider": "scripted"
+      }
+    },
+    {
+      "id": "cf-scripted-live",
+      "category": "configuration",
+      "kind": "config",
+      "what": "The scripted double with a non-test database.",
+      "settings": {
+        "LEXFLOW_AI_PROVIDER": "scripted",
+        "DATABASE_URL": "postgresql+psycopg://eval@127.0.0.1:1/lexflow",
+        "LEXFLOW_ENV": "development"
+      },
+      "expected": {
+        "refused": true
+      }
+    },
+    {
+      "id": "cf-scripted-dbname",
+      "category": "configuration",
+      "kind": "config",
+      "what": "A test-looking URL that connects elsewhere (?dbname=).",
+      "settings": {
+        "LEXFLOW_AI_PROVIDER": "scripted",
+        "DATABASE_URL": "postgresql+psycopg://eval@127.0.0.1:1/lexflow_eval_test?dbname=lexflow",
+        "LEXFLOW_ENV": "development"
+      },
+      "expected": {
+        "refused": true
+      }
+    }
+  ]
+}

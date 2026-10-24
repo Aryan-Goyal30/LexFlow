@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 from lexflow.audit import AuditLog
 from lexflow.cli import judgments as cli
-from lexflow.config import Settings, get_settings
+from lexflow.config import Settings, get_settings, is_test_database_name
 from lexflow.db import get_independent_sessions
 from lexflow.extraction import Extracted, Limits, extract
 from lexflow.models import (
@@ -339,14 +339,155 @@ def test_synthetic_sources_need_the_explicit_flag(committed_engine: Engine, corp
     assert count(committed_engine, Judgment) == 0
 
 
-def test_synthetic_sources_are_refused_outside_test_databases(
-    committed_engine: Engine, corpus: Path
-) -> None:
-    live_like = get_settings().model_copy(
-        update={"database_url": "postgresql+psycopg://u@127.0.0.1:1/lexflow"}
+def live_like_settings(name: str = "lexflow") -> Settings:
+    return get_settings().model_copy(
+        update={"database_url": f"postgresql+psycopg://u@127.0.0.1:1/{name}"}
     )
-    with pytest.raises(cli.CommandError, match="never imported into this database"):
-        run(committed_engine, "import", str(corpus), "--allow-synthetic", settings=live_like)
+
+
+def pretend_connected(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+    """The tests always run on the disposable test database; this makes the
+    command believe it is connected to ``name`` (nothing is written there)."""
+    monkeypatch.setattr(cli, "connected_database", lambda session: name)
+
+
+def test_synthetic_sources_are_refused_outside_test_databases(
+    committed_engine: Engine, corpus: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for name in ("lexflow", "lexflow_latest", "contest", "lexflowtest"):
+        pretend_connected(monkeypatch, name)
+        with pytest.raises(cli.CommandError, match="never imported into this database"):
+            run(
+                committed_engine,
+                "import",
+                str(corpus),
+                "--allow-synthetic",
+                "--confirm",
+                "13",
+                settings=live_like_settings(name),
+            )
+    assert count(committed_engine, Judgment) == 0
+
+
+@pytest.mark.parametrize(
+    ("name", "is_test"),
+    [
+        ("lexflow_test", True),
+        ("lexflow_e2e", True),
+        ("lexflow_eval_test", True),
+        ("test", True),
+        ("LEXFLOW-TEST", True),
+        ("lexflow", False),
+        ("lexflow_latest", False),
+        ("contest", False),
+        ("lexflowtest", False),
+        ("e2etest", False),
+        ("", False),
+    ],
+)
+def test_a_test_database_is_named_by_a_whole_name_part(name: str, is_test: bool) -> None:
+    assert is_test_database_name(name) is is_test
+
+
+def test_the_connected_database_is_read_from_the_server(committed_engine: Engine) -> None:
+    with Session(committed_engine) as session:
+        assert cli.connected_database(session) == committed_engine.url.database
+
+
+def test_the_checks_use_the_database_actually_connected_not_the_url(
+    committed_engine: Engine, corpus: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A URL naming a test database could still connect elsewhere (for example
+    with ?dbname=lexflow). Then nothing synthetic is imported, whatever the flags."""
+    pretend_connected(monkeypatch, "lexflow")  # while DATABASE_URL names lexflow_test
+    for flags in (
+        (),
+        ("--allow-synthetic-in-database", "lexflow"),
+        ("--allow-synthetic-in-database", "lexflow_test"),
+    ):
+        with pytest.raises(cli.CommandError, match="connected to database 'lexflow'"):
+            run(committed_engine, "import", str(corpus), "--allow-synthetic", *flags)
+    pretend_connected(monkeypatch, "")
+    with pytest.raises(cli.CommandError, match="connected to database ''"):
+        run(committed_engine, "import", str(corpus), "--allow-synthetic", "--confirm", "13")
+    assert count(committed_engine, Judgment) == 0
+    assert count(committed_engine, JudgmentSource) == 0
+
+
+def test_a_demo_import_into_a_non_test_database_must_name_it_exactly(
+    committed_engine: Engine, corpus: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pretend_connected(monkeypatch, "lexflow")
+    live = live_like_settings()
+    # The opt-in alone does not replace --allow-synthetic.
+    with pytest.raises(cli.CommandError, match="only imported into test databases"):
+        run(
+            committed_engine,
+            "import",
+            str(corpus),
+            "--allow-synthetic-in-database",
+            "lexflow",
+            settings=live,
+        )
+    # Anything but the exact name is refused, including other test-looking names.
+    for wrong in ("other", "Lexflow", "lexflow ", "lexflow_test", "e2e", ""):
+        with pytest.raises(cli.CommandError, match="must name this database exactly"):
+            run(
+                committed_engine,
+                "import",
+                str(corpus),
+                "--allow-synthetic",
+                "--allow-synthetic-in-database",
+                wrong,
+                "--confirm",
+                "13",
+                settings=live,
+            )
+    assert count(committed_engine, Judgment) == 0
+    assert count(committed_engine, JudgmentSource) == 0
+
+
+def test_an_authorised_demo_import_previews_first_is_audited_and_removable(
+    committed_engine: Engine, corpus: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pretend_connected(monkeypatch, "lexflow")
+    live = live_like_settings()
+    flags = ("--allow-synthetic", "--allow-synthetic-in-database", "lexflow")
+    code, preview = run(committed_engine, "import", str(corpus), *flags, settings=live)
+    assert code == 0 and "13 new" in preview
+    assert "DEMO IMPORT" in preview and "SYNTHETIC" in preview and "'lexflow'" in preview
+    assert "remove --source lexflow-synthetic" in preview
+    assert count(committed_engine, Judgment) == 0  # a preview changes nothing
+
+    # A wrong count still imports nothing.
+    with pytest.raises(cli.CommandError, match="does not match the 13 listed"):
+        run(committed_engine, "import", str(corpus), *flags, "--confirm", "12", settings=live)
+    assert count(committed_engine, Judgment) == 0
+
+    code, _ = run(committed_engine, "import", str(corpus), *flags, "--confirm", "13", settings=live)
+    assert code == 0 and count(committed_engine, Judgment) == 13
+    with Session(committed_engine) as session:
+        assert (
+            session.scalar(
+                select(func.count())
+                .select_from(JudgmentSource)
+                .where(JudgmentSource.is_synthetic.is_(True))
+            )
+            == 1
+        )
+        imported = session.scalars(
+            select(AuditEvent).where(AuditEvent.action == "judgment.imported")
+        ).all()
+    assert len(imported) == 13
+
+    # The supported removal command takes them out again, and audits it.
+    code, _ = run(committed_engine, "remove", "--source", "lexflow-synthetic", "--confirm", "13")
+    assert code == 0 and count(committed_engine, Judgment) == 0
+    with Session(committed_engine) as session:
+        removed = session.scalars(
+            select(AuditEvent).where(AuditEvent.action == "judgment.removed")
+        ).all()
+    assert len(removed) == 1
 
 
 def test_a_source_cannot_switch_between_real_and_synthetic(

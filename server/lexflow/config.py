@@ -20,12 +20,24 @@ LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost"})
 _MODEL_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,99}")
 
 
+TEST_DATABASE_PARTS = frozenset({"test", "e2e"})
+
+
+def is_test_database_name(name: str) -> bool:
+    """True for names such as lexflow_test, lexflow_e2e, lexflow_eval_test: a
+    part of the name (split on non-letters) is "test" or "e2e". Not for names
+    that merely contain the letters (lexflow_latest, contest)."""
+    return bool(TEST_DATABASE_PARTS & set(re.split(r"[^a-z0-9]+", name.lower())))
+
+
 def _is_test_database(database_url: str) -> bool:
     try:
-        name = make_url(database_url).database or ""
+        url = make_url(database_url)
     except ArgumentError:
         return False
-    return "test" in name or "e2e" in name
+    if {"dbname", "service"} & set(url.query):
+        return False  # psycopg would connect to another database than the name checked
+    return is_test_database_name(url.database or "")
 
 
 class Settings(BaseSettings):
@@ -216,7 +228,7 @@ class Settings(BaseSettings):
         ):
             raise ValueError(
                 "LEXFLOW_AI_PROVIDER=scripted is a test double: it is only allowed with a "
-                "test or e2e database (name containing 'test' or 'e2e')"
+                "test or e2e database (a name part 'test' or 'e2e', e.g. lexflow_test)"
             )
         return self
 

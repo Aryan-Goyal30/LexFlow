@@ -157,7 +157,9 @@ class ScriptedAnswers:
     """A provider that returns (or raises) prepared answers in order."""
 
     answers: list[Any]
-    name: str = "gemini"
+    # Runs in the tests are confirmed for the scripted provider; the worker
+    # refuses a run whose provider differs from its own.
+    name: str = "scripted"
     model: str = "fake-model-for-tests"
     requests: list[Any] = field(default_factory=list)
 

@@ -6,6 +6,13 @@ Each check replaces one exact snippet in one source file, runs the tests that
 should notice, and restores the file byte-for-byte (verified) before the next.
 A check passes ("caught") when the tests FAIL with the guard removed.
 
+    server\\.venv\\Scripts\\python docs/verification/phase5/run_mutation_checks.py --working-tree
+
+runs the same checks on uncommitted work (M9): instead of naming a commit, the
+report lists the SHA-256 of every target file, checks they are unchanged at
+the end, and is written to ``mutation-report-working-tree.md`` and
+``mutation-output-working-tree.log`` so earlier reports are kept.
+
 The tests use only the test database (``lexflow_test`` via ``TEST_DATABASE_URL``,
 which must point at a PostgreSQL server with pgvector) and the fake API of the
 front-end tests. Refuses to start if any
@@ -16,6 +23,7 @@ tail of each test run).
 
 from __future__ import annotations
 
+import hashlib
 import re
 import subprocess
 import sys
@@ -62,6 +70,9 @@ C_TESTS = pytest("tests/test_analysis_config.py", "tests/test_analysis_provider.
 E_TESTS = pytest("tests/test_analysis_evidence.py")
 R_TESTS = pytest("tests/test_analysis_runs.py")
 UI_TESTS = vitest("src/pages/analysis.test.tsx")
+J_TESTS = pytest("tests/test_judgment_import.py")
+CLI = "server/lexflow/cli/judgments.py"
+CONFIG = "server/lexflow/config.py"
 
 MUTATIONS = [
     # --- validation: only verifiable items survive -----------------------------------------
@@ -167,8 +178,8 @@ MUTATIONS = [
         "P-1",
         "provider error text is never passed on",
         PROVIDER,
-        "            raise _api_error(exc.code) from None",
-        '            raise ProviderError("provider-error", str(exc), retry=True) from None',
+        "            error = _api_error(exc.code, quota_exhausted=_quota_exhausted(exc))",
+        '            error = ProviderError("provider-error", str(exc), retry=True)',
         P_TESTS,
     ),
     Mutation(
@@ -222,7 +233,7 @@ MUTATIONS = [
     ),
     Mutation(
         "C-3",
-        "a missing key is reported by name",
+        "a missing key is reported (the setting named to administrators only)",
         PROVIDER,
         "        if settings.gemini_api_key is None:",
         "        if False:",
@@ -391,6 +402,175 @@ MUTATIONS = [
         "          {false ? (",
         UI_TESTS,
     ),
+    # --- M9 stabilisation (2026-10-24) -----------------------------------------------------
+    Mutation(
+        "M9-1",
+        "an unknown provider fails closed",
+        PROVIDER,
+        "    if provider not in SUPPORTED_PROVIDERS:",
+        "    if False:",
+        P_TESTS,
+    ),
+    Mutation(
+        "M9-2",
+        "a run confirmed for another provider sends nothing",
+        RUNS,
+        "        if run.provider != provider.name:",
+        "        if False:",
+        R_TESTS,
+    ),
+    Mutation(
+        "M9-3",
+        "a used-up daily quota is not retried",
+        PROVIDER,
+        "    if status == 429 and quota_exhausted:",
+        "    if False:",
+        P_TESTS,
+    ),
+    Mutation(
+        "M9-4",
+        "provider messages do not name settings",
+        PROVIDER,
+        "            f\"Google's API did not accept this server's credentials ({status}). \"",
+        '            f"Check GEMINI_API_KEY in server/.env ({status}). "',
+        P_TESTS,
+    ),
+    Mutation(
+        "M9-5",
+        "only administrators see which setting is missing",
+        API,
+        "    if user.role == ADMINISTRATOR and missing.detail:",
+        "    if missing.detail:",
+        R_TESTS,
+    ),
+    Mutation(
+        "M9-6",
+        "an unexpected provider error fails the run, not the worker",
+        RUNS,
+        "        except Exception as error:  # an SDK or provider bug must not crash the worker",
+        "        except ZeroDivisionError as error:  # mutated",
+        R_TESTS,
+    ),
+    Mutation(
+        "M9-7",
+        "an answer that could not be checked is never stored",
+        RUNS,
+        "        except Exception as error:  # never store an answer that was not fully checked",
+        "        except ZeroDivisionError as error:  # mutated",
+        R_TESTS,
+    ),
+    Mutation(
+        "M9-8",
+        "an interrupted run fails after its last attempt",
+        RUNS,
+        "            .where(*held, AnalysisRun.attempts >= max_attempts)",
+        "            .where(*held, AnalysisRun.attempts >= max_attempts + 100)",
+        R_TESTS,
+    ),
+    Mutation(
+        "M9-9",
+        "sources changed since the run are reported",
+        API,
+        '        if current.get(chunk) != items[key].get("contentSha256")',
+        "        if False",
+        R_TESTS,
+    ),
+    Mutation(
+        "M9-10",
+        "the pipeline versions are stored with a run",
+        RUNS,
+        '    record = {**evidence.record(), "pipeline": pipeline_record()}',
+        "    record = evidence.record()",
+        R_TESTS,
+    ),
+    Mutation(
+        "M9-11",
+        "a provider-schema change needs a new schema version",
+        OUTPUT,
+        '                        "description": "Two to four sources.",',
+        '                        "description": "Two to five sources.",',
+        O_TESTS,
+    ),
+    Mutation(
+        "M9-12",
+        'the "outcome" key is discarded',
+        OUTPUT,
+        '{"outcome_assessment", "outcomeAssessment", "outcome", "prediction"}',
+        '{"outcome_assessment", "outcomeAssessment", "prediction"}',
+        O_TESTS,
+    ),
+    Mutation(
+        "M9-13",
+        "contradiction sources must be distinct",
+        VALIDATION,
+        "    return a.evidence_id == b.evidence_id and (a.quote in b.quote or b.quote in a.quote)",
+        "    return False",
+        V_TESTS,
+    ),
+    Mutation(
+        "M9-14",
+        "invented case names are removed",
+        VALIDATION,
+        "                if self._unknown_party(match.group(1)) or self._unknown_party(match.group(2)):",
+        "                if False:",
+        V_TESTS,
+    ),
+    Mutation(
+        "M9-15",
+        "outcome wording is removed",
+        VALIDATION,
+        "        return any(_OUTCOME.search(normalise(text)) for text in texts)",
+        "        return False",
+        V_TESTS,
+    ),
+    Mutation(
+        "M9-16",
+        "invented neutral citations are removed",
+        VALIDATION,
+        '    r"|\\b\\d{4}\\s+INSC\\s+\\d+"\n',
+        "",
+        V_TESTS,
+    ),
+    Mutation(
+        "M9-17",
+        "synthetic imports check the database actually connected",
+        CLI,
+        "        if not database or database != configured:",
+        "        if not database:",
+        J_TESTS,
+    ),
+    Mutation(
+        "M9-18",
+        "a demo import must name the database exactly",
+        CLI,
+        "            if not database or named != database:",
+        "            if not database:",
+        J_TESTS,
+    ),
+    Mutation(
+        "M9-19",
+        "a test database is named by a whole name part",
+        CONFIG,
+        '    return bool(TEST_DATABASE_PARTS & set(re.split(r"[^a-z0-9]+", name.lower())))',
+        '    return "test" in name or "e2e" in name',
+        J_TESTS,
+    ),
+    Mutation(
+        "M9-20",
+        "the scripted double refuses URLs that connect elsewhere (?dbname=)",
+        CONFIG,
+        '    if {"dbname", "service"} & set(url.query):\n        return False',
+        "    if False:\n        return False",
+        C_TESTS,
+    ),
+    Mutation(
+        "M9-21",
+        "changed sources are shown in the result",
+        TAB,
+        "          {changed.size > 0 && (",
+        "          {false && (",
+        UI_TESTS,
+    ),
 ]
 
 
@@ -448,13 +628,20 @@ def dry_run() -> int:
     return 1 if bad else 0
 
 
+def snapshot(paths: list[str]) -> dict[str, str]:
+    return {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in paths}
+
+
 def main() -> int:
     if sys.argv[1:] == ["--dry-run"]:
         return dry_run()
+    working_tree = sys.argv[1:] == ["--working-tree"]
     targets = sorted({m.path for m in MUTATIONS})
-    if git_status(targets):
+    before = snapshot(targets)
+    if git_status(targets) and not working_tree:
         print(
-            "Refusing: a target file has uncommitted changes:\n" + git_status(targets)
+            "Refusing: a target file has uncommitted changes (use --working-tree to check "
+            "uncommitted work):\n" + git_status(targets)
         )
         return 2
     head = subprocess.run(
@@ -518,20 +705,35 @@ def main() -> int:
             "",
         ]
 
-    if git_status(targets):
+    if working_tree:
+        if snapshot(targets) != before:
+            print("Target files differ from their state before the run; stopping.")
+            return 5
+    elif git_status(targets):
         print(
             "Target files differ from the commit after the run:\n" + git_status(targets)
         )
         return 5
 
     caught = sum(1 for _, code, _, _ in rows if code != 0)
+    suffix = "-working-tree" if working_tree else ""
+    report_name, log_name = (
+        f"mutation-report{suffix}.md",
+        f"mutation-output{suffix}.log",
+    )
     report = [
         "# Phase 5 mutation checks",
         "",
         (
-            f"Commit `{head}`; run {started:%Y-%m-%d %H:%M} UTC; script "
+            (
+                f"Working tree on commit `{head}` with uncommitted changes (target files "
+                "identified by SHA-256 below)"
+                if working_tree
+                else f"Commit `{head}`"
+            )
+            + f"; run {started:%Y-%m-%d %H:%M} UTC; script "
             "`docs/verification/phase5/run_mutation_checks.py` (raw output: "
-            "`mutation-output.log`)."
+            f"`{log_name}`)."
         ),
         "",
         (
@@ -554,13 +756,16 @@ def main() -> int:
             f"| {m.id} | {m.label} | `{m.path}` | `{tests}` | {code} | "
             f"{'caught' if code != 0 else '**survived**'} |"
         )
+    if working_tree:
+        report += ["", "## Target files (SHA-256, unchanged before and after)", ""]
+        report += [f"- `{p}` `{digest}`" for p, digest in before.items()]
     report += ["", "## Failing tests per check", ""]
     for m, _, _, failed in rows:
         report.append(
             f"- **{m.id}**: " + ("; ".join(f"`{f}`" for f in failed) or "(none listed)")
         )
-    (HERE / "mutation-report.md").write_text("\n".join(report) + "\n", encoding="utf-8")
-    (HERE / "mutation-output.log").write_text("\n".join(log) + "\n", encoding="utf-8")
+    (HERE / report_name).write_text("\n".join(report) + "\n", encoding="utf-8")
+    (HERE / log_name).write_text("\n".join(log) + "\n", encoding="utf-8")
     print(f"{caught} of {len(rows)} caught; all files restored.")
     return 0 if caught == len(rows) else 1
 

@@ -193,7 +193,9 @@ def analysis_provider(settings: Settings, sessions: Sessions) -> AnalysisProvide
     provider = analysis_provider_for(settings)
     if isinstance(provider, Unavailable):
         if provider.code != "analysis-disabled":
-            logger.warning("AI analysis runs are skipped: %s", provider.reason)
+            logger.warning(
+                "AI analysis runs are skipped: %s %s", provider.reason, provider.detail or ""
+            )
         return None
     with sessions() as session:
         if not analysis_runs.table_exists(session):
@@ -225,7 +227,9 @@ def run_next_analysis(
     try:
         analysis_runs.process(sessions, provider, settings, run_id, worker_id, now=now)
     except BaseException:
-        analysis_runs.release(sessions, run_id, worker_id)
+        analysis_runs.release(
+            sessions, run_id, worker_id, max_attempts=settings.ai_max_attempts, now=now()
+        )
         raise
     return True
 

@@ -65,7 +65,12 @@ def eval_url() -> URL:
     )
     if not raw:
         raise SystemExit("TEST_DATABASE_URL is not set (see server/.env.example)")
-    return make_url(raw).set(database=DATABASE)
+    url = make_url(raw)
+    if {"dbname", "service"} & set(url.query):
+        # Either would make psycopg connect to another database than the throwaway
+        # one named below, and the evaluation would migrate it and write test data there.
+        raise SystemExit("Refusing a TEST_DATABASE_URL with a dbname or service parameter.")
+    return url.set(database=DATABASE)
 
 
 def recreate(url: URL, *, drop_only: bool = False) -> None:
@@ -128,6 +133,7 @@ def main() -> int:
         "--out", type=Path, default=SERVER_ROOT.parent / "docs" / "verification" / "phase4"
     )
     args = parser.parse_args()
+    url = eval_url()  # first: refuse a URL that would connect elsewhere
     evalset, manifest, set_sha = load_set(args.set)
     k = int(evalset["k"])
     settings = get_settings()
@@ -144,7 +150,6 @@ def main() -> int:
     if provider is not None:
         modes += ["semantic", "hybrid"]
 
-    url = eval_url()
     recreate(url)
     rows: list[dict[str, Any]] = []
     try:

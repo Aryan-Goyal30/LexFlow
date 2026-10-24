@@ -74,8 +74,10 @@ Status: **Done** = implemented and tested; **Later** = a future phase.
   deployment.
 - PostgreSQL 17 with pgvector (`pgvector/pgvector:pg17-trixie`).
 - Judgment sources must be lawfully usable; LexFlow records but does not
-  decide the terms. **No real source is approved yet**, so the live
-  collection is empty.
+  decide the terms. **No real source is approved yet.** The live collection
+  holds only three judgments labelled "SYNTHETIC DEMO — NOT REAL CASE LAW"
+  (imported by the owner on 2026-10-20 for a demonstration; removable with
+  `remove --source`).
 - The embedding model is English-only.
 
 ## 6. Out of scope (this version)

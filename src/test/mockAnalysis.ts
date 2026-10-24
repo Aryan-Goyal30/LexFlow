@@ -45,7 +45,7 @@ const LIMITS = { maxDocuments: 20, maxInputChars: 60000, maxPrecedents: 8, runsP
 const fresh = (): AnalysisState => ({
   config: {
     available: false,
-    unavailableReason: 'AI analysis is turned off on this server (LEXFLOW_AI_PROVIDER=disabled).',
+    unavailableReason: 'AI analysis is turned off on this server.',
     provider: null,
     model: null,
     sampleOnly: true,
@@ -80,7 +80,7 @@ export function mockAnalysisRuns(): AnalysisRun[] {
 /** Finish a run as the worker would: ready with a result, or failed with a reason. */
 export function mockFinishRun(
   runId: string,
-  outcome: { result: AnalysisResult } | { reasonCode: string; reason: string },
+  outcome: { result: AnalysisResult; changed?: string[] } | { reasonCode: string; reason: string },
 ): void {
   const run = state.runs.find((r) => r.id === runId);
   if (!run) throw new Error(`no run ${runId}`);
@@ -96,6 +96,7 @@ export function mockFinishRun(
         judgmentPassages: 0,
         characters: 900,
         truncated: false,
+        changed: outcome.changed ?? [],
       },
     });
   } else {

@@ -45,6 +45,9 @@ def _test_database_url() -> URL:
     if "test" not in (url.database or ""):
         # Guard against pointing the destructive test setup at a real database.
         pytest.exit(f"Refusing to use database {url.database!r}: its name must contain 'test'", 2)
+    if {"dbname", "service"} & set(url.query):
+        # Either would make psycopg connect to another database than the name checked above.
+        pytest.exit("Refusing a TEST_DATABASE_URL with a dbname or service parameter.", 2)
     return url
 
 

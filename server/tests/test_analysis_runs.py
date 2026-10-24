@@ -5,6 +5,7 @@ scripted double or a fake with prepared answers. Synthetic text only."""
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
@@ -13,18 +14,21 @@ from typing import Any
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from google.genai import errors
+from pydantic import SecretStr
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from lexflow import worker
-from lexflow.analysis import runs
-from lexflow.analysis.provider import ProviderError, Response
+from lexflow.analysis import runs, validation
+from lexflow.analysis.provider import GeminiProvider, ProviderError, Response
 from lexflow.analysis.scripted import ScriptedProvider
+from lexflow.api import analysis as analysis_api
 from lexflow.config import Settings, get_settings
-from lexflow.models import AnalysisRun, AuditEvent, Case, Document
+from lexflow.models import AnalysisRun, AuditEvent, Case, Document, DocumentChunk
 from lexflow.seed import sample_uuid
 from tests.access_fixtures import SATTVIK
-from tests.analysis_fakes import ScriptedAnswers
+from tests.analysis_fakes import Factory, FakeGeminiClient, ScriptedAnswers
 from tests.conftest import APP_HEADERS, shared_sessions, sign_in
 from tests.embedding_fakes import make_ready
 from tests.test_portal import as_client, portal_people  # noqa: F401 - fixtures
@@ -186,7 +190,25 @@ def test_a_run_needs_configuration(
     assert off.status_code == 503 and off.json()["code"] == "analysis-unavailable"
     configure(LEXFLOW_AI_PROVIDER="gemini", GEMINI_MODEL="m-1")
     no_key = start(as_("lead"), docs)
-    assert no_key.status_code == 503 and "GEMINI_API_KEY" in no_key.json()["detail"]
+    assert no_key.status_code == 503
+    # Advocates are told to ask an administrator; only administrators see which
+    # setting is missing.
+    assert "administrator" in no_key.json()["detail"]
+    for shown in (no_key.text, as_("lead").get(f"/api/cases/{SATTVIK}/analysis/setup").text):
+        assert "GEMINI" not in shown and ".env" not in shown
+    admin = start(as_("admin"), docs)
+    assert admin.status_code == 503 and "GEMINI_API_KEY" in admin.json()["detail"]
+    setup = as_("admin").get(f"/api/cases/{SATTVIK}/analysis/setup").json()
+    assert "GEMINI_API_KEY" in setup["unavailableReason"]
+
+
+def test_an_off_server_does_not_name_its_settings_to_advocates(
+    as_: As, docs: list[uuid.UUID]
+) -> None:
+    lead = as_("lead").get(f"/api/cases/{SATTVIK}/analysis/setup").json()
+    assert lead["unavailableReason"] == "AI analysis is turned off on this server."
+    admin = as_("admin").get(f"/api/cases/{SATTVIK}/analysis/setup").json()
+    assert "LEXFLOW_AI_PROVIDER=disabled" in admin["unavailableReason"]
 
 
 def test_a_run_needs_explicit_confirmation_and_valid_input(
@@ -316,10 +338,17 @@ def test_the_scripted_run_ends_ready_with_verified_sources_only(
         "judgmentPassages": 0,
         "characters": body["evidence"]["characters"],
         "truncated": False,
+        "changed": [],
     }
 
     (done,) = events(db, "analysis.completed")
     assert done.details["providerCalled"] is True and done.details["removed"] == 1
+    assert done.details["schemaVersion"] == "case-analysis-schema-2"
+    assert done.details["validatorVersion"] == "grounding-3"
+    row = db.get(AnalysisRun, uuid.UUID(run_id))
+    assert row is not None and row.evidence is not None
+    assert row.evidence["pipeline"] == runs.pipeline_record()
+    assert row.evidence["pipeline"]["promptVersion"] == row.prompt_version
     stored = json.dumps([done.details, db.get(AnalysisRun, uuid.UUID(run_id)).evidence])  # type: ignore[union-attr]
     assert "SYNTHETIC" not in stored  # counts and references only, never text
     assert len(events(db, "analysis.viewed")) == 1
@@ -372,6 +401,164 @@ def test_a_refused_request_fails_at_once(
         "provider-auth-failed",
         None,
     )
+
+
+def test_google_codes_reach_the_audit_log_and_worker_log_but_not_users_or_the_run(
+    as_: As,
+    db: Session,
+    docs: list[uuid.UUID],
+    configure: Callable[..., Settings],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A Google-style 400 through the real GeminiProvider: the validated status and
+    reason are kept for administrators; the provider's free text, the key and the
+    document text appear nowhere."""
+    settings = configure()
+    caplog.set_level(logging.INFO, logger="lexflow.analysis")
+    echo = f"PROVIDER-ECHO {FAKE_KEY} registered trade mark SATTVIK"
+    refused = errors.ClientError(
+        400,
+        {
+            "error": {
+                "code": 400,
+                "message": echo,
+                "status": "INVALID_ARGUMENT",
+                "details": [
+                    {
+                        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+                        "reason": "API_KEY_INVALID",
+                        "metadata": {"note": echo},
+                    }
+                ],
+            }
+        },
+    )
+    provider = GeminiProvider(
+        SecretStr(FAKE_KEY),
+        "test-model-1",
+        timeout_seconds=30,
+        client_factory=Factory(FakeGeminiClient([refused])),
+    )
+    run_id = uuid.UUID(start(as_("lead"), docs).json()["id"])
+    # The run was confirmed for the scripted provider; pretend it was for Gemini.
+    db.execute(update(AnalysisRun).where(AnalysisRun.id == run_id).values(provider="gemini"))
+    db.commit()
+    work(db, provider, settings)
+
+    run = db.get(AnalysisRun, run_id)
+    assert run is not None and (run.status, run.reason_code) == ("failed", "provider-rejected")
+    assert run.reason == "Google's API refused the request (400)."
+    (failed,) = events(db, "analysis.failed")
+    assert failed.details == {
+        "reason": "provider-rejected",
+        "attempts": 1,
+        "model": run.model,
+        "providerHttpStatus": "400",
+        "providerStatus": "INVALID_ARGUMENT",
+        "providerReason": "API_KEY_INVALID",
+    }
+    assert "provider-rejected" in caplog.text
+    assert "httpStatus=400 status=INVALID_ARGUMENT reason=API_KEY_INVALID" in caplog.text
+
+    # Ordinary readers of the run, and the stored row, see only the generic reason.
+    shown = [
+        json.dumps(as_("lead").get(f"{runs_url()}/{run_id}").json()),
+        as_("paralegal").get(runs_url()).text,
+        json.dumps([run.reason, run.evidence, run.usage, run.result]),
+    ]
+    for text in shown:
+        assert "INVALID_ARGUMENT" not in text and "API_KEY_INVALID" not in text
+    # No secret or free text anywhere that was written.
+    written = [caplog.text, json.dumps([e.details for e in db.scalars(select(AuditEvent))]), *shown]
+    for secret in (FAKE_KEY, "PROVIDER-ECHO", "SATTVIK"):
+        assert all(secret not in text for text in written)
+
+
+def test_a_run_confirmed_for_another_provider_sends_nothing(
+    as_: As, db: Session, docs: list[uuid.UUID], configure: Callable[..., Settings]
+) -> None:
+    """The person confirmed sending text to the scripted provider; a worker that
+    now has a different provider fails the run without calling it."""
+    settings = configure()
+    run_id = uuid.UUID(start(as_("lead"), docs).json()["id"])
+    other = ScriptedAnswers([], name="gemini")
+    assert work(db, other, settings)
+    assert other.requests == []
+    body = as_("lead").get(f"{runs_url()}/{run_id}").json()
+    assert (body["status"], body["reasonCode"], body["result"]) == (
+        "failed",
+        "provider-mismatch",
+        None,
+    )
+    assert body["provider"] == "scripted" and "nothing was sent" in body["reason"]
+    (failed,) = events(db, "analysis.failed")
+    assert failed.details["reason"] == "provider-mismatch"
+    assert failed.details["attempts"] == 1
+
+
+def test_an_exhausted_quota_fails_at_once_and_names_the_quota_to_administrators(
+    as_: As, db: Session, docs: list[uuid.UUID], configure: Callable[..., Settings]
+) -> None:
+    settings = configure()
+    run_id = uuid.UUID(start(as_("lead"), docs).json()["id"])
+    db.execute(update(AnalysisRun).where(AnalysisRun.id == run_id).values(provider="gemini"))
+    db.commit()
+    exhausted = errors.ClientError(
+        429,
+        {
+            "error": {
+                "status": "RESOURCE_EXHAUSTED",
+                "message": f"PROVIDER-ECHO {FAKE_KEY}",
+                "details": [
+                    {
+                        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                        "violations": [
+                            {"quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier"}
+                        ],
+                    }
+                ],
+            }
+        },
+    )
+    provider = GeminiProvider(
+        SecretStr(FAKE_KEY),
+        "test-model-1",
+        timeout_seconds=30,
+        client_factory=Factory(FakeGeminiClient([exhausted])),
+    )
+    assert work(db, provider, settings)
+    run = db.get(AnalysisRun, run_id)
+    assert run is not None
+    db.refresh(run)
+    assert (run.status, run.reason_code, run.attempts) == ("failed", "provider-quota-exhausted", 1)
+    assert run.reason is not None and "GEMINI" not in run.reason
+    assert "PROVIDER-ECHO" not in run.reason
+    (failed,) = events(db, "analysis.failed")
+    assert failed.details["providerQuotaId"] == "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+    assert FAKE_KEY not in json.dumps(failed.details)
+
+
+def test_a_retried_failure_logs_its_codes_without_a_failure_event(
+    as_: As,
+    db: Session,
+    docs: list[uuid.UUID],
+    configure: Callable[..., Settings],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    settings = configure()
+    caplog.set_level(logging.INFO, logger="lexflow.analysis")
+    run_id = uuid.UUID(start(as_("lead"), docs).json()["id"])
+    busy = ProviderError(
+        "provider-unavailable",
+        "Google's API had a server error (503).",
+        retry=True,
+        diagnostic={"httpStatus": "503", "status": "UNAVAILABLE"},
+    )
+    work(db, ScriptedAnswers([busy]), settings)
+    run = db.get(AnalysisRun, run_id)
+    assert run is not None and run.status == "queued"
+    assert "queued (provider-unavailable) httpStatus=503 status=UNAVAILABLE" in caplog.text
+    assert events(db, "analysis.failed") == []
 
 
 def test_an_unreadable_answer_is_asked_for_once_more(
@@ -513,6 +700,119 @@ def test_an_abandoned_run_fails_after_its_last_attempt(
     db.refresh(run)
     assert (run.status, run.reason_code) == ("failed", "interrupted")
     assert events(db, "analysis.failed")[0].details == {"reason": "interrupted"}
+
+
+# --- run integrity (M9) ----------------------------------------------------------------
+
+
+def test_an_unexpected_provider_error_fails_the_run_without_crashing_the_worker(
+    as_: As,
+    db: Session,
+    docs: list[uuid.UUID],
+    configure: Callable[..., Settings],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    settings = configure()
+    caplog.set_level(logging.INFO, logger="lexflow.analysis")
+    run_id = uuid.UUID(start(as_("lead"), docs).json()["id"])
+    assert work(db, ScriptedAnswers([RuntimeError(f"SDK-ECHO {FAKE_KEY} SATTVIK")]), settings)
+    run = db.get(AnalysisRun, run_id)
+    assert run is not None
+    db.refresh(run)
+    assert (run.status, run.reason_code, run.result) == ("failed", "provider-error", None)
+    assert run.reason == runs.PROVIDER_FAULT
+    assert "RuntimeError" in caplog.text
+    for secret in ("SDK-ECHO", FAKE_KEY, "SATTVIK"):
+        assert secret not in caplog.text and secret not in json.dumps(
+            [e.details for e in db.scalars(select(AuditEvent))]
+        )
+
+
+def test_an_error_while_checking_the_answer_never_stores_a_result(
+    as_: As,
+    db: Session,
+    docs: list[uuid.UUID],
+    configure: Callable[..., Settings],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = configure()
+    run_id = uuid.UUID(start(as_("lead"), docs).json()["id"])
+
+    def broken(*args: Any) -> Any:
+        raise ValueError("validator bug")
+
+    monkeypatch.setattr(validation, "validate", broken)
+    assert work(db, ScriptedProvider(), settings)
+    body = as_("lead").get(f"{runs_url()}/{run_id}").json()
+    assert (body["status"], body["reasonCode"], body["result"]) == (
+        "failed",
+        "validation-error",
+        None,
+    )
+    run = db.get(AnalysisRun, run_id)
+    assert run is not None and run.result is None and run.removed is None
+    assert events(db, "analysis.completed") == []
+
+
+@pytest.mark.parametrize(("attempts", "status"), [("1", "failed"), ("3", "queued")])
+def test_an_interrupted_run_is_handed_back_until_its_last_attempt(
+    attempts: str,
+    status: str,
+    as_: As,
+    db: Session,
+    docs: list[uuid.UUID],
+    configure: Callable[..., Settings],
+) -> None:
+    settings = configure(LEXFLOW_AI_MAX_ATTEMPTS=attempts)
+    run_id = uuid.UUID(start(as_("lead"), docs).json()["id"])
+    with pytest.raises(KeyboardInterrupt):
+        work(db, ScriptedAnswers([KeyboardInterrupt()]), settings)
+    run = db.get(AnalysisRun, run_id)
+    assert run is not None
+    db.refresh(run)
+    assert (run.status, run.attempts, run.worker_id) == (status, 1, None)
+    if status == "failed":
+        assert run.reason_code == "interrupted"
+        assert events(db, "analysis.failed")[0].details == {"reason": "interrupted"}
+    else:
+        assert events(db, "analysis.failed") == []
+
+
+def test_a_result_says_which_sources_changed_since_the_run(
+    as_: As, db: Session, docs: list[uuid.UUID], configure: Callable[..., Settings]
+) -> None:
+    """Re-extracting a document replaces its chunks; deleting it hides them. The
+    stored result keeps its quotes, and the run says which references changed."""
+    settings = configure()
+    run_id = start(as_("lead"), docs).json()["id"]
+    work(db, ScriptedProvider(), settings)
+    url = f"{runs_url()}/{run_id}"
+    assert as_("lead").get(url).json()["evidence"]["changed"] == []
+
+    db.execute(
+        update(DocumentChunk)
+        .where(DocumentChunk.document_id == docs[0])
+        .values(content_sha256="0" * 64)
+    )
+    db.commit()
+    assert as_("lead").get(url).json()["evidence"]["changed"] == ["D1"]
+
+    db.execute(update(Document).where(Document.id == docs[1]).values(deleted_at=datetime.now(UTC)))
+    db.commit()
+    body = as_("lead").get(url).json()
+    assert body["evidence"]["changed"] == ["D1", "D2"]
+    # The stored result is unchanged: its quotes are what was verified at the time.
+    assert body["status"] == "ready" and len(body["result"]["facts"]) == 2
+
+
+def test_missing_or_unreadable_judgment_references_count_as_changed(db: Session) -> None:
+    items: dict[str, dict[str, object]] = {
+        "J2": {"kind": "judgment", "chunkId": str(uuid.uuid4()), "contentSha256": "a" * 64},
+        "D10": {"kind": "document", "chunkId": "not-a-uuid", "contentSha256": "a" * 64},
+        "D9": {"kind": "document", "chunkId": str(uuid.uuid4()), "contentSha256": "a" * 64},
+    }
+    assert analysis_api._changed(db, items) == ["D9", "D10", "J2"]
+    assert analysis_api._changed(db, {}) == []
 
 
 def test_the_worker_leaves_analysis_alone_when_it_is_unavailable(

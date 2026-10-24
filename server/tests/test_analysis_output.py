@@ -66,7 +66,9 @@ def test_items_beyond_the_maximum_are_counted() -> None:
     assert len(parsed.facts) == 40 and parsed.over_limit == 5
 
 
-@pytest.mark.parametrize("key", ["outcome_assessment", "outcomeAssessment", "prediction"])
+@pytest.mark.parametrize(
+    "key", ["outcome_assessment", "outcomeAssessment", "outcome", "prediction"]
+)
 def test_an_outcome_assessment_is_noted_for_discarding(key: str) -> None:
     parsed = parse(json.dumps({key: {"likely": "win"}, "facts": [FACT]}))
     assert parsed.outcome_discarded and len(parsed.facts) == 1
@@ -88,3 +90,134 @@ def test_the_response_schema_is_plain_json_schema() -> None:
         "insufficient_evidence",
     }
     assert "outcome" not in text
+
+
+def test_every_outcome_key_is_covered() -> None:
+    from lexflow.analysis.output import OUTCOME_KEYS
+
+    assert {"outcome_assessment", "outcomeAssessment", "outcome", "prediction"} == OUTCOME_KEYS
+
+
+# The fingerprint of case-analysis-schema-2. If this test fails, the provider
+# schema changed: give it a new RESPONSE_SCHEMA_VERSION (and record why) rather
+# than editing the expected value alone, so stored runs keep an honest label.
+SCHEMA_2_SHA256 = "2b283e9b5b8a33f0cd3babe354fb10878548c2a7f1063733412dea7f2b223a86"
+
+
+def test_the_schema_version_names_exactly_this_schema() -> None:
+    from lexflow.analysis.output import RESPONSE_SCHEMA_VERSION, schema_sha256
+
+    assert RESPONSE_SCHEMA_VERSION == "case-analysis-schema-2"
+    assert schema_sha256() == SCHEMA_2_SHA256
+
+
+ARRAY_SIZE_KEYWORDS = {"minItems", "maxItems", "uniqueItems", "minContains", "maxContains"}
+
+
+def schema_nodes(node: object, path: str = "$") -> list[tuple[str, dict[str, object]]]:
+    found: list[tuple[str, dict[str, object]]] = []
+    if isinstance(node, dict):
+        found.append((path, node))
+        for key, value in node.items():
+            found += schema_nodes(value, f"{path}.{key}")
+    elif isinstance(node, list):
+        for i, value in enumerate(node):
+            found += schema_nodes(value, f"{path}[{i}]")
+    return found
+
+
+def test_the_provider_schema_has_no_array_size_keywords_but_states_the_limits() -> None:
+    nodes = schema_nodes(RESPONSE_SCHEMA)
+    # Not a keyword anywhere in the schema (not even as a nested property name).
+    assert [(p, k) for p, n in nodes for k in n if k in ARRAY_SIZE_KEYWORDS] == []
+    # Every array still declares its items and says, in words, how many it may have.
+    arrays = [(p, n) for p, n in nodes if n.get("type") == "array"]
+    assert len(arrays) == 8
+    for path, array in arrays:
+        assert isinstance(array.get("items"), dict), path
+        assert "At most" in str(array.get("description")) or "Two to four" in str(
+            array.get("description")
+        ), path
+    props = RESPONSE_SCHEMA["properties"]
+    assert props["facts"]["description"] == "At most 40 facts."
+    assert props["issues"]["description"] == "At most 20 issues."
+    assert props["precedents"]["description"] == "At most 20 precedents."
+    assert props["contradictions"]["description"] == "At most 15 contradictions."
+    sources = props["contradictions"]["items"]["properties"]["sources"]
+    assert sources["description"] == "Two to four sources."
+
+
+def test_the_rest_of_the_provider_schema_is_unchanged() -> None:
+    props = RESPONSE_SCHEMA["properties"]
+    assert RESPONSE_SCHEMA["type"] == "object"
+    assert {k: v["type"] for k, v in props.items()} == {
+        "facts": "array",
+        "issues": "array",
+        "precedents": "array",
+        "contradictions": "array",
+        "insufficient_evidence": "boolean",
+    }
+    required = {
+        name: sorted(props[name]["items"]["required"])
+        for name in ("facts", "issues", "precedents", "contradictions")
+    }
+    assert required == {
+        "facts": ["evidence", "id", "quote", "statement"],
+        "issues": ["fact_ids", "question"],
+        "precedents": ["differences", "evidence", "similarities", "summary"],
+        "contradictions": ["description", "sources"],
+    }
+    source_items = props["contradictions"]["items"]["properties"]["sources"]["items"]
+    assert sorted(source_items["required"]) == ["evidence", "quote"]
+    assert props["issues"]["items"]["properties"]["fact_ids"]["items"]["type"] == "string"
+
+
+QUOTE = "q" * 20
+SOURCE = {"evidence": "D1", "quote": QUOTE}
+
+
+def precedent(**changes: object) -> dict[str, object]:
+    return {
+        "evidence": "J1",
+        "summary": "s",
+        "similarities": ["a"],
+        "differences": ["b"],
+        **changes,
+    }
+
+
+def test_list_limits_are_still_enforced_by_the_parser() -> None:
+    parsed = parse(
+        answer(
+            facts=[{**FACT, "id": f"F{i}"} for i in range(1, 42)],
+            issues=[{"question": "Q?", "fact_ids": ["F1"]}] * 21,
+            precedents=[precedent()] * 21,
+            contradictions=[{"description": "d", "sources": [SOURCE, SOURCE]}] * 16,
+        )
+    )
+    assert (len(parsed.facts), len(parsed.issues)) == (40, 20)
+    assert (len(parsed.precedents), len(parsed.contradictions)) == (20, 15)
+    assert parsed.over_limit == 4 and parsed.malformed == 0
+
+
+def test_item_limits_are_still_enforced_by_the_parser() -> None:
+    def kept(**parts: object) -> tuple[int, int]:
+        parsed = parse(answer(**parts))
+        counts = (
+            len(parsed.issues) + len(parsed.precedents) + len(parsed.contradictions),
+            parsed.malformed,
+        )
+        return counts
+
+    # Five similarities or differences, twenty fact ids and two to four sources fit ...
+    assert kept(precedents=[precedent(similarities=list("abcde"))]) == (1, 0)
+    assert kept(precedents=[precedent(differences=list("abcde"))]) == (1, 0)
+    assert kept(issues=[{"question": "Q?", "fact_ids": ["F1"] * 20}]) == (1, 0)
+    for n in (2, 3, 4):
+        assert kept(contradictions=[{"description": "d", "sources": [SOURCE] * n}]) == (1, 0)
+    # ... and one more (or fewer) makes the item malformed, which drops and counts it.
+    assert kept(precedents=[precedent(similarities=list("abcdef"))]) == (0, 1)
+    assert kept(precedents=[precedent(differences=list("abcdef"))]) == (0, 1)
+    assert kept(issues=[{"question": "Q?", "fact_ids": ["F1"] * 21}]) == (0, 1)
+    for n in (0, 1, 5):
+        assert kept(contradictions=[{"description": "d", "sources": [SOURCE] * n}]) == (0, 1)

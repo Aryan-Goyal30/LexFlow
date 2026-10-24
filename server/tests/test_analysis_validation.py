@@ -12,6 +12,8 @@ import json
 from dataclasses import replace
 from typing import Any
 
+import pytest
+
 from lexflow.analysis.output import parse
 from lexflow.analysis.validation import (
     MODEL_INSUFFICIENT,
@@ -190,6 +192,153 @@ def test_a_contradiction_needs_two_verified_sources() -> None:
     (kept,) = result.contradictions
     assert [s.evidence_id for s in kept.sources] == ["D1", "D2"]
     assert removed(result) == {"contradiction-unsupported": 2}
+
+
+def test_two_quotes_of_the_same_text_are_not_a_contradiction() -> None:
+    nested = {
+        "description": "A quote and part of itself.",
+        "sources": [
+            {"evidence": "D1", "quote": QUOTE_A},
+            {"evidence": "D1", "quote": "the monthly rent at Rs. 40,000"},
+        ],
+    }
+    ev = evidence()
+    twin = replace(ev.passages[1], text=ev.passages[1].text + " " + QUOTE_A + ".")
+    ev.passages = [ev.passages[0], twin]
+    copied = {
+        "description": "The same words in two documents.",
+        "sources": [{"evidence": "D1", "quote": QUOTE_A}, {"evidence": "D2", "quote": QUOTE_A}],
+    }
+    apart = {
+        "description": "Two separate statements in one passage.",
+        "sources": [
+            {"evidence": "D1", "quote": "tenancy agreement dated 1 April 2019"},
+            {"evidence": "D1", "quote": "payable on the fifth day of each month"},
+        ],
+    }
+    result = run(ev=ev, contradictions=[nested, copied, apart])
+    (kept,) = result.contradictions
+    assert kept.description == "Two separate statements in one passage."
+    assert removed(result) == {"contradiction-unsupported": 2}
+    assert REASONS["contradiction-unsupported"] == "Had fewer than two distinct verified sources."
+
+
+# --- citations, case names and outcome wording in prose -------------------------------
+
+
+def test_an_invented_neutral_citation_is_removed() -> None:
+    result = run(
+        facts=[
+            fact(1, "D1", QUOTE_A, "As held in 2023 INSC 456, the rent governs."),
+            fact(2, "D1", QUOTE_A, "See 2024:DHC:1234 on notices."),
+            fact(3, "D1", QUOTE_A, "The rent was agreed in 2019."),
+        ]
+    )
+    assert [f.id for f in result.facts] == ["F3"]
+    assert removed(result) == {"unverified-citation": 2}
+
+
+def test_a_neutral_citation_in_the_evidence_may_be_named() -> None:
+    ev = evidence()
+    ev.judgments = [judgment_passage(citation="2019 INSC 101")]
+    result = run(ev=ev, facts=[fact(1, "D1", QUOTE_A, "Compare 2019 INSC 101.")])
+    assert len(result.facts) == 1 and result.removed.count == 0
+
+
+def test_an_invented_case_name_is_removed_but_known_parties_are_not() -> None:
+    result = run(
+        facts=[
+            fact(1, "D1", QUOTE_A, "As in Ramesh Kumar v. Suresh Enterprises, rent governs."),
+            fact(2, "D1", QUOTE_A, "Asha Rao v. Bharat Traders is the retrieved judgment."),
+            fact(3, "D1", QUOTE_A, "The Plaintiff v. Defendant dispute concerns rent."),
+            fact(4, "D1", QUOTE_A, "Compare Asha Rao vs Mohan Lal."),
+        ],
+        precedents=[precedent("J1", "Unlike Kavita Sharma versus Union of India, ...")],
+    )
+    assert [f.id for f in result.facts] == ["F2", "F3"]
+    assert result.precedents == []
+    assert removed(result) == {"unverified-citation": 3}
+    assert "citation or case" in REASONS["unverified-citation"]
+
+
+def test_the_case_title_is_known_to_the_case_name_check() -> None:
+    ev = evidence()
+    ev.context = replace(ev.context, title="Sattvik Foods v. Annapurna Snacks (SYNTHETIC)")
+    result = run(ev=ev, facts=[fact(1, "D1", QUOTE_A, "In Sattvik Foods v. Annapurna, rent.")])
+    assert len(result.facts) == 1
+
+
+PREDICTIONS = [
+    "The plaintiff is likely to win the suit.",
+    "The defendant will lose the case.",
+    "The plaintiff is likely to succeed.",
+    "The defendant is unlikely to succeed in its claim of honest adoption.",
+    "The suit is likely to fail.",
+    "The appeal will probably be dismissed.",
+    "The court will grant an injunction against the defendant.",
+    "The court will award damages of Rs. 5 lakh.",
+    "The court is likely to dismiss the suit.",
+    "The court will rule in favour of the plaintiff.",
+    "The court will side with the plaintiff.",
+    "The plaintiff's prospects of success are strong.",
+    "There is a good likelihood of winning the case.",
+    "The plaintiff should win the appeal.",
+]
+FACTS_WITH_OUTCOME_WORDS = [
+    # The three statements the M9 review found wrongly removed by grounding-2.
+    "The plaintiff is likely to lose goodwill if the mark continues in use.",
+    "Customers are likely to be confused and the plaintiff may lose sales.",
+    "An event probably occurred before a tenant could win a tender.",
+    # Other factual uses of "likely", "lose", "win", "probability", "court".
+    "Likelihood of confusion between SATTVIK and SATVIK is the central issue.",
+    "The defendant will lose market share.",
+    "There is a likelihood of losing customers.",
+    "The expert found a 70% probability that the signature is forged.",
+    "The court will hear the application on 5 May.",
+    "The court will allow the parties two weeks to file evidence.",
+    "The landlord said he would win the tender.",
+    "The tenant is likely to fail to pay the rent.",
+    "The defendant will lose its licence if it does not pay.",
+]
+
+
+@pytest.mark.parametrize("statement", PREDICTIONS)
+def test_a_prediction_of_the_case_outcome_is_removed(statement: str) -> None:
+    result = run(facts=[fact(1, "D1", QUOTE_A, statement)])
+    assert result.facts == [] and removed(result) == {"outcome-wording": 1}
+
+
+@pytest.mark.parametrize("statement", FACTS_WITH_OUTCOME_WORDS)
+def test_a_grounded_fact_using_outcome_words_is_kept(statement: str) -> None:
+    result = run(facts=[fact(1, "D1", QUOTE_A, statement)])
+    assert [f.statement for f in result.facts] == [statement]
+    assert result.removed.count == 0
+
+
+def test_outcome_wording_is_removed_wherever_it_appears() -> None:
+    good = {
+        "description": "The rent differs.",
+        "sources": [{"evidence": "D1", "quote": QUOTE_A}, {"evidence": "D2", "quote": QUOTE_B}],
+    }
+    result = run(
+        facts=[
+            fact(1, "D1", QUOTE_A, "The tenant is likely to win because the rent was fixed."),
+            fact(2, "D1", QUOTE_A, "The landlord has a 70% chance of recovering arrears."),
+            fact(3, "D1", QUOTE_A, "The rent was likely paid by cheque."),
+            fact(4, "D1", QUOTE_A, "The agreement provides for a success fee."),
+            fact(5, "D2", QUOTE_B, "The landlord will certainly lose on the notice."),
+        ],
+        issues=[
+            {"question": "What are the chances of success on the rent claim?", "fact_ids": ["F3"]},
+            {"question": "Which rent figure governs?", "fact_ids": ["F3", "F4"]},
+        ],
+        precedents=[precedent("J1", "The plaintiff would probably prevail on this reasoning.")],
+        contradictions=[{**good, "description": "The rent differs; the odds of winning are low."}],
+    )
+    assert [f.id for f in result.facts] == ["F3", "F4"]
+    assert [i.question for i in result.issues] == ["Which rent figure governs?"]
+    assert result.precedents == [] and result.contradictions == []
+    assert removed(result) == {"outcome-wording": 6}
 
 
 # --- the answer as a whole ------------------------------------------------------------

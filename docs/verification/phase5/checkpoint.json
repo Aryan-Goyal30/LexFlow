@@ -1,9 +1,9 @@
 {
   "phase": 5,
-  "updated": "2026-10-20",
+  "updated": "2026-10-25",
   "branch": "master",
   "base_commit": "cb40bcc",
-  "status": "M1-M7 done; M8 prepared and rehearsed, awaiting the owner (live migration not authorised)",
+  "status": "NOT COMPLETE: M1-M8 recorded; M9 stabilisation (P5-S2) implemented, reviewed and fixed 2026-10-24/25, UNCOMMITTED; demo-import flag kept provisionally (owner decision 2026-10-25); two owner decisions open (see next_action)",
   "plan": "docs/PHASE5_PLAN.md",
   "log": "docs/PHASE5_EXECUTION_LOG.md",
   "decisions": {
@@ -18,8 +18,75 @@
     "scratch database lexflow_autogen_p5_test (127.0.0.1:55432): upgrade, check, downgrade, upgrade, check",
     "scratch restore lexflow_p5_restore of a fresh live dump: identical to live; upgrade/downgrade/upgrade identical; alembic check clean; live unchanged"
   ],
-  "live_lexflow_revision": "0010",
-  "gemini_calls_made": 0,
+  "live_lexflow_revision": "0011",
+  "m8": {
+    "verified": {
+      "pre_0011_backup": {
+        "path": "server/var/backups/lexflow-20261020-193557-pre-0011.dump (git-ignored)",
+        "bytes": 71414,
+        "sha256": "6639f2b66886d6a305d9a427098c7e752dc2568d9b2d5d0f65c5881dc5f4efbc"
+      },
+      "restore_verification": "restored into new scratch database lexflow_pre0011_verify (127.0.0.1:55432) with no errors; row-level comparison (per-row md5, sorted, plus columns, constraints, indexes, counts) identical to live: 203 columns, 128 constraints, 49 indexes, 117 rows; revision 0010; cases 7, documents 28",
+      "applied": "2026-10-20, alembic upgrade head on 127.0.0.1:5432 lexflow (lock_timeout 10s), exit 0, owner-approved",
+      "after": "alembic current 0011 (head); alembic check clean; analysis_runs: 21 columns, 12 constraints, 5 indexes, 0 rows; only expected differences (revision, alembic_version row, analysis_runs objects); 0 unexpected; existing data unchanged (cases 7, documents 28, users 6, clients 6, hearings 7, timeline_events 27, audit_events 25)",
+      "services": "at M8d: API and worker running the committed Phase 5 code; health 200; analysis route 401 anonymous; no log errors (analysis was disabled then; Gemini was enabled by the owner afterwards, see gemini_smoke_test)",
+      "rollback": "alembic downgrade 0010 (rehearsed, not run) or the pre-0011 backup"
+    },
+    "pending": {
+      "contradiction_detection_live": "not met: the 2015 vs 2017 conflict was not reported; the single removal was a contradiction-unsupported item (probably this attempt; inference); cause unresolved",
+      "precedent_comparison_live": "not exercised: live judgment collection is empty (0); no judgment passage ever sent to Gemini; implemented and tested with synthetic judgments only",
+      "rejection_of_injected_output_live": "not exercised: the model did not produce J99, a fake citation or a win prediction; rejection covered by automated tests only",
+      "http_400_root_cause": "not established; hypothesis only: structured-output schema complexity (minItems/maxItems); one success after removing them is not proof",
+      "reverification": "full backend suite and mutation checks not rerun since the diagnostic and schema changes (134 focused tests passed)",
+      "commit": "code, tests and records below are uncommitted"
+    },
+    "gemini_smoke_test": {
+      "model": "gemini-3.1-flash-lite",
+      "provider": "gemini",
+      "prompt_version": "case-analysis-v1",
+      "case": "LF-2026-0361 (sample case); document: invented text file SYNTHETIC-phase5-smoke-notice.txt (1,850 bytes, 2 passages)",
+      "runs": [
+        {
+          "id": "bb1bfe75",
+          "result": "failed provider-rejected; 503, 503, 400; 3 attempts; no provider codes (before diagnostics)"
+        },
+        {
+          "id": "3b989815",
+          "result": "failed provider-rejected; 400 INVALID_ARGUMENT after ~42 s; 1 attempt; no reason code"
+        },
+        {
+          "id": "95db9bdb",
+          "result": "failed provider-rejected; 503 then 400 INVALID_ARGUMENT after ~6 s; 2 attempts; no reason code (old schema)"
+        },
+        {
+          "id": "4fc9ab87",
+          "result": "ready; 200 OK in ~26 s; 1 attempt; tokens 1522 in / 595 out / 2117 total; schema simplified"
+        }
+      ],
+      "successful_run": {
+        "facts": 4,
+        "issues": 1,
+        "precedents": 0,
+        "contradictions": 0,
+        "removed": "1 (contradiction-unsupported: fewer than two verified sources)",
+        "precedentsAvailable": false,
+        "traceability": "4 of 4 fact quotes verbatim in the single cited chunk; chunk hashes, document and section/page match; statement fidelity not machine-checked",
+        "injection_traps": "J99, fake citation, win prediction absent from output; none was recorded as removed",
+        "audit_and_storage": "analysis.requested/completed/viewed with counts only; no key, quote or document text in audit; no raw answer stored; logs clean"
+      },
+      "live_vs_automated": "see PHASE5_EXECUTION_LOG.md M8e Part D"
+    },
+    "pending_current_status_2026_10_25": {
+      "note": "m8.pending was written on 2026-10-20 (before M9) and is kept as history; this object gives the current status of each item. Sources: execution log M9.0, M9.8, M9.10.",
+      "contradiction_detection_live": "STILL OPEN: the planted 2015/2017 conflict of run 4fc9ab87 remains unreported; three later live runs (1712d02e, 5aa4711d, ea18be07) each reported one contradiction (log M9.0). Whether to investigate is an open owner decision (see next_action).",
+      "precedent_comparison_live": "SUPERSEDED: precedent comparison has run live, against SYNTHETIC demo judgments only - three judgments labelled 'SYNTHETIC DEMO - NOT REAL CASE LAW' were recorded in the live collection in the 2026-10-20 observation (log M9.0; not re-queried). No real judgment source is approved (open owner decision, see next_action).",
+      "rejection_of_injected_output_live": "UNCHANGED: still covered by automated tests only (M9 added the offline evaluation, server/scripts/evaluate_analysis.py, which is synthetic and calls no model).",
+      "http_400_root_cause": "UNCHANGED: not established; the schema is now versioned (case-analysis-schema-2, pinned by hash) and recorded per run, so a recurrence can be tied to a schema version.",
+      "reverification": "SUPERSEDED: the full backend suite passed with 906 tests at the end of M9 (pytest-full-m9.log, 2026-10-24) and with 950 tests after the M9 review fixes (pytest-full-m9-review-fixes.log, 2026-10-25). The full mutation run caught 61 of 61 (mutation-report-working-tree.md, 2026-10-24) BEFORE the M2 outcome-filter change; after M2 only an anchor dry run was repeated (61 of 61 snippets found), not the full mutation suite.",
+      "commit": "STILL OPEN: M8 and M9 work is uncommitted (see m9_stabilisation.git_at_end); staging and committing await the owner."
+    }
+  },
+  "gemini_calls_made": "7 generateContent requests across 4 runs (3x503, 3x400 INVALID_ARGUMENT, 1x200); synthetic data only; none made by the assistant",
   "real_client_data_sent": false,
   "dependencies_installed": [
     "google-genai==2.31.0 (+14 transitive pins)"
@@ -32,17 +99,110 @@
     "M4": "done (219945e)",
     "M5": "done (8e6430a)",
     "M6": "done (e57aebc)",
-    "M7": "done",
-    "M8": "prepared and rehearsed; not applied (owner-gated)"
+    "M7": "done (6b8f865)",
+    "M8": "migration applied and verified 2026-10-20; real Gemini smoke test run (1 success after 3 failures); open items listed in m8.pending"
   },
-  "next_action": "Owner: approve M8 (fresh dump, alembic upgrade head on lexflow, restart API and worker); optionally configure GEMINI_API_KEY and GEMINI_MODEL privately and smoke-test one sample case with synthetic documents",
-  "backend_tests": "807 passed (final)",
-  "frontend_tests": "176 Vitest passed; 41 Playwright passed (final)",
+  "next_action": "Owner: (1) stage the M9 working tree for review and commit it as 'Phase 5 M9: stabilisation'. Then decide two open follow-ups: (2) whether to investigate the planted 2015/2017 contradiction that live analysis did not report (m8.pending.contradiction_detection_live); (3) whether to approve a real judgment source for future dataset work (none approved; the live collection held only three SYNTHETIC demo judgments in the 2026-10-20 observation). The M9 batches are complete; the low findings L2/L3 and the known limitations remain open (current_status_2026_10_25, m9_stabilisation.review_2026_10_25).",
+  "backend_tests": "807 passed at the M7 commit 6b8f865 (not rerun in full since); 134 focused analysis tests passed after the diagnostic and schema changes",
+  "frontend_tests": "176 Vitest passed; 41 Playwright passed (at the M7 commit; frontend unchanged since)",
   "rehearsal_dump": {
     "path": "server/var/backups/lexflow-20261020-phase5-rehearsal.dump (git-ignored)",
     "sha256": "d608fed3ff66db2ecc51613e18f2e25e26314cac8040449e6c343da61bf8cd43"
   },
-  "mutation_checks": "40 of 40 caught",
+  "mutation_checks": "40 of 40 caught at the M7 commit; not rerun after the diagnostic and schema changes",
   "secret_scan": "clean",
-  "brief_sha256": "274ecaed93400f51dd47c42337fbd6e101aa6be366b80d977d1522359b34c2ec (unchanged)"
+  "brief_sha256": "274ecaed93400f51dd47c42337fbd6e101aa6be366b80d977d1522359b34c2ec (unchanged)",
+  "uncommitted": [
+    "docs/PHASE5_EXECUTION_LOG.md",
+    "docs/verification/phase5/checkpoint.json",
+    "server/lexflow/analysis/provider.py (diagnostic codes)",
+    "server/lexflow/analysis/runs.py (diagnostic codes in audit/log)",
+    "server/lexflow/analysis/output.py (provider schema without minItems/maxItems)",
+    "server/tests/test_analysis_provider.py, test_analysis_runs.py, test_analysis_output.py"
+  ],
+  "m9_stabilisation": {
+    "started": "2026-10-24",
+    "start_head": "6b8f865b4cdd6f759d46e39e247618f9f50353fd",
+    "preexisting_uncommitted": [
+      "docs/PHASE5_EXECUTION_LOG.md",
+      "docs/verification/phase5/checkpoint.json",
+      "server/README.md",
+      "server/lexflow/analysis/output.py",
+      "server/lexflow/analysis/provider.py",
+      "server/lexflow/analysis/runs.py",
+      "server/lexflow/cli/judgments.py",
+      "server/tests/test_analysis_output.py",
+      "server/tests/test_analysis_provider.py",
+      "server/tests/test_analysis_runs.py",
+      "server/tests/test_judgment_import.py"
+    ],
+    "preexisting_backup": "session scratch folder p5s2-preexisting/ (outside the repository; byte copies + diff + SHA-256 list)",
+    "brief_sha256_at_start": "274ecaed93400f51dd47c42337fbd6e101aa6be366b80d977d1522359b34c2ec",
+    "authorised": "Phase 5 code, tests, directly related docs and verification tooling; use the running Docker database for disposable test databases only; offline checks",
+    "not_authorised": "migrations/schema changes, application-record changes, paid LLM calls, secrets output, commits/pushes, brief changes, Phase 6/7, UI redesign, data acquisition, local LLM",
+    "batches": {
+      "B0 preflight + records start": "done",
+      "B1 provider selection fail-closed + run/provider consistency": "done (2026-10-24; 115 targeted tests pass)",
+      "B2 retry and quota classification": "done (2026-10-24)",
+      "B3 user-safe messages": "done (2026-10-24; admin-only detail in API)",
+      "B4 output schema/version + grounding checks": "done (2026-10-24; schema-2 + grounding-2; 173 analysis tests pass)",
+      "B5 run integrity (unexpected errors, stale references)": "done (2026-10-24; release bounded by attempts; evidence.changed API field + UI notice)",
+      "B6 synthetic-import safeguard review": "done (2026-10-24; 2 defects fixed: URL-vs-connected database, substring rule; conftest/e2e dbname guard)",
+      "B7 offline evaluation harness": "done (2026-10-24; 68/68 scenarios as expected; 0 unsafe messages; report docs/verification/phase5/analysis-eval.{json,md})",
+      "B8 full verification (pytest, static, contract, mutation, front end, e2e if safe)": "done (2026-10-25; pytest 906 passed; vitest 178; playwright 41; mutation 61/61 caught; all exit 0)",
+      "B9 records reconciliation": "done (2026-10-25)",
+      "B10 pre-commit review fixes (M1, M2, M3, L1)": "done (2026-10-25; log M9.10)"
+    },
+    "flag_allow_synthetic_in_database": "PROVISIONAL - kept by owner decision 2026-10-25, subject to the safeguards documented in log M9.6",
+    "new_codes": [
+      "provider-unsupported",
+      "provider-mismatch",
+      "provider-quota-exhausted"
+    ],
+    "versions": {
+      "prompt": "case-analysis-v1 (unchanged)",
+      "schema": "case-analysis-schema-2",
+      "validator": "grounding-3 (grounding-2 narrowed after the review; outcome wording)",
+      "recorded_in": "run evidence JSON key pipeline (new runs only)"
+    },
+    "contract_changes": [
+      "AnalysisEvidenceSummaryOut.changed (additive; openapi.json + schema.gen.ts regenerated)"
+    ],
+    "evaluation": {
+      "script": "server/scripts/evaluate_analysis.py",
+      "fixture": "server/tests/fixtures/analysis/synthetic-gold-v1.json",
+      "fixture_sha256": "cdfd191042b72a13761c3cf1bd2440b4f4ebc018b50598d47922144840e7e815",
+      "result": "71 scenarios, 71 as expected (2026-10-25); no pass mark; not a legal-accuracy measure"
+    },
+    "finished": "2026-10-25",
+    "verification": {
+      "pytest": "950 passed, exit 0 (pytest-full-m9-review-fixes.log, 2026-10-25); earlier 906 passed (pytest-full-m9.log)",
+      "ruff_check": "exit 0",
+      "ruff_format_check": "exit 0",
+      "mypy": "exit 0 (137 files); linux 148 files exit 0 (2026-10-25)",
+      "openapi_check": "exit 0",
+      "alembic_check_lexflow_test": "no new upgrade operations",
+      "evaluation": "71/71 as expected, exit 0 (2026-10-25)",
+      "npm_check": "178 vitest passed, build ok, exit 0 (npm-check-m9.log)",
+      "playwright": "41 passed, exit 0 (playwright-m9.log)",
+      "mutation_working_tree": "61 of 61 caught, exit 0 (mutation-report-working-tree.md, 2026-10-24); anchors re-checked by --dry-run 2026-10-25"
+    },
+    "git_at_end": "master @ 6b8f865, uncommitted: 34 modified tracked files + 12 untracked files; nothing staged, committed or pushed",
+    "boundaries": "no migration, no lexflow record changes, no LLM calls, no secrets printed, brief unchanged",
+    "review_2026_10_25": {
+      "findings": "no critical/high; M1 eval-script dbname bypass, M2 outcome-wording false positives, M3 stale verification README, L1 checkpoint date",
+      "fixed": "M1, M2, M3, L1 (log M9.10)",
+      "open_low": "L2 conftest/e2e name checks remain substring-based (dbname/service refused); L3 an operator stop during the last attempt fails the run as interrupted"
+    }
+  },
+  "current_status_2026_10_25": {
+    "note": "Top-level keys gemini_calls_made, backend_tests, frontend_tests, mutation_checks and uncommitted describe the state before M9 and are kept as history; current values are here and in m9_stabilisation.",
+    "gemini_calls_made": "Historical value covers M8e only. Afterwards the owner started three more real Gemini runs from the UI on the sample case (1712d02e, 5aa4711d, ea18be07; log M9.0; request count not recorded). No automated check and no assistant action made a Gemini call; M9 made none.",
+    "backend_tests": "950 passed, exit 0 (docs/verification/phase5/pytest-full-m9-review-fixes.log, 2026-10-25); earlier 906 passed (pytest-full-m9.log, 2026-10-24).",
+    "frontend_tests": "178 Vitest passed and build OK (npm-check-m9.log); 41 Playwright passed (playwright-m9.log); both 2026-10-24, before the review fixes, which changed no front-end, API or e2e file.",
+    "mutation_checks": "61 of 61 caught with --working-tree (2026-10-24), before the M2 outcome-filter change; after M2 only an anchor dry run (61 of 61 snippets found), not a full rerun.",
+    "uncommitted": "46 paths: 34 modified tracked files and 12 untracked files (m9_stabilisation.git_at_end); nothing staged or committed.",
+    "known_limitations": "Validation proves provenance, not legal correctness; outcome-wording and case-name checks are patterns (miss paraphrases, may remove an unusual factual sentence); a non-conflicting pair of verified quotes can be kept as a contradiction; offline evaluation measures checks, not model quality.",
+    "open_low_findings": "see m9_stabilisation.review_2026_10_25.open_low (L2, L3)"
+  }
 }

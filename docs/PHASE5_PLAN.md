@@ -1,9 +1,12 @@
 # Phase 5 plan — AI case analysis with Google Gemini
 
-Status (2026-10-20): **M1–M7 implemented; M8 (live migration 0011) prepared
-and rehearsed, awaiting the owner.** Decisions approved (§9); implementation
-recorded in `docs/PHASE5_EXECUTION_LOG.md`. Planned at `e122d11` (Phase 4
-complete).
+Status (2026-10-24): **M1–M7 committed; M8 done by the owner (migration
+0011 applied to `lexflow` 2026-10-20; real Gemini runs on the sample case);
+M9 stabilisation implemented and verified 2026-10-24 but uncommitted** (owner
+review and commit pending; the synthetic demo-import flag stays provisional).
+Phase 5 is not declared complete until the owner accepts M9. Decisions
+approved (§9, §13); implementation recorded in `docs/PHASE5_EXECUTION_LOG.md`.
+Planned at `e122d11` (Phase 4 complete).
 Scope from `docs/DEVELOPMENT_BRIEF.md` §4 Phase 5. Machine-readable state:
 `docs/verification/phase5/checkpoint.json`.
 
@@ -176,7 +179,8 @@ drops only `analysis_runs` (runs can be re-made).
 | M5 | Runs: API + worker + audit + authz | `POST/GET /api/cases/{id}/analysis-runs[/{runId}]`; worker job kind; one active run per case; rate limit; Client 403, outsider 404; audit events; OpenAPI + TS types | L |
 | M6 | UI | `aiService` HTTP implementation; document selection; data-transmission notice; progress; results with working source links; removed-items count; run history; disclaimer on every result; Vitest | M |
 | M7 | Verification + docs | pytest, `npm run check`, Playwright with the scripted provider (no network), mutation checks on validation/authz/key handling, ADR 0019, SRS/architecture/traceability (adds the *analyse case* sequence), execution log | M |
-| M8 | Live migration 0011 + optional manual smoke | Gated procedure (§4); then **one** manual run on a **synthetic** case with a real key, only after D1–D2 | owner-gated |
+| M8 | Live migration 0011 + optional manual smoke | Gated procedure (§4); then **one** manual run on a **synthetic** case with a real key, only after D1–D2 | owner-gated — **done 2026-10-20** (log M8) |
+| M9 | Stabilisation (P5-S2, 2026-10-24) | Provider fails closed; run/provider match; quota not retried; operator detail for Administrators only; schema/validator versions recorded per run; new grounding checks; unexpected errors fail the run; interrupted runs bounded; changed sources reported; synthetic-import guard reviewed and hardened; offline evaluation harness; full verification (§13, log M9) | done, uncommitted |
 
 Total estimate: comparable to Phase 4 (seven to eight milestones).
 
@@ -256,15 +260,54 @@ long-running calls (worker, timeouts); contract churn affecting Phase 6
 
 `server`: `.venv\Scripts\python -m pytest -q`, `ruff check .`, `ruff format
 --check .`, `mypy .`, `mypy --platform linux .`, `python
-scripts/export_openapi.py --check`, `alembic check`. Root: `npm run check`,
-`npx playwright test`. Mutation: `docs/verification/phase5/run_mutation_checks.py`
-(to be written).
+scripts/export_openapi.py --check`, `alembic check`, `python
+scripts/evaluate_analysis.py` (offline, synthetic; `--write` for the report).
+Root: `npm run check`, `npx playwright test`. Mutation:
+`docs/verification/phase5/run_mutation_checks.py` (committed code) or
+`... --working-tree` (uncommitted work; target files listed by SHA-256).
 
 ## 12. How to resume
 
-1. Read `docs/verification/phase5/checkpoint.json` and §9 here.
-2. If D1–D5 are recorded, start **M1**: autogenerate migration 0011 against a
-   scratch database (never `lexflow`), add the output schema and settings.
-3. Prompt to continue: *"Implement Phase 5 milestone M1 from
-   docs/PHASE5_PLAN.md (decisions D1–D5 as recorded); scratch-only migration;
-   mocked provider; no Gemini calls."*
+1. Read `docs/verification/phase5/checkpoint.json` (`next_action`) and the
+   newest section of `docs/PHASE5_EXECUTION_LOG.md` (M9).
+2. M9 is implemented and verified in the working tree, uncommitted. The next
+   step is the owner's: stage the M9 diff for review and commit it
+   (`Phase 5 M9: stabilisation`). The owner kept the
+   `--allow-synthetic-in-database` flag provisionally (2026-10-25).
+3. Never run tests against `lexflow`; the suites use `lexflow_test` and
+   `lexflow_e2e`, which they recreate.
+
+## 13. M9 stabilisation decisions (2026-10-24)
+
+Made within the owner's M9 instruction; details and evidence in the execution
+log (M9.1–M9.8).
+
+- **Fail closed.** Only `gemini` and `scripted` can be built; any other
+  provider value is `provider-unsupported`. A run confirmed for one provider
+  is never sent to another (`provider-mismatch`). A changed model of the same
+  provider is allowed and recorded.
+- **Quota vs rate limit.** A 429 whose structured `QuotaFailure` names a daily
+  or monthly quota is `provider-quota-exhausted`, not retried; other 429s
+  keep their retries.
+- **Who sees what.** Messages stored on runs and shown to staff never name
+  settings, files or keys; the setting to fix is shown to Administrators only
+  and logged by the worker; validated provider codes go to the
+  administrator-only audit log.
+- **Constraints.** The provider schema carries shape and required keys; limits
+  are in descriptions there and enforced by the application, which relaxed
+  nothing. Versions: prompt `case-analysis-v1` (unchanged), schema
+  `case-analysis-schema-2` (pinned by hash), validator `grounding-3`
+  (`grounding-2` narrowed after the M9 review so that factual statements
+  such as "likely to lose goodwill" are kept); recorded in each new run's
+  evidence JSON (`pipeline`). Older runs are not reinterpreted. No schema
+  migration.
+- **Outcome wording.** Removed only when a predictive word meets a
+  litigation outcome (the case, a claim, an appeal, a relief, a court's
+  disposition, prospects of success). These are patterns: they cannot
+  separate every prediction from every fact, and that limit is documented.
+- **Run integrity.** Unexpected provider or validation errors fail the run;
+  an interrupted run fails after its last attempt; the single-run API reports
+  sources changed since the run (`evidence.changed`, additive).
+- **Test-database names.** One rule (`config.is_test_database_name`): a whole
+  name part `test` or `e2e`; the synthetic import checks the database it is
+  actually connected to.

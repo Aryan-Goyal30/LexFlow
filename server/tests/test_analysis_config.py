@@ -59,6 +59,20 @@ def test_the_scripted_double_is_refused_outside_test_and_e2e_databases() -> None
     assert e2e.ai_provider == "scripted"
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        "postgresql+psycopg://u:p@127.0.0.1/lexflow_latest",  # "test" only as letters
+        "postgresql+psycopg://u:p@127.0.0.1/contest",
+        "postgresql+psycopg://u:p@127.0.0.1/lexflow_test?dbname=lexflow",  # connects to lexflow
+        "postgresql+psycopg://u:p@127.0.0.1/lexflow_e2e?service=live",
+    ],
+)
+def test_the_scripted_double_needs_a_real_test_database_name(url: str) -> None:
+    with pytest.raises(ValidationError, match="is a test double"):
+        Settings(**{"DATABASE_URL": url, "LEXFLOW_ENV": "development", **OUTSIDE_TESTS})  # type: ignore[arg-type]
+
+
 def test_limits_are_bounded() -> None:
     with pytest.raises(ValidationError):
         settings(LEXFLOW_AI_MAX_INPUT_CHARS="10")

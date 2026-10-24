@@ -1006,6 +1006,13 @@ class AnalysisEvidenceSummaryOut(ApiModel):
     judgment_passages: int
     characters: int = Field(description="Characters of case and judgment text sent.")
     truncated: bool = Field(description="True when limits left some passages out.")
+    changed: list[str] = Field(
+        description=(
+            "Evidence ids (D1, J2) whose passage has been re-extracted, changed or removed "
+            "since the run. Their quotes are shown as they were sent; a link may now open "
+            "different text."
+        )
+    )
 
 
 class AnalysisRunSummaryOut(ApiModel):

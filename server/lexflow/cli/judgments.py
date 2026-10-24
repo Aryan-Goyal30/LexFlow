@@ -12,8 +12,16 @@ records their source and its terms of use (``lexflow/services/
 judgment_import.py``). Every command previews first and changes nothing
 until ``--confirm N`` matches the number previewed. Synthetic (invented)
 sources are refused unless ``--allow-synthetic`` is given and the database
-is a test database (its name contains "test" or "e2e"). Each import, removal
-and indexing run is recorded in the audit log as made from the command line.
+is a test database (a name part, split on non-letters, is "test" or "e2e").
+The name checked is the database the command is actually connected to
+(``current_database()``), which must also be the one ``DATABASE_URL`` names: a
+URL parameter such as ``?dbname=`` cannot point a "test" URL at another
+database. A deliberate demo
+import of synthetic records into any other database also needs
+``--allow-synthetic-in-database NAME``, where NAME is that database's exact
+name; the records stay marked synthetic, are shown with a badge everywhere,
+and ``remove --source KEY`` removes them. Each import, removal and indexing
+run is recorded in the audit log as made from the command line.
 """
 
 from __future__ import annotations
@@ -26,12 +34,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TextIO
 
-from sqlalchemy import delete, func, make_url, select
+from sqlalchemy import delete, func, make_url, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
 from lexflow.audit import Actor, AuditLog
-from lexflow.config import Settings, get_settings
+from lexflow.config import Settings, get_settings, is_test_database_name
 from lexflow.db import engine_for, get_independent_sessions
 from lexflow.embeddings import EmbeddingsUnavailableError, provider_for
 from lexflow.extraction import Extracted, Limits
@@ -70,6 +78,13 @@ def _extract(content_type: str, data: bytes, limits: Limits, timeout: float) -> 
     return run_extraction(content_type, data, limits, timeout_seconds=timeout)
 
 
+def connected_database(session: Session) -> str:
+    """The database this session is really connected to. A URL's query
+    (``?dbname=``), a service file or PG* variables can make it differ from
+    the name in the URL, so the synthetic-data checks use this."""
+    return str(session.scalar(text("SELECT current_database()")) or "")
+
+
 def cmd_import(
     args: argparse.Namespace,
     settings: Settings,
@@ -87,18 +102,35 @@ def cmd_import(
     except importer.ManifestError as exc:
         raise CommandError(str(exc)) from exc
     source = plan.manifest.source
+    demo_database: str | None = None
     if source.synthetic:
-        database = make_url(settings.database_url).database or ""
         if not args.allow_synthetic:
             raise CommandError(
                 f"Source {source.key!r} is synthetic (invented test data); it is only imported "
                 "into test databases, with --allow-synthetic."
             )
-        if "test" not in database and "e2e" not in database:
+        configured = make_url(settings.database_url).database or ""
+        database = connected_database(session)
+        if not database or database != configured:
             raise CommandError(
-                "Synthetic judgments are never imported into this database "
-                "(only into databases whose name contains 'test' or 'e2e')."
+                f"This command is connected to database {database!r}, not {configured!r} as "
+                "DATABASE_URL names; synthetic judgments are not imported. Nothing was imported."
             )
+        if not is_test_database_name(database):
+            named = args.allow_synthetic_in_database
+            if named is None:
+                raise CommandError(
+                    "Synthetic judgments are never imported into this database "
+                    "(only into databases whose name contains 'test' or 'e2e'). A deliberate "
+                    "demo import also needs --allow-synthetic-in-database NAME, naming this "
+                    "database exactly."
+                )
+            if not database or named != database:
+                raise CommandError(
+                    "--allow-synthetic-in-database must name this database exactly; "
+                    "nothing was imported."
+                )
+            demo_database = database
     print(
         f"Source: {source.name} ({source.key})"
         f"{' [SYNTHETIC TEST DATA]' if source.synthetic else ''}",
@@ -109,6 +141,14 @@ def cmd_import(
         f"{source.terms_checked_by}",
         file=out,
     )
+    if demo_database is not None:
+        print(
+            f"DEMO IMPORT: these records are SYNTHETIC (invented, not case law) and would be "
+            f"added to database {demo_database!r}, which is not a test database. They are shown "
+            f"with a synthetic badge. Remove them afterwards with: python -m "
+            f"lexflow.cli.judgments remove --source {source.key}",
+            file=out,
+        )
     if plan.source_change:
         print(f"Source record: {plan.source_change}", file=out)
     for item in plan.items:
@@ -275,6 +315,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-synthetic",
         action="store_true",
         help="accept a synthetic source (test databases only)",
+    )
+    imp.add_argument(
+        "--allow-synthetic-in-database",
+        metavar="NAME",
+        help="also allow a synthetic source in a database that is not a test database; "
+        "NAME must be that database's exact name (deliberate demo imports only)",
     )
     confirm(imp)
     commands.add_parser("sources", help="list sources and their terms-of-use records")

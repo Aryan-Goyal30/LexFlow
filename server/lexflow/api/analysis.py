@@ -39,8 +39,18 @@ from lexflow.auth.deps import require_user
 from lexflow.authz import Action
 from lexflow.config import Settings, get_settings
 from lexflow.db import get_session
+from lexflow.domain import ADMINISTRATOR
 from lexflow.errors import ProblemError, problem_responses
-from lexflow.models import AnalysisRun, Case, Document, DocumentExtraction, Judgment, User
+from lexflow.models import (
+    AnalysisRun,
+    Case,
+    Document,
+    DocumentChunk,
+    DocumentExtraction,
+    Judgment,
+    JudgmentChunk,
+    User,
+)
 from lexflow.schemas import (
     ActorOut,
     AnalysisDocumentOut,
@@ -66,11 +76,17 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def _unavailable(settings: Settings, session: Session) -> tuple[str, str] | None:
+def _unavailable(settings: Settings, session: Session, user: User) -> tuple[str, str] | None:
+    """Why analysis cannot run, worded for this user: the setting to fix is
+    named to Administrators only; everyone else is told to ask one."""
     if not runs.table_exists(session):
         return "migration-missing", MIGRATION_MISSING
     missing = unavailable_reason(settings)
-    return (missing.code, missing.reason) if missing is not None else None
+    if missing is None:
+        return None
+    if user.role == ADMINISTRATOR and missing.detail:
+        return missing.code, f"{missing.reason} ({missing.detail})"
+    return missing.code, missing.reason
 
 
 def _documents(session: Session, case: Case) -> list[AnalysisDocumentOut]:
@@ -118,6 +134,57 @@ def _people(session: Session, items: list[AnalysisRun]) -> dict[uuid.UUID, User]
     return {u.id: u for u in session.scalars(select(User).where(User.id.in_(ids)))}
 
 
+def _evidence_key(evidence_id: str) -> tuple[str, int]:
+    return evidence_id[:1], int(evidence_id[1:]) if evidence_id[1:].isdigit() else 0
+
+
+def _changed(session: Session, items: dict[str, dict[str, object]]) -> list[str]:
+    """The run's evidence ids whose passage no longer exists with the same text
+    (re-extracted document, deleted document, removed judgment). Read only."""
+
+    def chunk_ids(kind: str) -> dict[str, uuid.UUID]:
+        found: dict[str, uuid.UUID] = {}
+        for key, item in items.items():
+            try:
+                if item.get("kind") == kind:
+                    found[key] = uuid.UUID(str(item.get("chunkId")))
+            except ValueError:
+                found[key] = uuid.UUID(int=0)  # unreadable: reported as changed
+        return found
+
+    documents, judgments = chunk_ids("document"), chunk_ids("judgment")
+    current: dict[uuid.UUID, str] = {}
+    if documents:
+        current.update(
+            session.execute(
+                select(DocumentChunk.id, DocumentChunk.content_sha256)
+                .join(Document, Document.id == DocumentChunk.document_id)
+                .where(
+                    DocumentChunk.id.in_(list(documents.values())),
+                    Document.deleted_at.is_(None),
+                )
+            )
+            .tuples()
+            .all()
+        )
+    if judgments:
+        current.update(
+            session.execute(
+                select(JudgmentChunk.id, JudgmentChunk.content_sha256).where(
+                    JudgmentChunk.id.in_(list(judgments.values()))
+                )
+            )
+            .tuples()
+            .all()
+        )
+    changed = [
+        key
+        for key, chunk in {**documents, **judgments}.items()
+        if current.get(chunk) != items[key].get("contentSha256")
+    ]
+    return sorted(changed, key=_evidence_key)
+
+
 def _full(session: Session, run: AnalysisRun) -> AnalysisRunOut:
     evidence = None
     if run.evidence is not None:
@@ -129,6 +196,7 @@ def _full(session: Session, run: AnalysisRun) -> AnalysisRunOut:
             judgment_passages=sum(1 for v in items.values() if v.get("kind") == "judgment"),
             characters=int(run.evidence.get("characters", 0)),
             truncated=bool(run.evidence.get("truncated", False)),
+            changed=_changed(session, items),
         )
     result = (
         AnalysisResultOut.model_validate(run.result)
@@ -155,7 +223,7 @@ def analysis_setup(
     case, rel = authz.load_case(
         session, user, case_service.parse_case_id(case_id), Action.VIEW, audit
     )
-    unavailable = _unavailable(settings, session)
+    unavailable = _unavailable(settings, session, user)
     sample_only = not settings.ai_allow_client_data
     active = runs.active_run(session, case.id) if unavailable is None else None
     cannot: str | None = None
@@ -215,7 +283,7 @@ def start_analysis(
     case, _ = authz.load_case(
         session, user, case_service.parse_case_id(case_id), Action.RUN_ANALYSIS, audit
     )
-    unavailable = _unavailable(settings, session)
+    unavailable = _unavailable(settings, session, user)
     if unavailable is not None:
         raise ProblemError(503, "analysis-unavailable", unavailable[1])
     if not body.confirm_transmission:

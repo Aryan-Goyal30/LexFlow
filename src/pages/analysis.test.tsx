@@ -201,7 +201,10 @@ describe('Starting an analysis', () => {
 });
 
 describe('A finished analysis', () => {
-  async function openFinished(change?: (r: AnalysisResult) => AnalysisResult) {
+  async function openFinished(
+    change?: (r: AnalysisResult) => AnalysisResult,
+    changed: string[] = [],
+  ) {
     mockAnalysisAvailable();
     const [first] = readyDocuments();
     const app = renderApp(TAB, { as: ARYAN_EMAIL });
@@ -209,7 +212,7 @@ describe('A finished analysis', () => {
     await screen.findByText(/Waiting for the worker/);
     const [run] = mockAnalysisRuns();
     const base = result(first.id, first.name);
-    mockFinishRun(run.id, { result: change ? change(base) : base });
+    mockFinishRun(run.id, { result: change ? change(base) : base, changed });
     await act(() => app.queryClient.invalidateQueries());
     await screen.findByText('Analysis result');
     return { ...app, first };
@@ -254,6 +257,20 @@ describe('A finished analysis', () => {
     await openFinished((r) => ({ ...r, precedents: [], precedentsAvailable: false }));
     expect(screen.getByText(/No precedents were available for comparison/)).toBeVisible();
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
+  });
+
+  it('says which sources changed after the run, and keeps the verified quotes', async () => {
+    await openFinished(undefined, ['D2', 'J1']);
+    const notice = screen.getByRole('status');
+    expect(notice).toHaveTextContent(/Some sources changed after this analysis ran \(D2, J1\)/);
+    expect(screen.getByText(/“SYNTHETIC page two\.”/)).toBeVisible();
+    expect(screen.getByText('(changed since this analysis)')).toBeVisible();
+  });
+
+  it('shows no change notice while the sources are as they were', async () => {
+    await openFinished();
+    expect(screen.queryByText(/Some sources changed/)).not.toBeInTheDocument();
+    expect(screen.queryByText('(changed since this analysis)')).not.toBeInTheDocument();
   });
 
   it('states insufficient evidence instead of a guess', async () => {

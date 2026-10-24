@@ -200,6 +200,7 @@ judgments. Read the source's terms first and record what they permit.
 .venv\Scripts\python -m lexflow.cli.judgments sources             # sources, terms, counts
 .venv\Scripts\python -m lexflow.cli.judgments index               # embed (needs LEXFLOW_EMBEDDINGS=local)
 .venv\Scripts\python -m lexflow.cli.judgments remove --source KEY # e.g. licence withdrawn (preview first)
+.venv\Scripts\python -m lexflow.cli.judgments import … --allow-synthetic --allow-synthetic-in-database NAME   # demo only: invented records into a non-test database
 ```
 
 - **Required per judgment:** id (the source's own), title, court, `https`
@@ -209,8 +210,12 @@ judgments. Read the source's terms first and record what they permit.
   content) are reported; `--update` replaces changed ones. Each judgment is
   stored with its text in one transaction; failures are listed.
 - **Synthetic (test) sources** must use `.invalid` addresses and are refused
-  unless `--allow-synthetic` is given and the database name contains "test"
-  or "e2e".
+  unless `--allow-synthetic` is given and the database the command is
+  actually connected to (which must be the one `DATABASE_URL` names) has
+  "test" or "e2e" as a whole name part (`lexflow_test`, `lexflow_e2e`). A
+  deliberate demo import into another database also needs
+  `--allow-synthetic-in-database NAME` with that database's exact name
+  (provisional; see the Phase 5 execution log, M9.6).
 - **Search:** keyword (full text, GIN index) always; semantic and hybrid when
   embeddings are on and judgments are indexed. Staff only; Client accounts
   never reach it. Searches are audited without their text.

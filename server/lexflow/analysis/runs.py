@@ -46,6 +46,8 @@ Sessions = Callable[[], AbstractContextManager[Session]]
 ACTIVE = ("queued", "running")
 RETRY_PAUSE_SECONDS = 30
 INTERRUPTED = "The analysis stopped unexpectedly too many times. Start it again later."
+PROVIDER_FAULT = "The AI provider failed in an unexpected way. Start the analysis again later."
+CHECK_FAULT = "LexFlow could not check the model's answer, so nothing from it is shown."
 WORKER = Actor(None, "analysis worker", "System")
 
 
@@ -191,6 +193,9 @@ class Failed:
     retry: bool = False
     evidence: dict[str, Any] | None = None
     usage: dict[str, int] | None = None
+    # Validated provider codes (see ProviderError.diagnostic): for the worker
+    # log and the administrator-only audit log, never for the stored reason.
+    diagnostic: dict[str, str] | None = None
 
 
 def _event(
@@ -205,6 +210,12 @@ def _event(
         case_id=case_id,
         details=details,
     )
+
+
+def retry_due(outcome: Failed, attempts: int, max_attempts: int) -> bool:
+    """Whether a failed attempt goes back to the queue (``attempts`` counts the
+    attempt that just failed)."""
+    return outcome.retry and attempts < max_attempts
 
 
 def complete(
@@ -225,7 +236,7 @@ def complete(
         return "discarded"
     run.lease_expires_at, run.worker_id = None, None
     if isinstance(outcome, Failed):
-        if outcome.retry and run.attempts < max_attempts:
+        if retry_due(outcome, run.attempts, max_attempts):
             run.status = "queued"
             run.available_at = now + timedelta(seconds=RETRY_PAUSE_SECONDS * run.attempts)
             session.commit()
@@ -240,7 +251,15 @@ def complete(
                 run.id,
                 run.case_id,
                 "failed",
-                {"reason": outcome.code, "attempts": run.attempts, "model": run.model},
+                {
+                    "reason": outcome.code,
+                    "attempts": run.attempts,
+                    "model": run.model,
+                    **{
+                        f"provider{k[0].upper()}{k[1:]}": v
+                        for k, v in (outcome.diagnostic or {}).items()
+                    },
+                },
             )
         )
         session.commit()
@@ -263,6 +282,8 @@ def complete(
                 "provider": outcome.provider,
                 "model": outcome.model,
                 "promptVersion": run.prompt_version,
+                "schemaVersion": output.RESPONSE_SCHEMA_VERSION,
+                "validatorVersion": validation.VALIDATOR_VERSION,
                 "providerCalled": outcome.called,
                 "facts": len(result.facts),
                 "issues": len(result.issues),
@@ -285,9 +306,26 @@ def _gate(case: Case | None, settings: Settings) -> Failed | None:
     if not case.is_sample and not settings.ai_allow_client_data:
         return Failed(
             "client-data-not-allowed",
-            "Only sample cases may be analysed on this server (LEXFLOW_AI_ALLOW_CLIENT_DATA).",
+            "Only sample (fictional) cases may be analysed on this server.",
         )
     return None
+
+
+PROVIDER_MISMATCH = (
+    "This analysis was confirmed for a different AI provider than the one this server "
+    "now uses, so nothing was sent. Start a new analysis to use the current provider."
+)
+
+
+def pipeline_record() -> dict[str, str]:
+    """Which instructions, response schema and validation rules produced a
+    result, stored with the run's evidence record (from M9 on)."""
+    return {
+        "promptVersion": prompt.PROMPT_VERSION,
+        "schemaVersion": output.RESPONSE_SCHEMA_VERSION,
+        "schemaSha256": output.schema_sha256(),
+        "validatorVersion": validation.VALIDATOR_VERSION,
+    }
 
 
 def _merge(total: dict[str, int], more: dict[str, int]) -> None:
@@ -307,13 +345,30 @@ def analyse(
         run = session.get(AnalysisRun, run_id)
         if run is None:
             return None
+        # The person who started the run confirmed sending text to this provider;
+        # if the worker now has another one, nothing may be sent to it.
+        if run.provider != provider.name:
+            return Failed("provider-mismatch", PROVIDER_MISMATCH)
         case = session.get(Case, run.case_id)
         refused = _gate(case, settings)
         if refused is not None or case is None:
             return refused
         document_ids = [uuid.UUID(d) for d in run.selection.get("documentIds", [])]
         evidence = evidence_mod.assemble(session, case, document_ids, limits_from(settings))
-    record = evidence.record()
+    return check_answer(provider, evidence, settings.ai_max_output_tokens, label=str(run_id))
+
+
+def check_answer(
+    provider: AnalysisProvider,
+    evidence: evidence_mod.Evidence,
+    max_output_tokens: int,
+    *,
+    label: str,
+) -> Ready | Failed:
+    """Send assembled evidence to the provider and keep only what validates.
+    No database access: the worker calls it for a run, and the offline
+    evaluation (``scripts/evaluate_analysis.py``) with a scripted provider."""
+    record = {**evidence.record(), "pipeline": pipeline_record()}
     if not evidence.passages:
         return Ready(
             validation.insufficient(evidence),
@@ -327,7 +382,7 @@ def analyse(
         system_instruction=prompt.SYSTEM_INSTRUCTION,
         prompt=prompt.render(evidence),
         response_schema=output.RESPONSE_SCHEMA,
-        max_output_tokens=settings.ai_max_output_tokens,
+        max_output_tokens=max_output_tokens,
         evidence=evidence,
     )
     usage: dict[str, int] = {}
@@ -336,7 +391,13 @@ def analyse(
         try:
             response = provider.generate(request)
         except ProviderError as error:
-            return Failed(error.code, error.message, error.retry, record, usage)
+            return Failed(
+                error.code, error.message, error.retry, record, usage, diagnostic=error.diagnostic
+            )
+        except Exception as error:  # an SDK or provider bug must not crash the worker
+            # Only the type is logged: an exception's text could echo the request.
+            logger.error("analysis %s: provider raised %s", label, type(error).__name__)
+            return Failed("provider-error", PROVIDER_FAULT, evidence=record, usage=usage)
         _merge(usage, response.usage)
         if response.truncated:
             problem = output.InvalidOutputError(
@@ -345,10 +406,13 @@ def analyse(
             continue
         try:
             parsed = output.parse(response.text)
+            result = validation.validate(parsed, evidence)
         except output.InvalidOutputError as error:
             problem = error
             continue
-        result = validation.validate(parsed, evidence)
+        except Exception as error:  # never store an answer that was not fully checked
+            logger.error("analysis %s: checking the answer raised %s", label, type(error).__name__)
+            return Failed("validation-error", CHECK_FAULT, evidence=record, usage=usage)
         return Ready(result, record, usage, provider.name, provider.model, called=True)
     return Failed(
         "invalid-output",
@@ -380,7 +444,8 @@ def process(
             max_attempts=settings.ai_max_attempts,
         )
     if isinstance(outcome, Failed):
-        logger.info("analysis %s: %s (%s)", run_id, status, outcome.code)
+        codes = "".join(f" {k}={v}" for k, v in (outcome.diagnostic or {}).items())
+        logger.info("analysis %s: %s (%s)%s", run_id, status, outcome.code, codes)
     else:
         logger.info(
             "analysis %s: %s (%d facts, %d removed)",
@@ -392,16 +457,44 @@ def process(
     return status
 
 
-def release(sessions: Sessions, run_id: uuid.UUID, worker_id: str) -> None:
-    """Hand an interrupted run back to the queue (if this worker still holds it)."""
+def release(
+    sessions: Sessions,
+    run_id: uuid.UUID,
+    worker_id: str,
+    *,
+    max_attempts: int,
+    now: datetime,
+) -> None:
+    """Hand an interrupted run back to the queue (if this worker still holds
+    it), or fail it as interrupted when it has used its last attempt, so a run
+    that keeps stopping the worker cannot be claimed forever."""
     with sessions() as session:
-        session.execute(
-            update(AnalysisRun)
-            .where(
-                AnalysisRun.id == run_id,
-                AnalysisRun.status == "running",
-                AnalysisRun.worker_id == worker_id,
-            )
-            .values(status="queued", lease_expires_at=None, worker_id=None)
+        held = (
+            AnalysisRun.id == run_id,
+            AnalysisRun.status == "running",
+            AnalysisRun.worker_id == worker_id,
         )
+        failed = session.execute(
+            update(AnalysisRun)
+            .where(*held, AnalysisRun.attempts >= max_attempts)
+            .values(
+                status="failed",
+                reason_code="interrupted",
+                reason=INTERRUPTED,
+                lease_expires_at=None,
+                worker_id=None,
+                finished_at=now,
+            )
+            .returning(AnalysisRun.case_id)
+        ).scalar_one_or_none()
+        if failed is not None:
+            session.add(
+                _event("analysis.failed", run_id, failed, "failed", {"reason": "interrupted"})
+            )
+        else:
+            session.execute(
+                update(AnalysisRun)
+                .where(*held)
+                .values(status="queued", lease_expires_at=None, worker_id=None)
+            )
         session.commit()

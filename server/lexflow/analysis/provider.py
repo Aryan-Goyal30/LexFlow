@@ -10,11 +10,28 @@ only. The key is held as a ``SecretStr`` until the client is built and never
 appears in errors, logs or results: failures are mapped to fixed messages and
 codes, never to the provider's own error text. The SDK's own retries are off;
 the worker decides about retries (``ProviderError.retry``).
+
+For support, a failed call also carries a small ``diagnostic``: Google's
+status name and error reason code, read only from the structured fields of
+the SDK's error (never from its free-text message), accepted only if they
+look like such codes and are short. It goes to the worker log and to the
+administrator-only audit log, not to the run's stored reason or to the API.
+
+Messages are written for the people who read them. ``ProviderError.message``
+and ``Unavailable.reason`` are shown to every staff member who can see the
+case, so they never name settings, files or keys. Operator detail (which
+setting to fix) is in ``Unavailable.detail``, shown to Administrators only,
+and in the validated ``diagnostic`` codes.
+
+Selection fails closed: only the providers listed in ``SUPPORTED_PROVIDERS``
+can be built; any other value is reported as unsupported and never falls
+through to Gemini.
 """
 
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
@@ -27,6 +44,10 @@ from lexflow.config import Settings
 logger = logging.getLogger("lexflow.analysis")
 
 PROVIDER_LABELS = {"gemini": "Google Gemini API", "scripted": "Scripted test provider (not AI)"}
+# The providers this code can build. Anything else fails closed.
+SUPPORTED_PROVIDERS = frozenset({"gemini", "scripted"})
+# Shown to staff when the configuration needs an administrator.
+ASK_AN_ADMINISTRATOR = "An administrator needs to check the AI configuration of this server."
 
 
 @dataclass(frozen=True)
@@ -48,13 +69,25 @@ class Response:
 
 
 class ProviderError(Exception):
-    """A provider call failed. ``code`` and ``message`` are safe to store and show."""
+    """A provider call failed. ``code`` and ``message`` are safe to store and show.
 
-    def __init__(self, code: str, message: str, *, retry: bool = False) -> None:
+    ``diagnostic`` holds validated provider codes (``httpStatus``, ``status``,
+    ``reason``) for logs and the audit log only; it may be empty.
+    """
+
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        retry: bool = False,
+        diagnostic: dict[str, str] | None = None,
+    ) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
         self.retry = retry
+        self.diagnostic: dict[str, str] = dict(diagnostic or {})
 
 
 @runtime_checkable
@@ -67,8 +100,12 @@ class AnalysisProvider(Protocol):
 
 @dataclass(frozen=True)
 class Unavailable:
+    """Why analysis cannot run. ``reason`` is safe for every staff member;
+    ``detail`` names the setting to fix and is for Administrators only."""
+
     code: str
     reason: str
+    detail: str | None = None
 
 
 ClientFactory = Callable[[str, int], Any]
@@ -150,7 +187,10 @@ class GeminiProvider:
                 model=self.model, contents=request.prompt, config=config
             )
         except errors.APIError as exc:
-            raise _api_error(exc.code) from None
+            diagnostic = _diagnostic(exc)
+            error = _api_error(exc.code, quota_exhausted=_quota_exhausted(exc))
+            error.diagnostic = diagnostic
+            raise error from None
         except _timeouts():
             raise ProviderError(
                 "provider-timeout", "Google's API did not answer in time.", retry=True
@@ -162,22 +202,104 @@ class GeminiProvider:
         return _read(response)
 
 
-def _api_error(status: int | None) -> ProviderError:
+# google.rpc.Code names ("INVALID_ARGUMENT") and google.rpc.ErrorInfo.reason values
+# ("API_KEY_INVALID": UPPER_SNAKE_CASE, at most 63 characters, per Google's API
+# design guide). Anything else is discarded, never stored or logged.
+_STATUS_NAME = re.compile(r"[A-Z][A-Z_]{1,39}")
+_REASON_CODE = re.compile(r"[A-Z][A-Z0-9_]{1,62}")
+_ERROR_INFO = "type.googleapis.com/google.rpc.ErrorInfo"
+# google.rpc.QuotaFailure: which quota was exceeded. Quota ids are identifiers
+# such as "GenerateRequestsPerDayPerProjectPerModel-FreeTier".
+_QUOTA_FAILURE = "type.googleapis.com/google.rpc.QuotaFailure"
+_QUOTA_ID = re.compile(r"[A-Za-z][A-Za-z0-9_-]{1,99}")
+# A quota that resets only after a day (or longer) is not worth retrying in
+# minutes; a per-minute rate limit is.
+_LONG_QUOTA = re.compile(r"Per(Day|Month)|Daily|Monthly", re.IGNORECASE)
+
+
+def _error_body(exc: Any) -> dict[str, Any] | None:
+    body = getattr(exc, "details", None)
+    if isinstance(body, dict) and isinstance(body.get("error"), dict):
+        body = body["error"]
+    return body if isinstance(body, dict) else None
+
+
+def _detail_entries(exc: Any) -> list[dict[str, Any]]:
+    body = _error_body(exc)
+    entries = body.get("details") if body is not None else None
+    return [e for e in entries if isinstance(e, dict)] if isinstance(entries, list) else []
+
+
+def _quota_ids(exc: Any) -> list[str]:
+    """Validated quota ids from QuotaFailure entries (structured fields only)."""
+    found: list[str] = []
+    for entry in _detail_entries(exc):
+        if entry.get("@type") != _QUOTA_FAILURE:
+            continue
+        violations = entry.get("violations")
+        for violation in violations if isinstance(violations, list) else []:
+            quota = violation.get("quotaId") if isinstance(violation, dict) else None
+            if isinstance(quota, str) and _QUOTA_ID.fullmatch(quota):
+                found.append(quota)
+    return found
+
+
+def _quota_exhausted(exc: Any) -> bool:
+    """True when a 429 names a daily or monthly quota: retrying within minutes
+    cannot succeed. Without a structured QuotaFailure the answer is False, so
+    an ordinary 429 keeps its retries."""
+    return getattr(exc, "code", None) == 429 and any(_LONG_QUOTA.search(q) for q in _quota_ids(exc))
+
+
+def _diagnostic(exc: Any) -> dict[str, str]:
+    """Validated codes from the SDK error's structured fields. Never reads
+    ``message`` or any other free text; returns only what passes the patterns."""
+    found: dict[str, str] = {}
+    http = getattr(exc, "code", None)
+    if isinstance(http, int) and not isinstance(http, bool) and 100 <= http <= 599:
+        found["httpStatus"] = str(http)
+    status = getattr(exc, "status", None)
+    if isinstance(status, str) and _STATUS_NAME.fullmatch(status):
+        found["status"] = status
+    for entry in _detail_entries(exc):
+        if entry.get("@type") != _ERROR_INFO:
+            continue
+        reason = entry.get("reason")
+        if isinstance(reason, str) and _REASON_CODE.fullmatch(reason):
+            found["reason"] = reason
+            break
+    quotas = _quota_ids(exc)
+    if quotas:
+        found["quotaId"] = quotas[0]
+    return found
+
+
+def _api_error(status: int | None, *, quota_exhausted: bool = False) -> ProviderError:
+    """A ProviderError whose message is safe for every staff member: it never
+    names settings, files or keys (operator detail travels in ``diagnostic``)."""
+    if status == 429 and quota_exhausted:
+        return ProviderError(
+            "provider-quota-exhausted",
+            "The AI provider's usage quota for this server is used up (429), so the "
+            "analysis was not retried. Start it again after the quota resets. "
+            + ASK_AN_ADMINISTRATOR,
+        )
     if status == 429:
         return ProviderError(
             "provider-rate-limited",
-            "Google's API refused the request because of rate or quota limits (429).",
+            "Google's API is limiting requests at the moment (429). Try again later.",
             retry=True,
         )
     if status in (401, 403):
         return ProviderError(
             "provider-auth-failed",
-            f"Google's API refused the key ({status}). Check GEMINI_API_KEY in server/.env.",
+            f"Google's API did not accept this server's credentials ({status}). "
+            + ASK_AN_ADMINISTRATOR,
         )
     if status == 404:
         return ProviderError(
             "provider-model-not-found",
-            "Google's API does not know the configured model (404). Check GEMINI_MODEL.",
+            "Google's API does not offer the configured AI model (404). " + ASK_AN_ADMINISTRATOR,
         )
     if status is not None and status >= 500:
         return ProviderError(
@@ -224,21 +346,38 @@ def _read(response: Any) -> Response:
 
 
 def unavailable_reason(settings: Settings) -> Unavailable | None:
-    if settings.ai_provider == "disabled":
+    """None when the configured provider can be built; otherwise why not.
+    Unknown providers fail closed (``provider-unsupported``)."""
+    provider = settings.ai_provider
+    if provider == "disabled":
         return Unavailable(
             "analysis-disabled",
-            "AI analysis is turned off on this server (LEXFLOW_AI_PROVIDER=disabled).",
+            "AI analysis is turned off on this server.",
+            detail="LEXFLOW_AI_PROVIDER=disabled in server/.env.",
         )
-    if settings.ai_provider == "gemini":
+    if provider not in SUPPORTED_PROVIDERS:
+        return Unavailable(
+            "provider-unsupported",
+            "AI analysis is not available: the configured AI provider is not supported. "
+            + ASK_AN_ADMINISTRATOR,
+            detail=(
+                "LEXFLOW_AI_PROVIDER names a provider this version cannot use; supported: "
+                + ", ".join(sorted(SUPPORTED_PROVIDERS))
+                + ", disabled."
+            ),
+        )
+    if provider == "gemini":
         if settings.gemini_api_key is None:
             return Unavailable(
                 "provider-not-configured",
-                "AI analysis is not configured: GEMINI_API_KEY is missing from server/.env.",
+                "AI analysis is not fully configured on this server. " + ASK_AN_ADMINISTRATOR,
+                detail="GEMINI_API_KEY is missing from server/.env.",
             )
         if settings.gemini_model is None:
             return Unavailable(
                 "provider-not-configured",
-                "AI analysis is not configured: GEMINI_MODEL is missing from server/.env.",
+                "AI analysis is not fully configured on this server. " + ASK_AN_ADMINISTRATOR,
+                detail="GEMINI_MODEL is missing from server/.env.",
             )
     return None
 
@@ -254,6 +393,8 @@ def configured_model(settings: Settings) -> str | None:
 
 
 def provider_for(settings: Settings) -> AnalysisProvider | Unavailable:
+    """The configured provider, or why there is none. Every provider is chosen
+    by an explicit branch: an unknown name can never reach Gemini."""
     missing = unavailable_reason(settings)
     if missing is not None:
         return missing
@@ -261,7 +402,11 @@ def provider_for(settings: Settings) -> AnalysisProvider | Unavailable:
         from lexflow.analysis.scripted import ScriptedProvider
 
         return ScriptedProvider()
-    key, model = settings.gemini_api_key, settings.gemini_model
-    if key is None or model is None:  # pragma: no cover - unavailable_reason covers it
-        return Unavailable("provider-not-configured", "AI analysis is not configured.")
-    return GeminiProvider(key, model, timeout_seconds=settings.ai_timeout_seconds)
+    if settings.ai_provider == "gemini":
+        key, model = settings.gemini_api_key, settings.gemini_model
+        if key is not None and model is not None:
+            return GeminiProvider(key, model, timeout_seconds=settings.ai_timeout_seconds)
+    return Unavailable(  # pragma: no cover - unavailable_reason covers every other case
+        "provider-unsupported",
+        "AI analysis is not available. " + ASK_AN_ADMINISTRATOR,
+    )
