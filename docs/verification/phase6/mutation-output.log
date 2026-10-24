@@ -1,0 +1,249 @@
+Phase 6 mutation checks on the working tree of 5302e41, 2026-10-24 22:57 UTC
+
+=== P6-1 CAUGHT: a stale version is refused
+file: server/lexflow/services/reviews.py
+        assert decide(lead, run, "F2", "accepted", 0).status_code == 200
+        # The same request again (a retry after a lost response): the version moved on.
+        retry = decide(lead, run, "F2", "accepted", 0)
+>       assert (retry.status_code, retry.json()["code"]) == (409, "review-changed")
+                                   ^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'code'
+tests\test_analysis_reviews.py:139: KeyError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_reviews.py::test_a_stale_version_is_refused_and_a_retry_adds_nothing
+1 failed, 11 passed in 4.50s
+
+=== P6-2 CAUGHT: a change that alters nothing adds no history entry
+file: server/lexflow/services/reviews.py
+        assert late.status_code == 409 and "version 1" in late.json()["detail"]
+        # Repeating the current state with the current version changes nothing.
+        same = decide(lead, run, "F2", "accepted", 1)
+>       assert same.status_code == 200 and same.json()["version"] == 1
+E       assert (200 == 200 and 2 == 1)
+E        +  where 200 = <Response [200 OK]>.status_code
+tests\test_analysis_reviews.py:145: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_reviews.py::test_a_stale_version_is_refused_and_a_retry_adds_nothing
+1 failed, 11 passed in 4.26s
+
+=== P6-3 CAUGHT: an edit must change the AI's wording
+file: server/lexflow/api/reviews.py
+            ({"reviewedText": f"  {original}  "}, "wording-unchanged"),
+        ):
+            refused = decide(lead, run, "F1", "edited", 0, **body)
+>           assert (refused.status_code, refused.json()["code"]) == (422, code)
+                                         ^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'code'
+tests\test_analysis_reviews.py:122: KeyError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_reviews.py::test_edit_rules - KeyError: 'code'
+1 failed, 11 passed in 4.47s
+
+=== P6-4 CAUGHT: a not-ready run cannot be reviewed
+file: server/lexflow/api/reviews.py
+        db.add(failed)
+        db.commit()
+        not_ready = lead.get(url(failed))
+>       assert (not_ready.status_code, not_ready.json()["code"]) == (409, "analysis-not-ready")
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'code'
+tests\test_analysis_reviews.py:233: KeyError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_reviews.py::test_runs_and_findings_must_belong_to_the_case
+1 failed, 11 passed in 4.24s
+
+=== P6-5 CAUGHT: a run of another case is not found through this case
+file: server/lexflow/api/reviews.py
+>           assert lead.get(path).status_code == 404, path
+E           AssertionError: /api/cases/<uuid>/analysis-runs/<uuid>/reviews
+E           assert 200 == 404
+E            +  where 200 = <Response [200 OK]>.status_code
+E            +    where <Response [200 OK]> = get('/api/cases/<uuid>/analysis-runs/<uuid>/reviews')
+E            +      where get = <starlette.testclient.TestClient object at 0x000001D69A214EF0>.get
+tests\test_analysis_reviews.py:215: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_reviews.py::test_runs_and_findings_must_belong_to_the_case
+1 failed, 11 passed in 4.08s
+
+=== P6-6 CAUGHT: a finding must exist in the run
+file: server/lexflow/api/reviews.py
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\Claude\Legal Case Management System\server\lexflow\api\reviews.py", line 219, in review_finding
+    outcome = reviews.apply(
+              ^^^^^^^^^^^^^^
+  File "C:\Projects\Claude\Legal Case Management System\server\lexflow\services\reviews.py", line 138, in apply
+    .where(AnalysisFindingReview.run_id == run.id, AnalysisFindingReview.finding_id == item.id)
+                                                                                       ^^^^^^^
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_reviews.py::test_runs_and_findings_must_belong_to_the_case
+1 failed, 11 passed in 4.29s
+
+=== P6-7 CAUGHT: paralegals may not decide on findings
+file: server/lexflow/authz.py
+        paralegal = decide(as_("paralegal"), run, "P1", "accepted", 0)
+>       assert paralegal.status_code == 403
+E       assert 200 == 403
+E        +  where 200 = <Response [200 OK]>.status_code
+tests\test_analysis_reviews.py:186: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_reviews.py::test_every_finding_starts_unreviewed
+FAILED tests/test_analysis_reviews.py::test_notes_are_private_to_reviewers - ...
+FAILED tests/test_analysis_reviews.py::test_only_the_cases_advocates_and_administrators_decide
+3 failed, 9 passed in 4.05s
+
+=== P6-8 CAUGHT: notes are shown to reviewers only
+file: server/lexflow/api/reviews.py
+        paralegal = as_("paralegal")
+        seen = paralegal.get(url(run)).json()
+>       assert item(seen, "C1")["status"] == "rejected" and item(seen, "C1")["note"] is None
+E       AssertionError: assert ('rejected' == 'rejected'
+E         
+E           rejected and 'SYNTHETIC private note: check the 2017 invoice' is None)
+tests\test_analysis_reviews.py:158: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_reviews.py::test_notes_are_private_to_reviewers - ...
+1 failed, 11 passed in 4.16s
+
+=== P6-9 CAUGHT: the audit event holds no note
+file: server/lexflow/api/reviews.py
+E       AssertionError: assert {'kind': 'fac...g': 'F1', ...} == {'finding': '...sion': 1, ...}
+E         
+E         Omitting 6 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'note': 'SYNTHETIC-NOTE-TEXT'}
+E         Use -v to get more diff
+tests\test_analysis_reviews.py:245: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_reviews.py::test_decisions_are_audited_without_wording_or_notes
+1 failed, 11 passed in 4.22s
+
+=== P6-10 CAUGHT: the timeline entry holds no note
+file: server/lexflow/services/reviews.py
+        assert "Fact F1 of the AI analysis of" in entries[0]["description"]
+>       assert entries[0]["description"].endswith("accepted with the lawyer's wording.")
+E       assert False
+E        +  where False = <built-in method endswith of str object at 0x0000014F07F1F2D0>("accepted with the lawyer's wording.")
+E        +    where <built-in method endswith of str object at 0x0000014F07F1F2D0> = "Fact F1 of the AI analysis of 25 Oct 2026 accepted with the lawyer's wording. SYNTHETIC-NOTE-TEXT".endswith
+tests\test_analysis_reviews.py:269: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_analysis_reviews.py::test_notes_are_private_to_reviewers - ...
+FAILED tests/test_analysis_reviews.py::test_review_actions_appear_on_the_matter_timeline_without_their_content
+2 failed, 10 passed in 4.14s
+
+=== P6-11 CAUGHT: the brief holds only accepted findings
+file: server/lexflow/services/brief.py
+>       assert text.count(CHANGED_NOTE) == 3  # the fact's source and the contradiction's two
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert 4 == 3
+E        +  where 4 = <built-in method count of str object at 0x0000020030120020>('This source changed after the analysis (the document was re-extracted or deleted, or the judgment removed). The quote is shown as it was verified at the time.')
+E        +    where <built-in method count of str object at 0x0000020030120020> = 'Case brief: Sattvik Foods Pvt. Ltd. v. Nisarga Retail Pvt. Ltd.\nCase number: LF-2026-0361\nCourt: High Court of Delh...ng of it is legally right. This brief contains only findings a lawyer accepted; verify every point against its source.'.count
+tests\test_case_brief.py:116: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_case_brief.py::test_the_brief_holds_only_accepted_findings
+FAILED tests/test_case_brief.py::test_changed_sources_are_flagged_not_replaced
+2 failed, 8 passed in 4.57s
+
+=== P6-12 CAUGHT: an edited finding appears in the lawyer's wording
+file: server/lexflow/services/brief.py
+        assert original["facts"][0]["statement"] in text  # F1 accepted
+        assert original["facts"][1]["statement"] not in text  # F2 rejected
+        assert original["issues"][0]["question"] not in text  # I1 unreviewed
+>       assert WORDING in text and "Wording by the reviewing lawyer." in text  # C1 edited
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert ("SYNTHETIC: first use is disputed between 2015 and 2017 (lawyer's wording)." in 'Case brief: Sattvik Foods Pvt. Ltd. v. Nisarga Retail Pvt. Ltd.\nCase number: LF-2026-0361\nCourt: High Court of Delh...ng of it is legally right. This brief contains only findings a lawyer accepted; verify every point against its source.')
+tests\test_case_brief.py:77: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_case_brief.py::test_the_brief_holds_only_accepted_findings
+1 failed, 9 passed in 4.43s
+
+=== P6-13 CAUGHT: synthetic judgments are labelled in the brief
+file: server/lexflow/services/brief.py
+        assert (
+            "Source: SYNTHETIC Plaint.pdf, page 2: “SYNTHETIC: the mark was registered in 2015”" in text
+        )
+        assert "Asha Rao v. Bharat Traders (SYNTHETIC)" in text
+>       assert "(SYN) 2019 TEST 101" in text and SYNTHETIC_LABEL in text
+E       AssertionError: assert ('(SYN) 2019 TEST 101' in 'Case brief: Sattvik Foods Pvt. Ltd. v. Nisarga Retail Pvt. Ltd.\nCase number: LF-2026-0361\nCourt: High Court of Delh...ng of it is legally right. This brief contains only findings a lawyer accepted; verify every point against its source.' and 'SYNTHETIC test judgment: fictional, not real case law.' in 'Case brief: Sattvik Foods Pvt. Ltd. v. Nisarga Retail Pvt. Ltd.\nCase number: LF-2026-0361\nCourt: High Court of Delh...ng of it is legally right. This brief contains only findings a lawyer accepted; verify every point against its source.')
+tests\test_case_brief.py:94: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_case_brief.py::test_each_finding_keeps_its_citation_and_reviewer
+1 failed, 9 passed in 4.44s
+
+=== P6-14 CAUGHT: changed sources are flagged in the brief
+file: server/lexflow/services/brief.py
+        text = text_of(as_("lead").get(brief_url(reviewed)).content)
+>       assert text.count(CHANGED_NOTE) == 3  # the fact's source and the contradiction's two
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert 0 == 3
+E        +  where 0 = <built-in method count of str object at 0x000001F0D9985520>('This source changed after the analysis (the document was re-extracted or deleted, or the judgment removed). The quote is shown as it was verified at the time.')
+E        +    where <built-in method count of str object at 0x000001F0D9985520> = 'Case brief: Sattvik Foods Pvt. Ltd. v. Nisarga Retail Pvt. Ltd.\nCase number: LF-2026-0361\nCourt: High Court of Delh...ng of it is legally right. This brief contains only findings a lawyer accepted; verify every point against its source.'.count
+tests\test_case_brief.py:116: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_case_brief.py::test_changed_sources_are_flagged_not_replaced
+1 failed, 9 passed in 4.48s
+
+=== P6-15 CAUGHT: no brief without an accepted finding
+file: server/lexflow/api/reviews.py
+            if not isinstance(s, (bytes, bytearray)):
+                raise TypeError(f'the JSON object must be str, bytes or bytearray, '
+                                f'not {s.__class__.__name__}')
+>           s = s.decode(detect_encoding(s), 'surrogatepass')
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           UnicodeDecodeError: 'utf-8' codec can't decode byte 0xac in position 10: invalid start byte
+<home>\AppData\Local\Programs\Python\Python312\Lib\json\__init__.py:341: UnicodeDecodeError
+=========================== short test summary info ===========================
+FAILED tests/test_case_brief.py::test_nothing_accepted_means_no_brief - Unico...
+1 failed, 9 passed in 4.54s
+
+=== U6-1 CAUGHT: review controls only for those the server allows
+file: src/components/workspace/AnalysisTab.tsx
+  Accept
+</button> instead
+ ❯ src/pages/review.test.tsx:193:64
+    191|     expect(within(fact).getByText('Unreviewed')).toBeVisible();
+    192|     for (const name of ['Accept', 'Edit wording', 'Reject']) {
+    193|       expect(within(fact).queryByRole('button', { name })).not.toBeInT…
+       |                                                                ^
+    194|     }
+    195|   });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+=== U6-2 CAUGHT: unreviewed findings are visibly marked
+file: src/components/workspace/FindingReview.tsx
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/pages/review.test.tsx:191:25
+    189|     await openFinished([], MOCK_PARALEGAL_EMAIL);
+    190|     const fact = panel('Fact F1');
+    191|     expect(within(fact).getByText('Unreviewed')).toBeVisible();
+       |                         ^
+    192|     for (const name of ['Accept', 'Edit wording', 'Reject']) {
+    193|       expect(within(fact).queryByRole('button', { name })).not.toBeInT…
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+=== U6-3 CAUGHT: the export needs an accepted finding
+file: src/components/workspace/FindingReview.tsx
+  type="button"
+/>
+ ❯ src/pages/review.test.tsx:254:20
+    252|     await openFinished();
+    253|     const button = screen.getByRole('button', { name: 'Export case bri…
+    254|     expect(button).toBeDisabled();
+       |                    ^
+    255|     expect(button).toHaveAccessibleDescription(/Accept at least one fi…
+    256|   });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+=== U6-4 CAUGHT: review decisions are not counted as analysis input
+file: src/components/workspace/AnalysisTab.tsx
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/pages/review.test.tsx:231:20
+    229|     renderApp(TAB, { as: ARYAN_EMAIL });
+    230|     expect(
+    231|       await screen.findByText(
+       |                    ^
+    232|         `${caseEvents} events (the latest 30 are sent; lawyers' review…
+    233|       ),
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+

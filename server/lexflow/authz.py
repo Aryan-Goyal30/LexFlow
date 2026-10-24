@@ -63,6 +63,7 @@ class Action(StrEnum):
     VIEW_DELETED_DOCUMENTS = "view-deleted-documents"
     SHARE_DOCUMENT = "share-document"
     RUN_ANALYSIS = "run-analysis"  # start an AI case analysis (Phase 5)
+    REVIEW_ANALYSIS = "review-analysis"  # accept, reject or edit AI findings (Phase 6)
 
 
 _STAFF_ON_CASE = frozenset({Relation.ADMIN, Relation.LEAD, Relation.ASSOCIATE, Relation.PARALEGAL})
@@ -88,6 +89,9 @@ ALLOWED: dict[Action, frozenset[Relation]] = {
     # Owner decision D4 (Phase 5): advocates on the case and Administrators;
     # paralegals may read results (VIEW) but not send case text to a provider.
     Action.RUN_ANALYSIS: _ADVOCATES_ON_CASE,
+    # Phase 6: the advocates on the case and Administrators decide on findings;
+    # paralegals see the decisions (VIEW) but not the reviewers' notes.
+    Action.REVIEW_ANALYSIS: _ADVOCATES_ON_CASE,
 }
 
 # PATCH /api/cases/{id}: the action each field needs.
@@ -270,6 +274,7 @@ def permissions(rel: Relation, *, is_archived: bool = False) -> dict[str, Any]:
         "can_restore_documents": may(Action.RESTORE_DOCUMENT),
         "can_share_documents": may(Action.SHARE_DOCUMENT),
         "can_run_analysis": may(Action.RUN_ANALYSIS),
+        "can_review_analysis": may(Action.REVIEW_ANALYSIS),
     }
 
 

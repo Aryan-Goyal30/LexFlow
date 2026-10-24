@@ -45,9 +45,14 @@ from lexflow.domain import (
     DOCUMENT_NAME_MAX,
     EXTRACTION_REASON_MAX,
     EXTRACTION_STATUSES,
+    FINDING_KINDS,
+    FINDING_PREFIX,
     HEARING_SCHEDULED,
     INDEX_STATUSES,
     PRACTICE_AREAS,
+    REVIEW_NOTE_MAX,
+    REVIEW_STATUSES,
+    REVIEW_TEXT_MAX,
     TITLE_MAX,
     TITLE_MIN,
     USER_ROLES,
@@ -861,6 +866,130 @@ class AnalysisRun(Base):
     )
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+_KIND_MATCHES_ID = (
+    "left(finding_id, 1) = CASE finding_kind "
+    + " ".join(f"WHEN '{kind}' THEN '{prefix}'" for kind, prefix in FINDING_PREFIX.items())
+    + " END"
+)
+
+
+def _review_checks() -> tuple[CheckConstraint, ...]:
+    """The rules shared by a finding's current review and each history entry."""
+    return (
+        CheckConstraint(_in_list("status", REVIEW_STATUSES), name="status_valid"),
+        CheckConstraint(_in_list("finding_kind", FINDING_KINDS), name="finding_kind_valid"),
+        CheckConstraint("finding_id ~ '^[FIPC][1-9][0-9]{0,3}$'", name="finding_id_format"),
+        CheckConstraint(_KIND_MATCHES_ID, name="finding_kind_matches_id"),
+        CheckConstraint(
+            "(status = 'edited') = (reviewed_text IS NOT NULL)", name="text_matches_status"
+        ),
+        CheckConstraint(
+            f"reviewed_text IS NULL OR char_length(reviewed_text) BETWEEN 1 AND {REVIEW_TEXT_MAX}",
+            name="reviewed_text_length",
+        ),
+        CheckConstraint(
+            f"note IS NULL OR char_length(note) BETWEEN 1 AND {REVIEW_NOTE_MAX}",
+            name="note_length",
+        ),
+        CheckConstraint("version >= 1", name="version_positive"),
+    )
+
+
+class AnalysisFindingReview(Base):
+    """A lawyer's current decision on one finding of one analysis run (Phase 6).
+
+    A finding is identified by its run and its id in that run's result (F2,
+    I1, P1, C1: ids are unique only within a run). The run's ``result`` is
+    never changed: an edit is stored here as ``reviewed_text`` and the
+    model's wording stays in the run. No row means the finding is unreviewed;
+    clearing a decision sets ``unreviewed`` and keeps the history. Every
+    change increments ``version`` and adds an ``AnalysisFindingReviewEvent``
+    in the same transaction.
+    """
+
+    __tablename__ = "analysis_finding_reviews"
+    __table_args__ = (
+        *_review_checks(),
+        UniqueConstraint("run_id", "finding_id"),
+        Index("ix_analysis_finding_reviews_case_id", "case_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("analysis_runs.id", ondelete="CASCADE"), nullable=False
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
+    finding_kind: Mapped[str] = mapped_column(Text, nullable=False)
+    finding_id: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    # The lawyer's wording, only for status "edited".
+    reviewed_text: Mapped[str | None] = mapped_column(Text)
+    # Private to reviewers: never on the timeline, in audit details or in briefs.
+    note: Mapped[str | None] = mapped_column(Text)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    reviewed_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        server_default=func.now(),
+    )
+
+
+class AnalysisFindingReviewEvent(Base):
+    """One change to a finding's review, kept forever (append-only history).
+
+    Holds the state after the change (status, wording, note) with who made it
+    and when. ``version`` matches the review's version after the change, so
+    (review, version) is unique and a retried request cannot add a second
+    entry for the same change. These rows also appear on the matter timeline
+    (without the wording or note), derived at read time: they are never
+    written to ``timeline_events``, which the analysis evidence reads.
+    """
+
+    __tablename__ = "analysis_finding_review_events"
+    __table_args__ = (
+        *_review_checks(),
+        UniqueConstraint("review_id", "version"),
+        Index("ix_analysis_finding_review_events_case_id_occurred_at", "case_id", "occurred_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    review_id: Mapped[uuid.UUID] = mapped_column(
+        # Named explicitly: the generated name would exceed PostgreSQL's 63 characters.
+        ForeignKey(
+            "analysis_finding_reviews.id",
+            ondelete="CASCADE",
+            name="fk_analysis_finding_review_events_review_id",
+        ),
+        nullable=False,
+    )
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("analysis_runs.id", ondelete="CASCADE"), nullable=False
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
+    finding_kind: Mapped[str] = mapped_column(Text, nullable=False)
+    finding_id: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    reviewed_text: Mapped[str | None] = mapped_column(Text)
+    note: Mapped[str | None] = mapped_column(Text)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        server_default=func.now(),
+    )
 
 
 class CaseNumberCounter(Base):

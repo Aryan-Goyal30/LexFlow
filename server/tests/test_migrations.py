@@ -37,6 +37,8 @@ APP_TABLES = {
     "judgment_chunks",
     "judgment_chunk_embeddings",
     "analysis_runs",
+    "analysis_finding_reviews",
+    "analysis_finding_review_events",
 }
 
 

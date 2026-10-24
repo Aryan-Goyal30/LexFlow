@@ -25,6 +25,7 @@ from lexflow.api import (
     judgments,
     portal,
     reference,
+    reviews,
     search,
 )
 from lexflow.auth.deps import require_roles, require_user
@@ -105,6 +106,7 @@ def create_app() -> FastAPI:
     app.include_router(documents.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(search.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(analysis.router, prefix=API_PREFIX, dependencies=staff)
+    app.include_router(reviews.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(judgments.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(hearings.router, prefix=API_PREFIX, dependencies=staff)
     administrators = [Depends(require_user), Depends(require_roles(ADMINISTRATOR))]

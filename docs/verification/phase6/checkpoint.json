@@ -1,0 +1,71 @@
+{
+  "phase": 6,
+  "updated": "2026-10-25",
+  "branch": "master",
+  "start_commit": "5302e411dcf93a4651e036c8428a8d691f9e252b",
+  "status": "COMPLETE: Phase 6 closed 2026-10-25 (closure commit 'Phase 6: lawyer review and case brief export', parent 5302e41; hash recorded by git)",
+  "current_batch": "none (Phase 6 closed)",
+  "plan": "docs/PHASE6_PLAN.md",
+  "log": "docs/PHASE6_EXECUTION_LOG.md",
+  "brief_sha256": "274ecaed93400f51dd47c42337fbd6e101aa6be366b80d977d1522359b34c2ec",
+  "batches": {
+    "B0 preflight, plan, records": "complete (2026-10-25)",
+    "B1 models + migration 0012": "complete (2026-10-25; 16 model tests + 5 migration tests pass)",
+    "B2 review service + API + audit + timeline": "complete (2026-10-25; 12 review API tests; full backend 1008 passed)",
+    "B3 evidence isolation": "complete (2026-10-25; 4 isolation tests incl. a control)",
+    "B4 review UI": "complete (2026-10-25; 9 review UI tests; Vitest 189 passed)",
+    "B5 brief export": "complete (2026-10-25; 10 backend + 3 UI tests; Vitest 192)",
+    "B6 integration + e2e": "complete (2026-10-25; 6 lifecycle tests; e2e analysis.spec 4 passed; inputs-count defect fixed)",
+    "B7 full verification": "complete (2026-10-25)",
+    "B8 records + closure commit": "complete (2026-10-25; records reconciled; closure commit created after this checkpoint)"
+  },
+  "acceptance_criteria": {
+    "AC1 persistence and history": "met (B1, B2 backend tests; B4 UI history)",
+    "AC2 authorization and API": "met (B2 tests)",
+    "AC3 evidence isolation": "met (tests/test_review_isolation.py, 4 passed)",
+    "AC4 review UI": "met (src/pages/review.test.tsx 9 passed)",
+    "AC5 brief export": "met (tests/test_case_brief.py; src/pages/review.test.tsx)",
+    "AC6 provenance and stale sources": "met (tests/test_case_brief.py; src/pages/review.test.tsx)",
+    "AC7 synthetic labels and confidentiality": "met (tests/test_case_brief.py; src/pages/review.test.tsx)",
+    "AC8 regression and fresh verification": "met (B7: pytest 1028, Vitest 193 + build, Playwright 42, mutation 19/19, ruff/format/mypy/linux/alembic check/OpenAPI/api:check clean)",
+    "AC9 documentation and traceability": "met (plan, ADR 0020, SRS, TRACEABILITY, ARCHITECTURE, verification README, log, checkpoint agree; B8)",
+    "AC10 git state and closure commit": "met at the closure commit 'Phase 6: lawyer review and case brief export' (parent 5302e41); clean tree verified after committing"
+  },
+  "latest_tests": {
+    "baseline_historical": "at 5302e41 (Phase 5 M10.4, not re-run): pytest 980 passed, Vitest 180 passed + build, Playwright 41 passed, all exit 0",
+    "B1": "tests/test_migrations.py 5 passed; tests/test_finding_reviews_model.py 16 passed; ruff + mypy clean (2026-10-25)",
+    "B2": "tests/test_analysis_reviews.py 12 passed; full backend pytest -x 1008 passed, exit 0 (2026-10-25)",
+    "B3": "tests/test_review_isolation.py 4 passed, exit 0 (2026-10-25)",
+    "B4": "npx vitest run: 189 passed (18 files); lint, prettier, typecheck clean (2026-10-25)",
+    "B5": "tests/test_case_brief.py 10 passed; test_analysis_runs+reviews 52 passed; Vitest 192 passed; drift checks clean (2026-10-25)",
+    "B6": "tests/test_review_lifecycle.py 6 passed; npx playwright test e2e/analysis.spec.ts 4 passed; review.test.tsx 13 passed (2026-10-25)",
+    "B7": {
+      "pytest": "1028 passed, exit 0 (docs/verification/phase6/pytest-full.log)",
+      "npm_check": "193 Vitest passed, build OK, exit 0 (npm-check.log)",
+      "playwright": "42 passed, exit 0 (playwright.log)",
+      "mutation": "19 of 19 caught, exit 0 (mutation-report.md)",
+      "static": "ruff check/format, mypy (147) and linux (159), export_openapi --check, alembic check on lexflow_test: all exit 0"
+    }
+  },
+  "decisions": {
+    "D6-1..D6-9": "docs/PHASE6_PLAN.md section 3 (ADR 0020 to follow)",
+    "no_session_hook": "CLAUDE.md is loaded automatically; files are the source of truth",
+    "D6-9": "done: migration 0012 applied to lexflow after a verified backup (log B8a)",
+    "ADR": "docs/adr/0020-lawyer-review-and-case-brief.md"
+  },
+  "deferred": {
+    "real_judgment_source": "dataset phase; requires verified reuse terms, provenance, separation from synthetic demo data and evaluation fixtures",
+    "phase7": "gated; thresholds not agreed; starts only on owner instruction",
+    "retention": "owner decides how long to keep server/var/backups/*-pre-0012.dump and lexflow_pre0012_verify",
+    "limitations": "docs/PHASE6_PLAN.md section 10"
+  },
+  "migration": {
+    "latest_in_code": "0012 (additive)",
+    "applied_to": "scratch test databases, lexflow_test, lexflow_e2e, and live lexflow (2026-10-25, log B8a)",
+    "live_lexflow": "0012 (head), verified by alembic current and alembic check; 0 unexpected row differences",
+    "backup": "server/var/backups/lexflow-20261025-043125-pre-0012.dump (sha256 f55168ca074439518fff26c4836d9048121b5a0b8cc5ecb55411ce4e9c01a49e), restored into lexflow_pre0012_verify: identical"
+  },
+  "working_tree": "all Phase 6 changes are in the closure commit; tree clean after committing",
+  "next_action": "None in Phase 6 (closed). Next phase: Phase 7 (outcome assessment) is gated by the brief and starts only on the owner's instruction, with its own plan, log and checkpoint.",
+  "latest_log_entry": "B8 — Records reconciled; Phase 6 closed (2026-10-25)"
+}

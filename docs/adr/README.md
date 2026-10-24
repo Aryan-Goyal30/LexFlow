@@ -25,6 +25,8 @@ building them.
 | [0016](0016-embeddings-local-and-gated.md) | Embeddings: off by default, local only, gated on a compatible pgvector image | Superseded in part by 0017 |
 | [0017](0017-pgvector-trixie-and-local-embeddings.md) | pgvector on Debian 13 (`pg17-trixie`), local `bge-small-en-v1.5`, per-case search | Accepted |
 | [0018](0018-judgment-collection-and-search.md) | Judgment collection: operator imports with provenance, synthetic data fenced off, staff-wide search | Accepted |
+| [0019](0019-ai-case-analysis.md) | AI case analysis: Gemini behind the server, evidence ids, validation before display | Accepted (amended M9, M10) |
+| [0020](0020-lawyer-review-and-case-brief.md) | Lawyer review beside the AI result, review actions kept out of model input, DOCX brief of accepted findings | Accepted |
 
 Format: Context, Decision, Consequences. Superseding a decision means adding a
 new record and marking the old one "Superseded by NNNN", not editing history.

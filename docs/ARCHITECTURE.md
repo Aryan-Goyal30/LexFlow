@@ -49,16 +49,19 @@ flowchart LR
     uc11[Purge deleted documents]
     uc12[Start an AI case analysis]
     uc13[Read AI analysis results]
+    uc14[Review AI findings and export a case brief]
   end
-  admin --> uc1 & uc2 & uc3 & uc4 & uc5 & uc6 & uc7 & uc12 & uc13
-  adv --> uc2 & uc3 & uc4 & uc5 & uc6 & uc7 & uc12 & uc13
+  admin --> uc1 & uc2 & uc3 & uc4 & uc5 & uc6 & uc7 & uc12 & uc13 & uc14
+  adv --> uc2 & uc3 & uc4 & uc5 & uc6 & uc7 & uc12 & uc13 & uc14
   para --> uc3 & uc4 & uc5 & uc6 & uc7 & uc13
   client --> uc8
   op --> uc9 & uc10 & uc11
 ```
 
-Review of AI findings (Phase 6) and outcome assessment (Phase 7) are later
-phases and are not shown.
+Reviewing AI findings (accept, reject, edit; Phase 6) is for the Administrator
+and the case's advocates; paralegals read the decisions (uc13) and may export
+the brief of accepted findings. Outcome assessment (Phase 7) is a later, gated
+phase and is not shown.
 
 ## 3. Deployment
 

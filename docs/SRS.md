@@ -1,7 +1,7 @@
 # LexFlow — Software Requirements Specification
 
-Version: Phase 5, closed (2026-10-25). Describes the system **as built** through
-Phase 5 and marks what later phases add. Source of the plan:
+Version: Phase 6 (2026-10-25). Describes the system **as built** through
+Phase 6 and marks what later phases add. Source of the plan:
 `docs/DEVELOPMENT_BRIEF.md`. Traceability to code and tests:
 `docs/TRACEABILITY.md`. Architecture and UML: `docs/ARCHITECTURE.md`.
 
@@ -11,8 +11,9 @@ LexFlow is a legal case workspace and research assistant for advocates in the
 Indian legal system. It manages cases, hearings, clients and documents,
 extracts and searches document text, and keeps a searchable collection of
 judgments, and offers AI case analysis whose every claim is checked against
-its source before it is shown (Phase 5). Lawyer review of AI findings
-(Phase 6) and outcome assessment (Phase 7) are **not** part of this version.
+its source before it is shown (Phase 5), lawyer review of every AI finding
+and a case brief of the accepted findings (Phase 6). Outcome assessment
+(Phase 7) is **not** part of this version.
 Any AI is decision support only; LexFlow never replaces the lawyer or the
 judge.
 
@@ -51,7 +52,7 @@ Status: **Done** = implemented and tested; **Later** = a future phase.
 | FR-17 | Reproducible search evaluation (Recall@K, Precision@K, MRR) | Done (machinery, Phase 4); real-corpus evaluation pending external data |
 | FR-18 | AI case analysis with validated citations: facts with source document and page, issues, precedent comparisons, contradictions; unknown sources removed or rejected; insufficient evidence stated | Done (Phase 5, closed 2026-10-25); migration 0011 applied to the live database (2026-10-20); analysing real client material needs the D1 privacy review; real judgment sources are a later dataset decision |
 | FR-18a | Starting an analysis: Administrator and the case's advocates; archived cases refused; sample cases only unless client data is allowed; explicit per-run confirmation of what is sent to the provider | Done (Phase 5) |
-| FR-19 | Lawyer review of AI findings; brief export | Later (Phase 6) |
+| FR-19 | Lawyer review of AI findings: accept, reject or edit each finding with an optional note (Administrator and the case's advocates; paralegals read; history kept; the AI's wording preserved; unreviewed findings marked); review actions on the matter timeline (never sent to the model); a DOCX case brief containing only accepted findings with citations | Done (Phase 6); migration 0012 applied to the live database (2026-10-25) |
 | FR-20 | Gated outcome assessment | Later (Phase 7) |
 
 ## 4. Non-functional requirements
@@ -82,6 +83,5 @@ Status: **Done** = implemented and tested; **Later** = a future phase.
 
 ## 6. Out of scope (this version)
 
-OCR; crawling or downloading judgments; outcome prediction; review of AI
-findings (Phase 6);
+OCR; crawling or downloading judgments; outcome prediction (Phase 7);
 e-mail; multi-factor sign-in; internet deployment.

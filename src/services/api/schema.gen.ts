@@ -675,6 +675,89 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/analysis-runs/{run_id}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Reviews
+         * @description Every finding of a finished run with its current review decision.
+         */
+        get: operations["list_reviews_api_cases__case_id__analysis_runs__run_id__reviews_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/analysis-runs/{run_id}/reviews/{finding_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Review Finding
+         * @description Accept, edit, reject or clear one finding. The run's stored result is
+         *     never changed; every change is kept in the finding's history.
+         */
+        put: operations["review_finding_api_cases__case_id__analysis_runs__run_id__reviews__finding_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/analysis-runs/{run_id}/reviews/{finding_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Review History
+         * @description Every recorded change to one finding's review, oldest first.
+         */
+        get: operations["review_history_api_cases__case_id__analysis_runs__run_id__reviews__finding_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/analysis-runs/{run_id}/brief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Brief
+         * @description The case brief (DOCX): the findings a lawyer accepted, with their
+         *     citations; unreviewed and rejected findings are left out and counted.
+         *     Generated here, on request; no model is called.
+         */
+        get: operations["export_brief_api_cases__case_id__analysis_runs__run_id__brief_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/judgments/facets": {
         parameters: {
             query?: never;
@@ -1371,6 +1454,132 @@ export interface components {
             precedentsAvailable: boolean;
             removed: components["schemas"]["AnalysisRemovedOut"];
         };
+        /** AnalysisReviewHistoryEntryOut */
+        AnalysisReviewHistoryEntryOut: {
+            /** Version */
+            version: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "unreviewed" | "accepted" | "edited" | "rejected";
+            /** Reviewedtext */
+            reviewedText: string | null;
+            /**
+             * Note
+             * @description Shown to reviewers only; null for others.
+             */
+            note: string | null;
+            actor: components["schemas"]["ActorOut"] | null;
+            /**
+             * Occurredat
+             * Format: date-time
+             */
+            occurredAt: string;
+        };
+        /** AnalysisReviewHistoryOut */
+        AnalysisReviewHistoryOut: {
+            /** Findingid */
+            findingId: string;
+            /**
+             * Items
+             * @description Oldest first.
+             */
+            items: components["schemas"]["AnalysisReviewHistoryEntryOut"][];
+        };
+        /**
+         * AnalysisReviewIn
+         * @description A decision on one finding. ``expectedVersion`` is the version the
+         *     reviewer saw (0 when unreviewed); a stale one is refused with 409.
+         */
+        AnalysisReviewIn: {
+            /**
+             * Status
+             * @description 'unreviewed' clears an earlier decision; the history keeps it.
+             * @enum {string}
+             */
+            status: "unreviewed" | "accepted" | "edited" | "rejected";
+            /**
+             * Reviewedtext
+             * @description The lawyer's wording; required for 'edited' and only allowed there.
+             */
+            reviewedText?: string | null;
+            /**
+             * Note
+             * @description Optional note or rejection reason, private to reviewers.
+             */
+            note?: string | null;
+            /** Expectedversion */
+            expectedVersion: number;
+        };
+        /** AnalysisReviewListOut */
+        AnalysisReviewListOut: {
+            /**
+             * Runid
+             * Format: uuid
+             */
+            runId: string;
+            /**
+             * Canreview
+             * @description This user may record decisions on this run now.
+             */
+            canReview: boolean;
+            summary: components["schemas"]["AnalysisReviewSummaryOut"];
+            /**
+             * Items
+             * @description Every finding of the run, in order.
+             */
+            items: components["schemas"]["AnalysisReviewOut"][];
+        };
+        /** AnalysisReviewOut */
+        AnalysisReviewOut: {
+            /**
+             * Findingid
+             * @description e.g. 'F2'; unique within the run.
+             */
+            findingId: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "fact" | "issue" | "precedent" | "contradiction";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "unreviewed" | "accepted" | "edited" | "rejected";
+            /**
+             * Reviewedtext
+             * @description The lawyer's wording (status 'edited').
+             */
+            reviewedText: string | null;
+            /**
+             * Note
+             * @description Shown to reviewers only; null for others.
+             */
+            note: string | null;
+            /**
+             * Version
+             * @description 0 while the finding has never been reviewed.
+             */
+            version: number;
+            reviewedBy: components["schemas"]["ActorOut"] | null;
+            /** Reviewedat */
+            reviewedAt: string | null;
+        };
+        /** AnalysisReviewSummaryOut */
+        AnalysisReviewSummaryOut: {
+            /** Total */
+            total: number;
+            /** Unreviewed */
+            unreviewed: number;
+            /** Accepted */
+            accepted: number;
+            /** Edited */
+            edited: number;
+            /** Rejected */
+            rejected: number;
+        };
         /** AnalysisRunIn */
         AnalysisRunIn: {
             /**
@@ -1782,6 +1991,11 @@ export interface components {
             canShareDocuments: boolean;
             /** Canrunanalysis */
             canRunAnalysis: boolean;
+            /**
+             * Canreviewanalysis
+             * @description May accept, reject or edit AI findings and see review notes (Phase 6).
+             */
+            canReviewAnalysis: boolean;
         };
         /**
          * CaseSearchHitOut
@@ -2921,6 +3135,13 @@ export interface components {
             recordedAt: string;
             /** Issample */
             isSample: boolean;
+            /**
+             * Kind
+             * @description 'review': a lawyer's decision on an AI finding (Phase 6), derived from the review history; it names the finding and the decision, never the wording or the note.
+             * @default case
+             * @enum {string}
+             */
+            kind: "case" | "review";
         };
         /** UpcomingHearingOut */
         UpcomingHearingOut: {
@@ -4428,6 +4649,234 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_reviews_api_cases__case_id__analysis_runs__run_id__reviews_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisReviewListOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    review_finding_api_cases__case_id__analysis_runs__run_id__reviews__finding_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                run_id: string;
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisReviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisReviewOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    review_history_api_cases__case_id__analysis_runs__run_id__reviews__finding_id__history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                run_id: string;
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisReviewHistoryOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    export_brief_api_cases__case_id__analysis_runs__run_id__brief_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The case brief as a Word document. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
                 };
             };
         };

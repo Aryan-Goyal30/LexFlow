@@ -20,6 +20,8 @@ from lexflow.domain import (
     DESCRIPTION_MAX,
     DESCRIPTION_MIN,
     HEARING_TEXT_MAX,
+    REVIEW_NOTE_MAX,
+    REVIEW_TEXT_MAX,
     SHORT_TEXT_MAX,
     TITLE_MAX,
     TITLE_MIN,
@@ -27,9 +29,11 @@ from lexflow.domain import (
     CasePriority,
     CaseStatus,
     ExtractionStatus,
+    FindingKind,
     HearingStatus,
     IndexStatus,
     PracticeArea,
+    ReviewStatus,
     UserRole,
 )
 
@@ -401,6 +405,13 @@ class TimelineEventOut(ApiModel):
     )
     recorded_at: datetime = Field(description="When the entry was recorded (UTC).")
     is_sample: bool
+    kind: Literal["case", "review"] = Field(
+        default="case",
+        description=(
+            "'review': a lawyer's decision on an AI finding (Phase 6), derived from the review "
+            "history; it names the finding and the decision, never the wording or the note."
+        ),
+    )
 
 
 class DocumentProcessingOut(ApiModel):
@@ -652,6 +663,9 @@ class CasePermissions(ApiModel):
     can_restore_documents: bool
     can_share_documents: bool
     can_run_analysis: bool
+    can_review_analysis: bool = Field(
+        description="May accept, reject or edit AI findings and see review notes (Phase 6)."
+    )
 
 
 class TeamMemberOut(ApiModel):
@@ -1083,3 +1097,66 @@ class AnalysisRunIn(InputModel):
     confirm_transmission: bool = Field(
         description="Must be true: the user confirms the selected text is sent to the provider."
     )
+
+
+# --- lawyer review of findings (Phase 6) --------------------------------------
+
+
+class AnalysisReviewIn(InputModel):
+    """A decision on one finding. ``expectedVersion`` is the version the
+    reviewer saw (0 when unreviewed); a stale one is refused with 409."""
+
+    status: ReviewStatus = Field(
+        description="'unreviewed' clears an earlier decision; the history keeps it."
+    )
+    reviewed_text: str | None = Field(
+        default=None,
+        max_length=REVIEW_TEXT_MAX,
+        description="The lawyer's wording; required for 'edited' and only allowed there.",
+    )
+    note: str | None = Field(
+        default=None,
+        max_length=REVIEW_NOTE_MAX,
+        description="Optional note or rejection reason, private to reviewers.",
+    )
+    expected_version: int = Field(ge=0, le=1_000_000)
+
+
+class AnalysisReviewOut(ApiModel):
+    finding_id: str = Field(description="e.g. 'F2'; unique within the run.")
+    kind: FindingKind
+    status: ReviewStatus
+    reviewed_text: str | None = Field(description="The lawyer's wording (status 'edited').")
+    note: str | None = Field(description="Shown to reviewers only; null for others.")
+    version: int = Field(description="0 while the finding has never been reviewed.")
+    reviewed_by: ActorOut | None
+    reviewed_at: datetime | None
+
+
+class AnalysisReviewSummaryOut(ApiModel):
+    total: int
+    unreviewed: int
+    accepted: int
+    edited: int
+    rejected: int
+
+
+class AnalysisReviewListOut(ApiModel):
+    run_id: uuid.UUID
+    can_review: bool = Field(description="This user may record decisions on this run now.")
+    summary: AnalysisReviewSummaryOut
+    items: list[AnalysisReviewOut] = Field(description="Every finding of the run, in order.")
+
+
+class AnalysisReviewHistoryEntryOut(ApiModel):
+    version: int
+    status: ReviewStatus
+    reviewed_text: str | None
+    note: str | None = Field(description="Shown to reviewers only; null for others.")
+    actor: ActorOut | None
+    occurred_at: datetime
+
+
+class AnalysisReviewHistoryOut(ApiModel):
+    finding_id: str
+    items: list[AnalysisReviewHistoryEntryOut] = Field(description="Oldest first.")

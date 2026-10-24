@@ -138,7 +138,7 @@ def _evidence_key(evidence_id: str) -> tuple[str, int]:
     return evidence_id[:1], int(evidence_id[1:]) if evidence_id[1:].isdigit() else 0
 
 
-def _changed(session: Session, items: dict[str, dict[str, object]]) -> list[str]:
+def changed_evidence(session: Session, items: dict[str, dict[str, object]]) -> list[str]:
     """The run's evidence ids whose passage no longer exists with the same text
     (re-extracted document, deleted document, removed judgment). Read only."""
 
@@ -196,7 +196,7 @@ def _full(session: Session, run: AnalysisRun) -> AnalysisRunOut:
             judgment_passages=sum(1 for v in items.values() if v.get("kind") == "judgment"),
             characters=int(run.evidence.get("characters", 0)),
             truncated=bool(run.evidence.get("truncated", False)),
-            changed=_changed(session, items),
+            changed=changed_evidence(session, items),
         )
     result = (
         AnalysisResultOut.model_validate(run.result)

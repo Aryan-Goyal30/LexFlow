@@ -1972,6 +1972,342 @@
         }
       }
     },
+    "/api/cases/{case_id}/analysis-runs/{run_id}/reviews": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "List Reviews",
+        "description": "Every finding of a finished run with its current review decision.",
+        "operationId": "list_reviews_api_cases__case_id__analysis_runs__run_id__reviews_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisReviewListOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/analysis-runs/{run_id}/reviews/{finding_id}": {
+      "put": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Review Finding",
+        "description": "Accept, edit, reject or clear one finding. The run's stored result is\nnever changed; every change is kept in the finding's history.",
+        "operationId": "review_finding_api_cases__case_id__analysis_runs__run_id__reviews__finding_id__put",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "finding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Finding Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisReviewIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisReviewOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/analysis-runs/{run_id}/reviews/{finding_id}/history": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Review History",
+        "description": "Every recorded change to one finding's review, oldest first.",
+        "operationId": "review_history_api_cases__case_id__analysis_runs__run_id__reviews__finding_id__history_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "finding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Finding Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisReviewHistoryOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/analysis-runs/{run_id}/brief": {
+      "get": {
+        "tags": [
+          "analysis"
+        ],
+        "summary": "Export Brief",
+        "description": "The case brief (DOCX): the findings a lawyer accepted, with their\ncitations; unreviewed and rejected findings are left out and counted.\nGenerated here, on request; no model is called.",
+        "operationId": "export_brief_api_cases__case_id__analysis_runs__run_id__brief_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The case brief as a Word document.",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {}
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/judgments/facets": {
       "get": {
         "tags": [
@@ -4020,6 +4356,307 @@
         ],
         "title": "AnalysisResultOut"
       },
+      "AnalysisReviewHistoryEntryOut": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unreviewed",
+              "accepted",
+              "edited",
+              "rejected"
+            ],
+            "title": "Status"
+          },
+          "reviewedText": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewedtext"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "Shown to reviewers only; null for others."
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurredat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "status",
+          "reviewedText",
+          "note",
+          "actor",
+          "occurredAt"
+        ],
+        "title": "AnalysisReviewHistoryEntryOut"
+      },
+      "AnalysisReviewHistoryOut": {
+        "properties": {
+          "findingId": {
+            "type": "string",
+            "title": "Findingid"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisReviewHistoryEntryOut"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Oldest first."
+          }
+        },
+        "type": "object",
+        "required": [
+          "findingId",
+          "items"
+        ],
+        "title": "AnalysisReviewHistoryOut"
+      },
+      "AnalysisReviewIn": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "unreviewed",
+              "accepted",
+              "edited",
+              "rejected"
+            ],
+            "title": "Status",
+            "description": "'unreviewed' clears an earlier decision; the history keeps it."
+          },
+          "reviewedText": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewedtext",
+            "description": "The lawyer's wording; required for 'edited' and only allowed there."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "Optional note or rejection reason, private to reviewers."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Expectedversion"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "expectedVersion"
+        ],
+        "title": "AnalysisReviewIn",
+        "description": "A decision on one finding. ``expectedVersion`` is the version the\nreviewer saw (0 when unreviewed); a stale one is refused with 409."
+      },
+      "AnalysisReviewListOut": {
+        "properties": {
+          "runId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Runid"
+          },
+          "canReview": {
+            "type": "boolean",
+            "title": "Canreview",
+            "description": "This user may record decisions on this run now."
+          },
+          "summary": {
+            "$ref": "#/components/schemas/AnalysisReviewSummaryOut"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisReviewOut"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Every finding of the run, in order."
+          }
+        },
+        "type": "object",
+        "required": [
+          "runId",
+          "canReview",
+          "summary",
+          "items"
+        ],
+        "title": "AnalysisReviewListOut"
+      },
+      "AnalysisReviewOut": {
+        "properties": {
+          "findingId": {
+            "type": "string",
+            "title": "Findingid",
+            "description": "e.g. 'F2'; unique within the run."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "issue",
+              "precedent",
+              "contradiction"
+            ],
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unreviewed",
+              "accepted",
+              "edited",
+              "rejected"
+            ],
+            "title": "Status"
+          },
+          "reviewedText": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewedtext",
+            "description": "The lawyer's wording (status 'edited')."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "Shown to reviewers only; null for others."
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "description": "0 while the finding has never been reviewed."
+          },
+          "reviewedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reviewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "findingId",
+          "kind",
+          "status",
+          "reviewedText",
+          "note",
+          "version",
+          "reviewedBy",
+          "reviewedAt"
+        ],
+        "title": "AnalysisReviewOut"
+      },
+      "AnalysisReviewSummaryOut": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "unreviewed": {
+            "type": "integer",
+            "title": "Unreviewed"
+          },
+          "accepted": {
+            "type": "integer",
+            "title": "Accepted"
+          },
+          "edited": {
+            "type": "integer",
+            "title": "Edited"
+          },
+          "rejected": {
+            "type": "integer",
+            "title": "Rejected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "unreviewed",
+          "accepted",
+          "edited",
+          "rejected"
+        ],
+        "title": "AnalysisReviewSummaryOut"
+      },
       "AnalysisRunIn": {
         "properties": {
           "documentIds": {
@@ -5026,6 +5663,11 @@
           "canRunAnalysis": {
             "type": "boolean",
             "title": "Canrunanalysis"
+          },
+          "canReviewAnalysis": {
+            "type": "boolean",
+            "title": "Canreviewanalysis",
+            "description": "May accept, reject or edit AI findings and see review notes (Phase 6)."
           }
         },
         "type": "object",
@@ -5040,7 +5682,8 @@
           "canDeleteDocuments",
           "canRestoreDocuments",
           "canShareDocuments",
-          "canRunAnalysis"
+          "canRunAnalysis",
+          "canReviewAnalysis"
         ],
         "title": "CasePermissions",
         "description": "What the signed-in user may do on this case (to show the right controls).\n\nA convenience for the screens only: the server checks every action again."
@@ -7679,6 +8322,16 @@
           "isSample": {
             "type": "boolean",
             "title": "Issample"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "case",
+              "review"
+            ],
+            "title": "Kind",
+            "description": "'review': a lawyer's decision on an AI finding (Phase 6), derived from the review history; it names the finding and the decision, never the wording or the note.",
+            "default": "case"
           }
         },
         "type": "object",

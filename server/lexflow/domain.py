@@ -30,6 +30,9 @@ ExtractionStatus = Literal["queued", "processing", "ready", "failed", "unsupport
 IndexStatus = Literal["disabled", "pending", "indexed", "failed"]
 # An AI case analysis run (Phase 5).
 AnalysisStatus = Literal["queued", "running", "ready", "failed"]
+# Phase 6: a lawyer's decision on one finding of an analysis run.
+ReviewStatus = Literal["unreviewed", "accepted", "edited", "rejected"]
+FindingKind = Literal["fact", "issue", "precedent", "contradiction"]
 
 USER_ROLES: tuple[str, ...] = get_args(UserRole)
 AUDIT_OUTCOMES: tuple[str, ...] = get_args(AuditOutcome)
@@ -45,6 +48,12 @@ INDEX_STATUSES: tuple[str, ...] = get_args(IndexStatus)
 EXTRACTION_REASON_MAX = 500
 ANALYSIS_STATUSES: tuple[str, ...] = get_args(AnalysisStatus)
 ANALYSIS_REASON_MAX = 500
+REVIEW_STATUSES: tuple[str, ...] = get_args(ReviewStatus)
+FINDING_KINDS: tuple[str, ...] = get_args(FindingKind)
+# The id prefix of each kind of finding in an analysis result (F1, I1, P1, C1).
+FINDING_PREFIX = {"fact": "F", "issue": "I", "precedent": "P", "contradiction": "C"}
+REVIEW_TEXT_MAX = 2_000
+REVIEW_NOTE_MAX = 2_000
 
 TITLE_MIN, TITLE_MAX = 4, 300
 DESCRIPTION_MIN, DESCRIPTION_MAX = 10, 10_000

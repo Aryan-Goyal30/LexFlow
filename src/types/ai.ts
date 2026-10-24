@@ -33,3 +33,16 @@ export type AnalysisIssue = Schemas['AnalysisIssueOut'];
 export type AnalysisPrecedent = Schemas['AnalysisPrecedentOut'];
 export type AnalysisContradiction = Schemas['AnalysisContradictionOut'];
 export type AnalysisRemoved = Schemas['AnalysisRemovedOut'];
+
+/**
+ * Lawyer review of findings (Phase 6). The run's result is never changed:
+ * a decision and any lawyer wording are stored beside it, with a history.
+ */
+export type ReviewStatus = Schemas['AnalysisReviewOut']['status'];
+export type FindingKind = Schemas['AnalysisReviewOut']['kind'];
+export type AnalysisReview = Schemas['AnalysisReviewOut'];
+export type AnalysisReviewInput = Schemas['AnalysisReviewIn'];
+export type AnalysisReviewList = Schemas['AnalysisReviewListOut'];
+export type AnalysisReviewSummary = Schemas['AnalysisReviewSummaryOut'];
+export type AnalysisReviewHistory = Schemas['AnalysisReviewHistoryOut'];
+export type AnalysisReviewHistoryEntry = Schemas['AnalysisReviewHistoryEntryOut'];

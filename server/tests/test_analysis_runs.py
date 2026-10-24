@@ -811,8 +811,8 @@ def test_missing_or_unreadable_judgment_references_count_as_changed(db: Session)
         "D10": {"kind": "document", "chunkId": "not-a-uuid", "contentSha256": "a" * 64},
         "D9": {"kind": "document", "chunkId": str(uuid.uuid4()), "contentSha256": "a" * 64},
     }
-    assert analysis_api._changed(db, items) == ["D9", "D10", "J2"]
-    assert analysis_api._changed(db, {}) == []
+    assert analysis_api.changed_evidence(db, items) == ["D9", "D10", "J2"]
+    assert analysis_api.changed_evidence(db, {}) == []
 
 
 def test_the_worker_leaves_analysis_alone_when_it_is_unavailable(

@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { storageStatePath, type Account } from './support/accounts';
 
@@ -76,6 +77,47 @@ test('an advocate analyses a sample case and every claim links to its source', a
   await lead.context().close();
 });
 
+test('a lawyer reviews the findings and exports a brief of the accepted ones (Phase 6)', async ({
+  browser,
+}) => {
+  const lead = await signedIn(browser, 'advocate');
+  const id = await sattvikId(lead);
+  await lead.goto(`/app/cases/${id}?tab=analysis`);
+  await expect(lead.getByText(/Lawyer review: 0 of \d+ findings reviewed/)).toBeVisible({
+    timeout: 60_000,
+  });
+  const fact = lead.getByRole('region', { name: 'Review of Fact F1' });
+  await expect(fact.getByText('Unreviewed')).toBeVisible();
+  const exportButton = lead.getByRole('button', { name: 'Export case brief (DOCX)' });
+  await expect(exportButton).toBeDisabled(); // nothing accepted yet
+
+  await fact.getByRole('button', { name: 'Accept' }).click();
+  await expect(fact.getByText('Accepted', { exact: true })).toBeVisible();
+
+  const precedent = lead.getByRole('region', { name: 'Review of Precedent comparison P1' });
+  await precedent.getByRole('button', { name: 'Edit wording' }).click();
+  const wording = 'SYNTHETIC: the precedent weighs prior use (lawyer’s wording, e2e).';
+  await precedent.getByLabel(/Lawyer’s wording for Precedent comparison P1/).fill(wording);
+  await precedent.getByRole('button', { name: 'Save wording' }).click();
+  await expect(precedent.getByText('Edited by lawyer')).toBeVisible();
+  await expect(precedent.getByText(wording)).toBeVisible();
+
+  await expect(exportButton).toBeEnabled();
+  const downloading = lead.waitForEvent('download');
+  await exportButton.click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toMatch(/^case-brief-LF-[\w-]+\.docx$/);
+  const bytes = await readFile(await download.path());
+  expect(bytes.subarray(0, 2).toString()).toBe('PK'); // a Word (zip) package
+  await expect(lead.getByText(/Brief saved as case-brief-LF-/)).toBeVisible();
+
+  // The decisions are on the matter timeline (never sent to the model).
+  await lead.goto(`/app/cases/${id}?tab=overview`);
+  await expect(lead.getByText('Lawyer review').first()).toBeVisible();
+  await expect(lead.getByText(/Fact F1 of the AI analysis of .* accepted\./)).toBeVisible();
+  await lead.context().close();
+});
+
 test('a paralegal sees the result but cannot start an analysis', async ({ browser }) => {
   const paralegal = await signedIn(browser, 'paralegal');
   const id = await sattvikId(paralegal);
@@ -84,6 +126,11 @@ test('a paralegal sees the result but cannot start an analysis', async ({ browse
   await expect(analyse).toBeDisabled();
   await expect(analyse).toHaveAccessibleDescription(/advocates and administrators/);
   await expect(paralegal.getByText(/Scripted test output — not AI/)).toBeVisible();
+  // The lawyer's decisions are visible, the review controls are not.
+  const fact = paralegal.getByRole('region', { name: 'Review of Fact F1' });
+  await expect(fact.getByText('Accepted', { exact: true })).toBeVisible();
+  await expect(fact.getByRole('button', { name: 'Accept' })).toHaveCount(0);
+  await expect(fact.getByRole('button', { name: 'Edit wording' })).toHaveCount(0);
   await paralegal.context().close();
 });
 

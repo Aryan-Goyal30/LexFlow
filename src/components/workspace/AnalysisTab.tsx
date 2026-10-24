@@ -21,6 +21,9 @@ import {
   type AiPillStatus,
 } from './AiNotices';
 import { PrecedentCard } from './PrecedentCard';
+import { ExportBrief, FindingReview, ReviewProgress } from './FindingReview';
+import { useFindingReviews } from '../../hooks/useFindingReviews';
+import { errorMessage } from '../../services/api/client';
 
 const alertClass =
   'rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-600/20';
@@ -331,11 +334,30 @@ function SourceLine({
  * with a link to the document page; every precedent links to the judgment
  * passage. Removed items are counted with their reasons. No outcome
  * assessment exists in the contract, so none can be shown.
+ *
+ * Phase 6: every finding carries its lawyer-review state ("Unreviewed" until
+ * a lawyer decides); reviewers accept, edit, reject or clear it in place.
  */
 function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) {
   const result = run.result!;
   const evidence = run.evidence;
   const changed = new Set(evidence?.changed ?? []);
+  const reviews = useFindingReviews(caseId, run.id);
+  const canReview = reviews.data?.canReview ?? false;
+  const review = (id: string, label: string, text: string, sourceChanged = false) => {
+    const current = reviews.data?.items.find((i) => i.findingId === id);
+    return current ? (
+      <FindingReview
+        caseId={caseId}
+        runId={run.id}
+        label={label}
+        originalText={text}
+        review={current}
+        canReview={canReview}
+        sourceChanged={sourceChanged}
+      />
+    ) : null;
+  };
   return (
     <>
       <Card>
@@ -394,6 +416,27 @@ function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) 
             </div>
           )}
           <DecisionSupportNote />
+          {reviews.isPending && (
+            <p className="text-xs text-brand-500">Loading the lawyer review…</p>
+          )}
+          {reviews.isError && (
+            <div role="alert" className={alertClass}>
+              The lawyer review could not be loaded: {errorMessage(reviews.error)}{' '}
+              <button
+                type="button"
+                className="font-medium underline underline-offset-2"
+                onClick={() => void reviews.refetch()}
+              >
+                Try again
+              </button>
+            </div>
+          )}
+          {reviews.data && (
+            <>
+              <ReviewProgress summary={reviews.data.summary} />
+              <ExportBrief caseId={caseId} runId={run.id} summary={reviews.data.summary} />
+            </>
+          )}
         </CardBody>
       </Card>
 
@@ -415,6 +458,12 @@ function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) 
                     source={fact.source}
                     changed={changed.has(fact.source.evidenceId)}
                   />
+                  {review(
+                    fact.id,
+                    `Fact ${fact.id}`,
+                    fact.statement,
+                    changed.has(fact.source.evidenceId),
+                  )}
                 </li>
               ))}
             </ul>
@@ -447,6 +496,7 @@ function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) 
                     ))}
                     )
                   </span>
+                  {review(issue.id, `Issue ${issue.id}`, issue.question)}
                 </li>
               ))}
             </ol>
@@ -467,7 +517,12 @@ function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) 
               None of the retrieved judgments was compared with this case.
             </p>
           ) : (
-            result.precedents.map((p) => <PrecedentCard key={p.id} precedent={p} />)
+            result.precedents.map((p) => (
+              <div key={p.id}>
+                <PrecedentCard precedent={p} />
+                {review(p.id, `Precedent comparison ${p.id}`, p.summary, changed.has(p.evidenceId))}
+              </div>
+            ))
           )}
         </CardBody>
       </Card>
@@ -488,6 +543,12 @@ function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) 
                       changed={changed.has(source.evidenceId)}
                     />
                   ))}
+                  {review(
+                    item.id,
+                    `Contradiction ${item.id}`,
+                    item.description,
+                    item.sources.some((s) => changed.has(s.evidenceId)),
+                  )}
                 </li>
               ))}
             </ul>
@@ -552,6 +613,8 @@ function RunHistory({
 }
 
 function InputsPanel({ legalCase: c }: { legalCase: Case }) {
+  // Review decisions are shown on the timeline but never sent to the model.
+  const caseEvents = c.timeline.filter((e) => e.kind !== 'review').length;
   const inputs = [
     {
       label: 'Case summary',
@@ -565,8 +628,8 @@ function InputsPanel({ legalCase: c }: { legalCase: Case }) {
     },
     {
       label: 'Matter timeline',
-      ready: c.timeline.length > 0,
-      note: `${c.timeline.length} events (the latest 30 are sent)`,
+      ready: caseEvents > 0,
+      note: `${caseEvents} events (the latest 30 are sent; lawyers' review decisions never are)`,
     },
   ];
   return (

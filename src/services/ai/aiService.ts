@@ -1,5 +1,14 @@
-import { apiFetch } from '../api/client';
-import type { AnalysisRun, AnalysisRunInput, AnalysisRunList, AnalysisSetup } from '../../types/ai';
+import { apiFetch, apiFetchFile, type DownloadedFile } from '../api/client';
+import type {
+  AnalysisReview,
+  AnalysisReviewHistory,
+  AnalysisReviewInput,
+  AnalysisReviewList,
+  AnalysisRun,
+  AnalysisRunInput,
+  AnalysisRunList,
+  AnalysisSetup,
+} from '../../types/ai';
 
 /**
  * The integration seam for AI case analysis (Phase 5): a client of the
@@ -23,6 +32,19 @@ export interface AiService {
   listRuns(caseId: string): Promise<AnalysisRunList>;
   /** One run, with its validated result when it is ready. */
   run(caseId: string, runId: string): Promise<AnalysisRun>;
+  /** Every finding of a finished run with its review decision (Phase 6). */
+  reviews(caseId: string, runId: string): Promise<AnalysisReviewList>;
+  /** Accept, edit, reject or clear one finding (with the version seen). */
+  review(
+    caseId: string,
+    runId: string,
+    findingId: string,
+    input: AnalysisReviewInput,
+  ): Promise<AnalysisReview>;
+  /** Every recorded change to one finding's review, oldest first. */
+  reviewHistory(caseId: string, runId: string, findingId: string): Promise<AnalysisReviewHistory>;
+  /** The case brief (DOCX) with the accepted findings only, made by the server. */
+  exportBrief(caseId: string, runId: string): Promise<DownloadedFile>;
 }
 
 const id = (value: string) => encodeURIComponent(value);
@@ -37,4 +59,21 @@ export const aiService: AiService = {
     }),
   listRuns: (caseId) => apiFetch<AnalysisRunList>(`/cases/${id(caseId)}/analysis-runs`),
   run: (caseId, runId) => apiFetch<AnalysisRun>(`/cases/${id(caseId)}/analysis-runs/${id(runId)}`),
+  reviews: (caseId, runId) =>
+    apiFetch<AnalysisReviewList>(`/cases/${id(caseId)}/analysis-runs/${id(runId)}/reviews`),
+  review: (caseId, runId, findingId, input) =>
+    apiFetch<AnalysisReview>(
+      `/cases/${id(caseId)}/analysis-runs/${id(runId)}/reviews/${id(findingId)}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      },
+    ),
+  reviewHistory: (caseId, runId, findingId) =>
+    apiFetch<AnalysisReviewHistory>(
+      `/cases/${id(caseId)}/analysis-runs/${id(runId)}/reviews/${id(findingId)}/history`,
+    ),
+  exportBrief: (caseId, runId) =>
+    apiFetchFile(`/cases/${id(caseId)}/analysis-runs/${id(runId)}/brief`),
 };

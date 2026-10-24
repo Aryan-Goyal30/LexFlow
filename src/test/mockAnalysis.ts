@@ -4,14 +4,21 @@
  * Mirrors `server/lexflow/api/analysis.py`: setup, start (with the server's
  * checks, in its order), list and read. Runs never progress on their own:
  * a test finishes one with `mockFinishRun`, as the worker would.
+ *
+ * Phase 6: the review routes of `server/lexflow/api/reviews.py` (decisions
+ * with versions and history; notes only for reviewers).
  */
 import { http, HttpResponse } from 'msw';
 import type {
   AnalysisDocument,
   AnalysisResult,
+  AnalysisReview,
+  AnalysisReviewHistoryEntry,
+  AnalysisReviewInput,
   AnalysisRun,
   AnalysisRunInput,
   AnalysisSetup,
+  FindingKind,
 } from '../types/ai';
 
 type Relation = 'admin' | 'lead' | 'associate' | 'paralegal' | 'none';
@@ -37,6 +44,11 @@ interface AnalysisState {
   config: Config;
   runs: AnalysisRun[];
   nextId: number;
+  /** runId -> findingId -> the stored decision (absent: unreviewed). */
+  reviews: Map<string, Map<string, AnalysisReview>>;
+  /** `${runId}/${findingId}` -> every change, oldest first. */
+  history: Map<string, AnalysisReviewHistoryEntry[]>;
+  reviewsUnavailable: boolean;
 }
 
 const LABELS = { gemini: 'Google Gemini API', scripted: 'Scripted test provider (not AI)' };
@@ -53,6 +65,9 @@ const fresh = (): AnalysisState => ({
   },
   runs: [],
   nextId: 1,
+  reviews: new Map(),
+  history: new Map(),
+  reviewsUnavailable: false,
 });
 
 let state = fresh();
@@ -120,6 +135,25 @@ const active = (caseId: string) =>
   state.runs.find((r) => r.caseId === caseId && (r.status === 'queued' || r.status === 'running'));
 const summary = ({ result: _r, evidence: _e, ...run }: AnalysisRun) => run;
 
+function readyRun(caseId: string, runId: string): AnalysisRun | Response {
+  if (state.reviewsUnavailable)
+    return problem(
+      503,
+      'review-unavailable',
+      'Reviewing findings needs a database update (migration 0012) that is not applied yet.',
+    );
+  const run = state.runs.find((r) => r.id === runId && r.caseId === caseId);
+  if (!run)
+    return problem(
+      404,
+      'analysis-run-not-found',
+      'No analysis run with this id exists for this case.',
+    );
+  if (run.status !== 'ready' || !run.result)
+    return problem(409, 'analysis-not-ready', 'Only a finished analysis can be reviewed.');
+  return run;
+}
+
 function cannotRun(access: AnalysisCaseAccess, caseId: string): string | null {
   const { config } = state;
   if (!config.available) return config.unavailableReason;
@@ -130,6 +164,70 @@ function cannotRun(access: AnalysisCaseAccess, caseId: string): string | null {
     return 'Only sample (fictional) cases may be analysed on this server until a privacy, confidentiality and provider-terms review allows client material.';
   if (active(caseId)) return 'An analysis of this case is already waiting or running.';
   return null;
+}
+
+interface Finding {
+  kind: FindingKind;
+  id: string;
+  text: string;
+}
+
+function findingsOf(result: AnalysisResult | null): Finding[] {
+  if (!result) return [];
+  return [
+    ...result.facts.map((f) => ({ kind: 'fact' as const, id: f.id, text: f.statement })),
+    ...result.issues.map((i) => ({ kind: 'issue' as const, id: i.id, text: i.question })),
+    ...result.precedents.map((p) => ({ kind: 'precedent' as const, id: p.id, text: p.summary })),
+    ...result.contradictions.map((c) => ({
+      kind: 'contradiction' as const,
+      id: c.id,
+      text: c.description,
+    })),
+  ];
+}
+
+const unreviewed = (f: Finding): AnalysisReview => ({
+  findingId: f.id,
+  kind: f.kind,
+  status: 'unreviewed',
+  reviewedText: null,
+  note: null,
+  version: 0,
+  reviewedBy: null,
+  reviewedAt: null,
+});
+
+/** Review routes answer 503, as the server does without migration 0012. */
+export function mockReviewsUnavailable(): void {
+  state.reviewsUnavailable = true;
+}
+
+/** Another reviewer decides on a finding (the next request with the old version gets 409). */
+export function mockReviewElsewhere(
+  runId: string,
+  findingId: string,
+  status: 'accepted' | 'rejected',
+): void {
+  const run = state.runs.find((r) => r.id === runId);
+  const finding = findingsOf(run?.result ?? null).find((f) => f.id === findingId);
+  if (!run || !finding) throw new Error(`no finding ${findingId} in ${runId}`);
+  const stored = state.reviews.get(runId) ?? new Map<string, AnalysisReview>();
+  const version = (stored.get(findingId)?.version ?? 0) + 1;
+  const at = new Date().toISOString();
+  const other = { id: 'u-other', name: 'Another Reviewer' };
+  stored.set(findingId, {
+    ...unreviewed(finding),
+    status,
+    version,
+    reviewedBy: other,
+    reviewedAt: at,
+  });
+  state.reviews.set(runId, stored);
+  const key = `${runId}/${findingId}`;
+  state.history.set(key, [
+    ...(state.history.get(key) ?? []),
+    { version, status, reviewedText: null, note: null, actor: other, occurredAt: at },
+  ]);
 }
 
 export function analysisHandlers(access: (caseId: string) => AnalysisCaseAccess | null) {
@@ -210,6 +308,125 @@ export function analysisHandlers(access: (caseId: string) => AnalysisCaseAccess 
       return HttpResponse.json({
         items: state.runs.filter((r) => r.caseId === caseId).map(summary),
       });
+    }),
+
+    http.get('*/api/cases/:id/analysis-runs/:runId/reviews', ({ params }) => {
+      const found = access(String(params.id));
+      if (!found) return notFound();
+      const run = readyRun(String(params.id), String(params.runId));
+      if (run instanceof Response) return run;
+      const stored = state.reviews.get(run.id) ?? new Map<string, AnalysisReview>();
+      const notes = ADVOCATES.includes(found.rel);
+      const items = findingsOf(run.result).map((f) => {
+        const review = stored.get(f.id) ?? unreviewed(f);
+        return notes ? review : { ...review, note: null };
+      });
+      const count = (s: AnalysisReview['status']) => items.filter((i) => i.status === s).length;
+      return HttpResponse.json({
+        runId: run.id,
+        canReview: ADVOCATES.includes(found.rel) && !found.archived,
+        summary: {
+          total: items.length,
+          unreviewed: count('unreviewed'),
+          accepted: count('accepted'),
+          edited: count('edited'),
+          rejected: count('rejected'),
+        },
+        items,
+      });
+    }),
+
+    http.put(
+      '*/api/cases/:id/analysis-runs/:runId/reviews/:findingId',
+      async ({ params, request }) => {
+        const found = access(String(params.id));
+        if (!found) return notFound();
+        if (!ADVOCATES.includes(found.rel))
+          return problem(403, 'forbidden', 'You do not have permission to do this.');
+        if (found.archived) return problem(409, 'case-archived', 'This case is archived.');
+        const run = readyRun(String(params.id), String(params.runId));
+        if (run instanceof Response) return run;
+        const finding = findingsOf(run.result).find((f) => f.id === params.findingId);
+        if (!finding)
+          return problem(
+            404,
+            'finding-not-found',
+            'No finding with this id exists in this analysis.',
+          );
+        const body = (await request.json()) as AnalysisReviewInput;
+        const wording = body.reviewedText?.trim() ?? '';
+        if (body.status === 'edited' && !wording)
+          return problem(422, 'reviewed-text-required', 'Enter the wording you accept.');
+        if (body.status === 'edited' && wording === finding.text.trim())
+          return problem(422, 'wording-unchanged', 'The wording is unchanged from the AI’s.');
+        const stored = state.reviews.get(run.id) ?? new Map<string, AnalysisReview>();
+        const before = stored.get(finding.id) ?? unreviewed(finding);
+        if (body.expectedVersion !== before.version)
+          return problem(
+            409,
+            'review-changed',
+            `This finding was reviewed again in the meantime (now version ${before.version}). Reload it and try again.`,
+          );
+        const next = {
+          status: body.status,
+          reviewedText: body.status === 'edited' ? wording : null,
+          note: body.note?.trim() || null,
+        };
+        if (
+          next.status === before.status &&
+          next.reviewedText === before.reviewedText &&
+          next.note === before.note
+        )
+          return HttpResponse.json(before);
+        const at = new Date().toISOString();
+        const review: AnalysisReview = {
+          ...before,
+          ...next,
+          version: before.version + 1,
+          reviewedBy: found.actor,
+          reviewedAt: at,
+        };
+        stored.set(finding.id, review);
+        state.reviews.set(run.id, stored);
+        const key = `${run.id}/${finding.id}`;
+        state.history.set(key, [
+          ...(state.history.get(key) ?? []),
+          { version: review.version, ...next, actor: found.actor, occurredAt: at },
+        ]);
+        return HttpResponse.json(review);
+      },
+    ),
+
+    http.get('*/api/cases/:id/analysis-runs/:runId/brief', ({ params }) => {
+      const found = access(String(params.id));
+      if (!found) return notFound();
+      const run = readyRun(String(params.id), String(params.runId));
+      if (run instanceof Response) return run;
+      const stored = [...(state.reviews.get(run.id)?.values() ?? [])];
+      if (!stored.some((r) => r.status === 'accepted' || r.status === 'edited'))
+        return problem(
+          409,
+          'no-accepted-findings',
+          'No finding of this analysis has been accepted yet. The brief contains only findings a lawyer accepted.',
+        );
+      return new HttpResponse('SYNTHETIC DOCX BYTES', {
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'Content-Disposition': 'attachment; filename="case-brief-LF-2026-0001-2026-10-25.docx"',
+        },
+      });
+    }),
+
+    http.get('*/api/cases/:id/analysis-runs/:runId/reviews/:findingId/history', ({ params }) => {
+      const found = access(String(params.id));
+      if (!found) return notFound();
+      const run = readyRun(String(params.id), String(params.runId));
+      if (run instanceof Response) return run;
+      const notes = ADVOCATES.includes(found.rel);
+      const items = (state.history.get(`${run.id}/${String(params.findingId)}`) ?? []).map((e) =>
+        notes ? e : { ...e, note: null },
+      );
+      return HttpResponse.json({ findingId: params.findingId, items });
     }),
 
     http.get('*/api/cases/:id/analysis-runs/:runId', ({ params }) => {

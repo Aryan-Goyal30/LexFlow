@@ -23,7 +23,14 @@ export function OverviewTab({ legalCase: c }: { legalCase: Case }) {
               {c.timeline.map((event) => (
                 <li key={event.id} className="relative">
                   <span className="absolute -left-[27px] top-1 grid h-3 w-3 place-items-center rounded-full border-2 border-white bg-brand-500" />
-                  <p className="text-sm font-medium text-brand-900">{event.label}</p>
+                  <p className="text-sm font-medium text-brand-900">
+                    {event.label}
+                    {event.kind === 'review' && (
+                      <span className="ml-2 rounded-full bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-800 ring-1 ring-inset ring-sky-600/30">
+                        Lawyer review
+                      </span>
+                    )}
+                  </p>
                   <p className="text-xs text-brand-400">
                     {formatDate(event.date)}
                     {/* Entries recorded in LexFlow say who made the change and when. */}

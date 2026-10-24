@@ -139,6 +139,41 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   return (await response.json()) as T;
 }
 
+/** A file the server generated (for example a case brief), ready to save. */
+export interface DownloadedFile {
+  blob: Blob;
+  filename: string;
+}
+
+/** The server's file name from Content-Disposition, made safe for saving. */
+function attachmentName(header: string | null, fallback: string): string {
+  const match = header ? /filename="?([^";]+)"?/i.exec(header) : null;
+  const name = (match?.[1] ?? fallback).replace(/[^A-Za-z0-9._-]/g, '_');
+  return name || fallback;
+}
+
+/** Like `apiFetch`, for a GET that answers with a file instead of JSON. */
+export async function apiFetchFile(
+  path: string,
+  fallbackName = 'download',
+): Promise<DownloadedFile> {
+  let response: Response;
+  try {
+    response = await fetch(apiUrl(path), { credentials: 'same-origin' });
+  } catch {
+    throw unreachable(0);
+  }
+  if (!response.ok) {
+    const error = await toApiError(response);
+    announce(error);
+    throw error;
+  }
+  return {
+    blob: await response.blob(),
+    filename: attachmentName(response.headers.get('Content-Disposition'), fallbackName),
+  };
+}
+
 /** A readable message for any error a query or mutation can raise. */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) return error.message;

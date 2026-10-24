@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session, aliased, selectinload
 from lexflow import authz
 from lexflow.audit import AuditLog
 from lexflow.authz import Action, Relation
+from lexflow.config import get_settings
 from lexflow.domain import ADMINISTRATOR, ADVOCATE, HEARING_SCHEDULED
 from lexflow.errors import FieldError, ProblemError
 from lexflow.models import (
@@ -47,6 +48,7 @@ from lexflow.schemas import (
     TimelineEventOut,
     UpcomingHearingOut,
 )
+from lexflow.services import reviews
 from lexflow.services.case_numbers import allocate_case_number
 from lexflow.services.formatting import format_file_size
 
@@ -280,6 +282,48 @@ def _hearing_fields(hearing: Hearing) -> dict[str, Any]:
     }
 
 
+def _timeline(
+    session: Session,
+    case_id: uuid.UUID,
+    events: list[TimelineEvent],
+    actors: Mapping[uuid.UUID, User],
+) -> list[TimelineEventOut]:
+    """The case's timeline entries, with the lawyers' review decisions on AI
+    findings (Phase 6) merged in. Those come from the review history, not
+    from ``timeline_events``, so the analysis evidence never contains them."""
+    merged = [
+        TimelineEventOut(
+            id=e.id,
+            date=e.event_date,
+            label=e.label,
+            description=e.description,
+            actor=actor_out(actors, e.actor_id),
+            recorded_at=e.created_at,
+            is_sample=e.is_sample,
+        )
+        for e in events
+    ]
+    entries = reviews.timeline_entries(session, case_id, get_settings().timezone)
+    reviewers = {e.actor_id for e in entries if e.actor_id is not None} - set(actors)
+    if reviewers:
+        more = session.scalars(select(User).where(User.id.in_(reviewers)))
+        actors = {**actors, **{u.id: u for u in more}}
+    merged += [
+        TimelineEventOut(
+            id=e.id,
+            date=e.day,
+            label=e.label,
+            description=e.description,
+            actor=actor_out(actors, e.actor_id),
+            recorded_at=e.recorded_at,
+            is_sample=False,
+            kind="review",
+        )
+        for e in entries
+    ]
+    return sorted(merged, key=lambda e: (e.date, e.recorded_at, str(e.id)))
+
+
 def get_case_detail(session: Session, case_id: uuid.UUID, today: date, rel: Relation) -> CaseDetail:
     """One case with its documents, hearings and timeline. Callers check access."""
     row = session.execute(
@@ -323,18 +367,7 @@ def get_case_detail(session: Session, case_id: uuid.UUID, today: date, rel: Rela
             "description": case.description,
             "documents": [document_out(d, actors, jobs.get(d.id)) for d in documents],
             "hearings": [HearingOut.model_validate(_hearing_fields(h)) for h in hearings],
-            "timeline": [
-                TimelineEventOut(
-                    id=e.id,
-                    date=e.event_date,
-                    label=e.label,
-                    description=e.description,
-                    actor=actor_out(actors, e.actor_id),
-                    recorded_at=e.created_at,
-                    is_sample=e.is_sample,
-                )
-                for e in timeline
-            ],
+            "timeline": _timeline(session, case.id, timeline, actors),
             "team": team_members(session, case.id),
             "permissions": CasePermissions.model_validate(
                 authz.permissions(rel, is_archived=case.archived_at is not None)
