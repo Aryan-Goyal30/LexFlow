@@ -49,6 +49,13 @@ the model returns: the output parser's `OUTCOME_KEYS` and the validator's
 5. **Real-model behaviour checked** on synthetic documents (register R7), if
    the assessment uses an external model; that needs approved paid calls.
 
+Preparation for items 1, 3 and 4 (drafts, 2026-10-25):
+- `docs/phase7-prerequisites/SOURCE_CANDIDATE_SCI_JUDGMENTS.md`;
+- `docs/phase7-prerequisites/ANNOTATION_GUIDE.md`;
+- `docs/phase7-prerequisites/PRIVACY_REVIEW_CHECKLIST.md`.
+
+None of these is approved.
+
 ## 4. Scope
 
 **In scope (proposed):**

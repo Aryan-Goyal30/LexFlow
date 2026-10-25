@@ -1,0 +1,44 @@
+--- run 1: python -m pytest -q -p no:cacheprovider tests/test_review_race.py
+.                                                                        [100%]
+1 passed in 1.81s
+exit=0
+--- run 2: python -m pytest -q -p no:cacheprovider tests/test_review_race.py
+.                                                                        [100%]
+1 passed in 1.73s
+exit=0
+--- run 3: python -m pytest -q -p no:cacheprovider tests/test_review_race.py
+.                                                                        [100%]
+1 passed in 1.66s
+exit=0
+--- run 4: python -m pytest -q -p no:cacheprovider tests/test_review_race.py
+.                                                                        [100%]
+1 passed in 1.66s
+exit=0
+--- run 5: python -m pytest -q -p no:cacheprovider tests/test_review_race.py
+.                                                                        [100%]
+1 passed in 1.70s
+exit=0
+--- run 6: python -m pytest -q -p no:cacheprovider tests/test_review_race.py
+.                                                                        [100%]
+1 passed in 1.76s
+exit=0
+--- run 7: python -m pytest -q -p no:cacheprovider tests/test_review_race.py
+.                                                                        [100%]
+1 passed in 1.59s
+exit=0
+--- run 8: python -m pytest -q -p no:cacheprovider tests/test_review_race.py
+.                                                                        [100%]
+1 passed in 1.69s
+exit=0
+--- run 9: python -m pytest -q -p no:cacheprovider tests/test_review_race.py
+.                                                                        [100%]
+1 passed in 1.72s
+exit=0
+--- run 10: python -m pytest -q -p no:cacheprovider tests/test_review_race.py
+.                                                                        [100%]
+1 passed in 1.69s
+exit=0
+--- mutation check: lexflow/api/reviews.py "except IntegrityError:" -> "except LookupError:" (temporary)
+E       assert 500 == 409   (the second request got internal-error 500 instead of review-changed 409)
+1 failed in 1.80s
+mutant exit=1 (caught); file restored, sha256 e4555e8f21f59af646488a3bea450f0c9899bc6fdae8b32318a5e7dad27c6e48 before and after

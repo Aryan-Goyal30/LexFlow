@@ -223,3 +223,113 @@ Checkpoint: V5 — post-Phase-6 review complete (docs/verification/post-phase6/c
   spaces on two pytest `E` lines in `mutation-output.log`, and a blank last
   line. Only that whitespace was removed. No other characters changed.
   (The committed Phase 6 copy has the same whitespace.)
+
+## F0 — Follow-up baseline (2026-10-25)
+
+- **Scope:** the owner's "safe next steps after Phase 6" instruction:
+  1. the race regression test;
+  2. a review of the candidate source (desk review only);
+  3. the annotation guide;
+  4. the privacy checklist;
+  5. the register update.
+
+  Phase 7 is not authorised.
+- **State at start:** HEAD `0d6914c` (parent `eada4ef`), branch `master`,
+  clean tree, no remote. Brief SHA-256 `274ecaed…59b34c2ec` matches. This is
+  the expected state, so nothing needed reconciling.
+
+## F1 — Regression test for simultaneous first decisions
+
+- **Added:** `server/tests/test_review_race.py`.
+  - Uses `committed_engine` on `lexflow_test`. The URL was checked: host
+    `127.0.0.1`, port 5432, database `lexflow_test`, no query parameters.
+  - Uses the real app with no dependency overrides, and a committed
+    Administrator signed in through the API.
+  - Connection A flushes "accepted" for F1 and holds its transaction open.
+  - The API request "rejected" (`expectedVersion` 0) runs in a thread. A
+    watcher, using a fresh transaction per poll, waits (30 s at most) until
+    `pg_blocking_pids` shows the request blocked behind A; then A commits.
+  - It asserts:
+    - 409 `review-changed`;
+    - one review `("F1", "accepted", 1, None)`;
+    - one history entry;
+    - no `analysis.finding_reviewed` audit event.
+- **Runs:**
+  - `python -m pytest -q -p no:cacheprovider tests/test_review_race.py`, run
+    10 times: 10 passed, exit 0 each, 1.6–1.8 s
+    (`followup/review-race-runs.log`).
+  - **Mutation check:** in `lexflow/api/reviews.py`, `except IntegrityError:`
+    was temporarily changed to `except LookupError:`. The test failed (500
+    instead of 409), exit 1. The file was restored from a copy; its SHA-256
+    `e4555e8f…dad27c6e48` was the same before and after.
+  - **Full suite:** `python -m pytest -q -p no:cacheprovider`: **1029
+    passed**, exit 0 (`followup/pytest-full.log`).
+  - **Static checks:** `ruff check .`, `ruff format --check .` (163 files),
+    `mypy` (148 files), `mypy --platform linux .` (160 files) and
+    `export_openapi.py --check` all exit 0 (`followup/static-checks.log`).
+  - No front-end file changed, so `npm run check` and Playwright were not
+    rerun.
+- **Likely cause of the probe's run-4 miss (V2 correction):** the probe
+  polled `pg_stat_activity` inside one transaction, and PostgreSQL serves
+  one activity snapshot per transaction.
+
+## F2 — Candidate source: Indian Supreme Court Judgments
+
+- **Read (web, 2026-10-25):**
+  - the AWS registry entry;
+  - the GitHub README;
+  - `LICENSE.md`;
+  - `opendata/docs/dataset.md`;
+  - the scr.sci.gov.in home page.
+- **Not reachable:** sci.gov.in website policies (403), India Code s. 52
+  (403), the copyright.gov.in exceptions page (redirect).
+- **Nothing downloaded or imported, and no terms accepted.**
+- **Verified facts, secondary information, seven unresolved questions and a
+  recommendation** (leading candidate, not approved): see
+  `docs/phase7-prerequisites/SOURCE_CANDIDATE_SCI_JUDGMENTS.md`.
+
+## F3 — Annotation guide and evaluation-set plan
+
+- `docs/phase7-prerequisites/ANNOTATION_GUIDE.md` covers:
+  - the E4 retrieval, E5 analysis and E7 assessment sets;
+  - query cases built from public judgments, with a time cut-off (no client
+    data);
+  - a 0–3 relevance scale (relevant means grade 2 or more);
+  - pooled candidates;
+  - agreement checks;
+  - the record format;
+  - how thresholds are set (no values).
+- Existing sets are restated as SYNTHETIC.
+
+## F4 — Privacy-review checklist (D1)
+
+- `docs/phase7-prerequisites/PRIVACY_REVIEW_CHECKLIST.md`, sections A–H:
+  - scope and law;
+  - data categories;
+  - access;
+  - storage;
+  - external transfers;
+  - retention and deletion;
+  - risks;
+  - sign-off.
+- Statements about today's system were checked against the code:
+  - compose binds the database to `127.0.0.1`;
+  - session idle and absolute limits;
+  - soft-delete and the purge command;
+  - `opentelemetry-api` comes only through FastAPI.
+- No real data was used.
+
+## F5 — Register and proposal
+
+- `docs/verification/post-phase6/README.md`:
+  - R1 marked resolved;
+  - a "Follow-up" section with the decision register for R4, R5, R5a
+    (thresholds: form only, no values), R6 and R7, each with
+    recommendation, evidence, unresolved questions, dependencies and
+    approval gate.
+- `docs/PHASE7_PROPOSAL.md`: one pointer to the three prerequisite drafts
+  added in §3. It is still a draft.
+- **Phase 7 remains blocked:** R4, R5 and R5a are required, and R6 for real
+  cases.
+
+Checkpoint: F5 — follow-up complete (docs/verification/post-phase6/checkpoint.json); next action: owner decides R4 (source, with a lawyer's review of the terms), R5 (reviewer and pilot) and R6 (D1 checklist).

@@ -1,0 +1,10 @@
+All checks passed!
+ruff check exit=0
+163 files already formatted
+ruff format exit=0
+Success: no issues found in 148 source files
+mypy exit=0
+Success: no issues found in 160 source files
+mypy linux exit=0
+server/openapi.json is up to date
+openapi exit=0

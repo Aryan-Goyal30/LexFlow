@@ -8,6 +8,9 @@ carried out on 2026-10-25.
 
 This review changed no application code, test, configuration, migration or
 record.
+The follow-up (section "Follow-up" below) added one regression test and
+planning documents; it changed no application code, configuration,
+migration or record.
 
 ## Verified (fresh runs, 2026-10-25, HEAD `eada4ef`)
 
@@ -30,7 +33,7 @@ Phase 7 should not start (or cannot be evaluated) until the item is settled.
 
 | # | Item | Type | Severity | Evidence | Recommended action | Blocks Phase 7 |
 |---|---|---|---|---|---|---|
-| R1 | No regression test for two simultaneous *first* decisions on one finding | Risk (coverage gap; the guard itself works) | Low | The probe: 9 of 9 runs refused the second decision (unique index, then 409); one run failed only the probe's timing observation | Add the probe as `server/tests/test_review_race.py`, asserting the outcome (second decision refused; one review and one history entry), not the lock observation | No |
+| R1 | No regression test for two simultaneous *first* decisions on one finding | Risk (coverage gap; the guard itself works) | Low | The probe: 9 of 9 runs refused the second decision (unique index, then 409); one run failed only the probe's timing observation | **Resolved in the follow-up:** `server/tests/test_review_race.py` (see below) | No |
 | R2 | Reviewers' private notes are stored unencrypted in PostgreSQL | Accepted limitation (ADR 0020; local-only deployment, ADR 0005) | Medium if the database is ever copied or exposed; low on one local machine | `analysis_finding_reviews.note`, `analysis_finding_review_events.note` | Owner decision before any non-local deployment, or before real client material is used: encryption at rest (disk or column level), or no notes | Only if Phase 7 uses real client material |
 | R3 | Copies of live data outside `lexflow`: 8 dumps and 2 base backups in `server/var/backups/` (git-ignored; from Phase 2 to the 0012 migration); the databases `lexflow_pre0012_verify`, `lexflow_p3_restore`, `lexflow_restore_check`; the M8 scratch-server restore | Open decision (retention) | Low (sample and synthetic data today); rises once real data exists | log V2; Phase 5 log M8c | The owner decides how long each is kept. Nothing was deleted here | No |
 | R4 | No real judgment source is approved; the live collection holds only 3 SYNTHETIC demo judgments | Open decision | High for Phase 7: an outcome assessment "lists the precedents behind it", and synthetic precedents cannot support real conclusions | Phase 5 log M10.3; SRS §5 | Approve a source only with: authoritative publisher, terms URL, verified reuse permission (who and when), provenance per judgment, de-duplication, and separation from synthetic and evaluation data | **Yes** |
@@ -43,6 +46,48 @@ Phase 7 should not start (or cannot be evaluated) until the item is settled.
 
 **Verified defects found in this review:** none in the application. R9 is
 a slip in a record.
+
+## Follow-up (2026-10-25): regression test and Phase 7 prerequisites
+
+Authorised by the owner's "safe next steps" instruction. Record of the
+work: `execution-log.md`, sections F0–F5. Evidence: `followup/`. Phase 7
+remains **blocked**.
+
+**R1, resolved:** `server/tests/test_review_race.py`.
+- It runs on `lexflow_test` with real commits, through the real API.
+- The test waits until the database shows the second request blocked behind
+  the first decision, then commits the first. The order is fixed, not left
+  to timing.
+- It asserts:
+  - 409 `review-changed` for the second request;
+  - exactly one review (accepted, version 1, no note);
+  - exactly one history entry;
+  - no `analysis.finding_reviewed` audit event for the refused request.
+- **Results:**
+  - 10 of 10 runs passed (`followup/review-race-runs.log`);
+  - a mutation check (conflict mapping removed) was caught, 500 instead of
+    409, and the file was restored byte for byte;
+  - the full suite: 1029 passed (`followup/pytest-full.log`);
+  - ruff, mypy (Windows and Linux) and the OpenAPI check all exit 0
+    (`followup/static-checks.log`).
+- **Likely cause of the probe's earlier timing miss:** PostgreSQL keeps
+  one activity snapshot per transaction. The probe polled inside one
+  transaction, so it could keep reading a stale snapshot. The test polls in
+  a fresh transaction each time.
+
+### Decision register: Phase 7 prerequisites
+
+| # | Decision | Recommendation | Evidence | Unresolved questions | Depends on | Approval gate |
+|---|---|---|---|---|---|---|
+| R4 | Real judgment source | Keep the Indian Supreme Court Judgments open dataset (AWS registry, CC-BY-4.0 stated) as the **leading candidate**; do not approve yet. If approved, pilot one practice area with a few hundred judgments, fetched by the owner. LexFlow does not crawl | `docs/phase7-prerequisites/SOURCE_CANDIDATE_SCI_JUDGMENTS.md` §1–2 (registry, README, licence file read 2026-10-25) | What the CC BY grant covers, and who the licensor is; the upstream portal's terms (not read: sci.gov.in returned 403); court-ordered prohibitions; personal data in judgments; commercial use; fidelity of the text and citations; the form of attribution | A lawyer's review of the terms; the practice area (Phase 4 Gate 2) | Owner records the source in `judgment_sources` form: terms URL, date, reader, permitted use |
+| R5 | Lawyer-labelled evaluation sets | Recruit one qualified reviewer (two if possible, for agreement). Pilot 2 query cases, then 10–20, built from public judgments with a time cut-off (no client data) | `docs/phase7-prerequisites/ANNOTATION_GUIDE.md`; existing sets are SYNTHETIC (`docs/verification/phase4/judgment-eval.md`) | Who the reviewer is and their time and cost; the area; whether a second reviewer is available | R4 (an approved source for candidates); a separate evaluation database | Owner approves the guide and the reviewer; the sets are committed with provenance |
+| R5a | Quality thresholds | Set **after** a baseline on the lawyer-labelled sets, with written reasons. Proposed form: a minimum per metric (for example no worse than keyword search alone) plus failures unacceptable at any rate. **No values proposed** | `ANNOTATION_GUIDE.md` §9; `docs/PHASE7_PROPOSAL.md` §5 (draft) | All values | R5 | Owner records the values in the Phase 7 plan before implementation |
+| R6 | D1 privacy review | Complete the checklist before any real case is stored for AI use, sent to Gemini, or used in evaluation. Until then, sample and synthetic cases only | `docs/phase7-prerequisites/PRIVACY_REVIEW_CHECKLIST.md`; Phase 5 plan §9 | The applicable law and its commencement; the provider's terms; consent; cross-border transfer; retention; redaction; encryption (R2) | A lawyer or privacy reviewer; the provider's current terms | Owner sign-off (checklist H) before `LEXFLOW_AI_ALLOW_CLIENT_DATA=true` |
+| R7 | Real-model checks | Unchanged: a small, budgeted set of real calls on synthetic documents, if the owner approves | Phase 5 log M10 | Budget; model choice | Owner | Owner approves the calls and the budget |
+
+**Phase 7 gate (unchanged):** R4, R5 and R5a are all required. R6 is also
+required for any real case. Then the decisions in `docs/PHASE7_PROPOSAL.md`
+§10.
 
 ## Resume
 

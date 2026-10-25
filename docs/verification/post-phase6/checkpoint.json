@@ -19,10 +19,20 @@
     "lexflow_e2e: recreated by e2e.py prepare",
     "backup lexflow-20261025-043125-pre-0012.dump sha256 matches; lexflow_pre0012_verify present (both kept)"
   ],
-  "next_action": "Owner: review docs/verification/post-phase6/README.md and docs/PHASE7_PROPOSAL.md and decide the items in PHASE7_PROPOSAL.md section 10; optionally approve adding the race probe as a regression test (R1). No implementation is pending in this review.",
+  "next_action": "Owner: decide R4 (approve or reject the candidate source after a lawyer reads the upstream terms), R5 (choose the reviewer and run the 2-case pilot) and R6 (complete the D1 checklist). Phase 7 stays blocked until then.",
   "blocking_phase7": [
-    "R4 real judgment source",
-    "R5 Phase 4/5 lawyer-labelled evaluation + agreed thresholds",
+    "R4 real judgment source (candidate identified, not approved)",
+    "R5 lawyer-labelled evaluation sets",
+    "R5a thresholds set after baseline",
     "R6 D1 privacy review (real cases)"
-  ]
+  ],
+  "followup": {
+    "instruction": "safe next steps after Phase 6 (no Phase 7 implementation)",
+    "start_head": "0d6914c",
+    "F1 race regression test": "complete (server/tests/test_review_race.py; 10/10 runs; mutation caught; full suite 1029 passed; static checks exit 0)",
+    "F2 candidate source review": "complete (desk review; not approved; nothing downloaded)",
+    "F3 annotation guide": "complete (draft)",
+    "F4 privacy checklist": "complete (checklist; review not done)",
+    "F5 register update": "complete (README follow-up section; proposal still draft)"
+  }
 }
