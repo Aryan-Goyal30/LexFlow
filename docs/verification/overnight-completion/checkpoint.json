@@ -1,0 +1,38 @@
+{
+  "task": "overnight completion: Phase 6 verification, synthetic-only Phase 7 demo, integration, verification, docs",
+  "updated": "2026-10-25",
+  "start_head": "707b002",
+  "head": "707b002",
+  "brief_sha256": "274ecaed93400f51dd47c42337fbd6e101aa6be366b80d977d1522359b34c2ec",
+  "preexisting_uncommitted_untouched": [
+    "CLAUDE.md",
+    "docs/phase7-prerequisites/PRIVACY_REVIEW_CHECKLIST.md",
+    "docs/phase7-prerequisites/SOURCE_CANDIDATE_SCI_JUDGMENTS.md",
+    "docs/verification/post-phase6/README.md",
+    "docs/verification/post-phase6/checkpoint.json",
+    "docs/verification/post-phase6/execution-log.md"
+  ],
+  "live_db_revision": "0012 (read-only check)",
+  "milestones": {
+    "O0 preflight": "complete",
+    "A Phase 6 verification": "complete (mapping + existing fresh evidence; no defect)",
+    "B Phase 7 synthetic demo": "in progress: B1-B3 backend complete",
+    "C integration": "pending",
+    "D verification": "pending",
+    "E documentation": "pending"
+  },
+  "commits": [],
+  "acceptance": {
+    "phase6": "verified (no defect found; full suites rerun at milestone D)",
+    "phase7_demo": "backend implemented; P7-A1/A2/A3/A5/A6/A7 covered by backend tests; UI, e2e, harness, docs pending",
+    "phase7_real_world_gate": "BLOCKED (R4, R5, R5a, R6)"
+  },
+  "last_tests": {
+    "pytest": "1104 passed, exit 0",
+    "npm run check": "exit 0",
+    "static": "ruff/format/mypy/mypy-linux/openapi all clean",
+    "race (assessment review)": "5/5"
+  },
+  "blockers": [],
+  "next_action": "Commit B1-B3 (backend) excluding the 6 pre-existing uncommitted files; then B4 UI."
+}

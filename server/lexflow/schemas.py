@@ -25,6 +25,9 @@ from lexflow.domain import (
     SHORT_TEXT_MAX,
     TITLE_MAX,
     TITLE_MIN,
+    AssessmentStance,
+    AssessmentStatus,
+    AssessmentUncertainty,
     AuditOutcome,
     CasePriority,
     CaseStatus,
@@ -1088,6 +1091,12 @@ class AnalysisSetupOut(ApiModel):
     judgments_available: int = Field(description="Judgments in the collection (0 = none).")
     limits: AnalysisLimitsOut
     active_run_id: uuid.UUID | None
+    assessment_enabled: bool = Field(
+        description=(
+            "The outcome-assessment demo (Phase 7) is switched on for this server. False by "
+            "default; when false no assessment route, field or control exists."
+        )
+    )
 
 
 class AnalysisRunIn(InputModel):
@@ -1159,4 +1168,128 @@ class AnalysisReviewHistoryEntryOut(ApiModel):
 
 class AnalysisReviewHistoryOut(ApiModel):
     finding_id: str
+    items: list[AnalysisReviewHistoryEntryOut] = Field(description="Oldest first.")
+
+
+# --- Outcome assessment (Phase 7: synthetic engineering demo) -----------------------
+# Off by default. Every reference below was checked by the server: a cited
+# precedent is a lawyer-accepted precedent comparison of the run, its quote
+# occurs verbatim in the judgment passage, and every reasoning step rests on
+# accepted findings or cited precedents. Categories only, never numbers or
+# probabilities. Decision support, not a prediction and not legal advice.
+
+
+class AssessmentPrecedentOut(ApiModel):
+    """A precedent the assessment relies on, with how it bears on the position."""
+
+    ref: str = Field(description="The accepted precedent comparison's id in the run, e.g. 'P1'.")
+    judgment_id: uuid.UUID
+    title: str = Field(description="From the collection, never from the model.")
+    court: str
+    citation: str | None
+    year: int | None
+    synthetic: bool = Field(description="Invented test judgment: fictional, never real law.")
+    passage: AnalysisPassageRefOut
+    stance: AssessmentStance
+    quote: str = Field(description="Occurs verbatim in the judgment passage (normalised).")
+    explanation: str
+
+
+class AssessmentStepOut(ApiModel):
+    id: str = Field(description="R1, R2, …")
+    text: str
+    finding_ids: list[str] = Field(description="Accepted findings of the run this step rests on.")
+    precedent_refs: list[str] = Field(description="Cited precedents this step rests on.")
+
+
+class AssessmentResultOut(ApiModel):
+    label: Literal["decision-support"] = Field(
+        description="Always 'decision-support': not a prediction, not legal advice."
+    )
+    summary: str
+    uncertainty: AssessmentUncertainty = Field(
+        description="A category for the engineering demo; not a validated or statistical measure."
+    )
+    precedents: list[AssessmentPrecedentOut] = Field(description="At least one.")
+    reasoning: list[AssessmentStepOut] = Field(description="At least one.")
+    missing_evidence: list[str]
+    limitations: list[str]
+    all_precedents_synthetic: bool
+    demo_only: bool = Field(
+        description="True when every cited precedent is synthetic or a scripted provider wrote it."
+    )
+    removed: AnalysisRemovedOut
+
+
+class AssessmentReviewOut(ApiModel):
+    status: ReviewStatus
+    reviewed_text: str | None = Field(description="The lawyer's wording of the summary ('edited').")
+    note: str | None = Field(description="Shown to reviewers only; null for others.")
+    version: int = Field(description="0 while the assessment has never been reviewed.")
+    reviewed_by: ActorOut | None
+    reviewed_at: datetime | None
+
+
+class AssessmentOut(ApiModel):
+    id: uuid.UUID
+    run_id: uuid.UUID
+    status: AssessmentStatus = Field(
+        description="'ready' (validated), 'insufficient' (no basis) or 'failed'."
+    )
+    reason_code: str | None
+    reason: str | None
+    provider: str
+    provider_label: str | None
+    model: str
+    prompt_version: str
+    schema_version: str | None
+    validator_version: str | None
+    requested_by: ActorOut | None
+    created_at: datetime
+    inputs_changed: bool = Field(
+        description=(
+            "An input changed since the assessment: a finding's review or a precedent passage. "
+            "Generate a new assessment to use the current state."
+        )
+    )
+    excluded: dict[str, int] = Field(
+        description="Findings left out of the inputs, by reason (unreviewed, rejected, …)."
+    )
+    removed: AnalysisRemovedOut | None
+    result: AssessmentResultOut | None
+    review: AssessmentReviewOut
+
+
+class AssessmentListOut(ApiModel):
+    run_id: uuid.UUID
+    can_generate: bool
+    cannot_generate_reason: str | None
+    can_review: bool = Field(description="This user may record decisions on assessments now.")
+    accepted_findings: int = Field(description="Accepted facts, issues and contradictions.")
+    accepted_precedents: int = Field(description="Accepted precedent comparisons.")
+    items: list[AssessmentOut] = Field(description="Newest first.")
+
+
+class AssessmentReviewIn(InputModel):
+    """A decision on an assessment. ``expectedVersion`` is the version the
+    reviewer saw (0 when unreviewed); a stale one is refused with 409."""
+
+    status: ReviewStatus = Field(
+        description="'unreviewed' clears an earlier decision; the history keeps it."
+    )
+    reviewed_text: str | None = Field(
+        default=None,
+        max_length=REVIEW_TEXT_MAX,
+        description="The lawyer's wording of the summary; required for 'edited' and only there.",
+    )
+    note: str | None = Field(
+        default=None,
+        max_length=REVIEW_NOTE_MAX,
+        description="Optional note or rejection reason, private to reviewers.",
+    )
+    expected_version: int = Field(ge=0, le=1_000_000)
+
+
+class AssessmentReviewHistoryOut(ApiModel):
+    assessment_id: uuid.UUID
     items: list[AnalysisReviewHistoryEntryOut] = Field(description="Oldest first.")

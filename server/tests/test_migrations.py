@@ -39,6 +39,9 @@ APP_TABLES = {
     "analysis_runs",
     "analysis_finding_reviews",
     "analysis_finding_review_events",
+    "outcome_assessments",
+    "outcome_assessment_reviews",
+    "outcome_assessment_review_events",
 }
 
 
@@ -214,3 +217,45 @@ def test_existing_hearings_become_scheduled_and_downgrade_keeps_cancellations(
         connection.execute(text("UPDATE hearings SET status = 'Scheduled', cancelled_at = NULL"))
     engine.dispose()
     run_alembic(scratch_url, ("downgrade", "0005"))
+
+
+PHASE6_ROWS = """
+INSERT INTO analysis_runs (id, case_id, status, provider, model, prompt_version, selection,
+                           result, created_at, finished_at)
+VALUES ('00000000-0000-4000-8000-0000000007a1', '00000000-0000-4000-8000-0000000000e1', 'ready',
+        'scripted', 'scripted-v1', 'case-analysis-v2', '{"documentIds": []}',
+        '{"facts": [], "issues": [], "precedents": [], "contradictions": []}', now(), now());
+INSERT INTO analysis_finding_reviews (id, run_id, case_id, finding_kind, finding_id, status,
+                                      version, reviewed_at)
+VALUES ('00000000-0000-4000-8000-0000000007b1', '00000000-0000-4000-8000-0000000007a1',
+        '00000000-0000-4000-8000-0000000000e1', 'fact', 'F1', 'accepted', 1, now());
+"""
+
+
+def test_0013_adds_assessment_tables_and_keeps_runs_and_reviews(scratch_url: URL) -> None:
+    """Phase 7's migration only adds tables: analysis runs and Phase 6 reviews
+    survive the upgrade and the downgrade unchanged."""
+    run_alembic(scratch_url, ("upgrade", "0012"))
+    engine = create_engine(scratch_url)
+    with engine.begin() as connection:
+        connection.execute(text(PHASE1_ROWS))
+        connection.execute(text(PHASE6_ROWS))
+    snapshot = "SELECT md5(string_agg(t::text, '|' ORDER BY t::text)) FROM {} t"
+    kept = ("analysis_runs", "analysis_finding_reviews", "cases")
+    with engine.connect() as connection:
+        before = {name: connection.scalar(text(snapshot.format(name))) for name in kept}
+    engine.dispose()
+
+    run_alembic(scratch_url, ("upgrade", "0013"))
+    assert {"outcome_assessments", "outcome_assessment_reviews"} <= _tables(scratch_url)
+    engine = create_engine(scratch_url)
+    with engine.connect() as connection:
+        assert {name: connection.scalar(text(snapshot.format(name))) for name in kept} == before
+    engine.dispose()
+
+    run_alembic(scratch_url, ("downgrade", "0012"))
+    assert "outcome_assessments" not in _tables(scratch_url)
+    engine = create_engine(scratch_url)
+    with engine.connect() as connection:
+        assert {name: connection.scalar(text(snapshot.format(name))) for name in kept} == before
+    engine.dispose()

@@ -34,6 +34,7 @@ from sqlalchemy.orm import Session
 from lexflow import authz
 from lexflow.analysis import prompt, runs
 from lexflow.analysis.provider import PROVIDER_LABELS, configured_model, unavailable_reason
+from lexflow.assessment.service import table_exists as assessments_exist
 from lexflow.audit import AuditLog, get_audit_log
 from lexflow.auth.deps import require_user
 from lexflow.authz import Action
@@ -87,6 +88,11 @@ def _unavailable(settings: Settings, session: Session, user: User) -> tuple[str,
     if user.role == ADMINISTRATOR and missing.detail:
         return missing.code, f"{missing.reason} ({missing.detail})"
     return missing.code, missing.reason
+
+
+def assessment_enabled(settings: Settings, session: Session) -> bool:
+    """The outcome-assessment demo's effective flag (Phase 7, D7-1)."""
+    return settings.outcome_assessment and runs.table_exists(session) and assessments_exist(session)
 
 
 def _documents(session: Session, case: Case) -> list[AnalysisDocumentOut]:
@@ -261,6 +267,7 @@ def analysis_setup(
             runs_per_hour=settings.ai_runs_per_user_per_hour,
         ),
         active_run_id=active.id if active is not None else None,
+        assessment_enabled=assessment_enabled(settings, session),
     )
 
 

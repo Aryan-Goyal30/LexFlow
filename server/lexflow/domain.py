@@ -33,6 +33,14 @@ AnalysisStatus = Literal["queued", "running", "ready", "failed"]
 # Phase 6: a lawyer's decision on one finding of an analysis run.
 ReviewStatus = Literal["unreviewed", "accepted", "edited", "rejected"]
 FindingKind = Literal["fact", "issue", "precedent", "contradiction"]
+# Phase 7 (synthetic engineering demo): an outcome assessment of a reviewed
+# analysis run, how each cited precedent bears on the position, and the
+# assessment's uncertainty category. Categories, never numbers.
+AssessmentStatus = Literal["ready", "insufficient", "failed"]
+AssessmentStance = Literal["supports", "cuts_against", "does_not_resolve"]
+AssessmentUncertainty = Literal[
+    "insufficient_basis", "mixed_evidence", "limited_support", "evidence_supports_position"
+]
 
 USER_ROLES: tuple[str, ...] = get_args(UserRole)
 AUDIT_OUTCOMES: tuple[str, ...] = get_args(AuditOutcome)
@@ -54,6 +62,10 @@ FINDING_KINDS: tuple[str, ...] = get_args(FindingKind)
 FINDING_PREFIX = {"fact": "F", "issue": "I", "precedent": "P", "contradiction": "C"}
 REVIEW_TEXT_MAX = 2_000
 REVIEW_NOTE_MAX = 2_000
+ASSESSMENT_STATUSES: tuple[str, ...] = get_args(AssessmentStatus)
+ASSESSMENT_STANCES: tuple[str, ...] = get_args(AssessmentStance)
+ASSESSMENT_UNCERTAINTIES: tuple[str, ...] = get_args(AssessmentUncertainty)
+ASSESSMENT_REASON_MAX = 500
 
 TITLE_MIN, TITLE_MAX = 4, 300
 DESCRIPTION_MIN, DESCRIPTION_MAX = 10, 10_000

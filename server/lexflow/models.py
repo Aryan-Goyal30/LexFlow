@@ -38,6 +38,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from lexflow.domain import (
     ANALYSIS_REASON_MAX,
     ANALYSIS_STATUSES,
+    ASSESSMENT_REASON_MAX,
+    ASSESSMENT_STATUSES,
     AUDIT_OUTCOMES,
     CASE_PRIORITIES,
     CASE_STATUSES,
@@ -979,6 +981,169 @@ class AnalysisFindingReviewEvent(Base):
     )
     finding_kind: Mapped[str] = mapped_column(Text, nullable=False)
     finding_id: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    reviewed_text: Mapped[str | None] = mapped_column(Text)
+    note: Mapped[str | None] = mapped_column(Text)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        server_default=func.now(),
+    )
+
+
+class OutcomeAssessment(Base):
+    """An outcome assessment of one reviewed analysis run (Phase 7, synthetic
+    engineering demo; off by default).
+
+    Written once and never changed. ``ready`` holds a validated assessment
+    that cites at least one verified precedent; ``insufficient`` says why
+    there was no basis (no accepted findings or precedents, or validation
+    left nothing usable); ``failed`` is a provider or reading failure.
+    ``inputs`` records which accepted findings (with their review versions)
+    and which judgment passages (with content hashes) were used, never their
+    text. The lawyer's decision is stored separately
+    (``OutcomeAssessmentReview``).
+    """
+
+    __tablename__ = "outcome_assessments"
+    __table_args__ = (
+        CheckConstraint(_in_list("status", ASSESSMENT_STATUSES), name="status_valid"),
+        CheckConstraint("(status = 'ready') = (result IS NOT NULL)", name="result_matches_status"),
+        CheckConstraint("(status = 'ready') = (reason_code IS NULL)", name="reason_matches_status"),
+        CheckConstraint(
+            f"reason IS NULL OR char_length(reason) <= {ASSESSMENT_REASON_MAX}",
+            name="reason_length",
+        ),
+        CheckConstraint("char_length(provider) BETWEEN 1 AND 50", name="provider_length"),
+        CheckConstraint("char_length(model) BETWEEN 1 AND 100", name="model_length"),
+        CheckConstraint(
+            "char_length(prompt_version) BETWEEN 1 AND 50", name="prompt_version_length"
+        ),
+        Index("ix_outcome_assessments_run_id_created_at", "run_id", "created_at"),
+        Index("ix_outcome_assessments_requested_by_id_created_at", "requested_by_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("analysis_runs.id", ondelete="CASCADE"), nullable=False
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
+    requested_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    reason_code: Mapped[str | None] = mapped_column(Text)
+    reason: Mapped[str | None] = mapped_column(Text)
+    provider: Mapped[str] = mapped_column(Text, nullable=False)
+    model: Mapped[str] = mapped_column(Text, nullable=False)
+    prompt_version: Mapped[str] = mapped_column(Text, nullable=False)
+    # Schema and validator versions, and the input references with hashes.
+    inputs: Mapped[dict[str, Any]] = mapped_column(JSONB(none_as_null=True), nullable=False)
+    result: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
+    removed: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
+    usage: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        server_default=func.now(),
+    )
+
+
+def _assessment_review_checks() -> tuple[CheckConstraint, ...]:
+    """The rules shared by an assessment's current review and each history entry."""
+    return (
+        CheckConstraint(_in_list("status", REVIEW_STATUSES), name="status_valid"),
+        CheckConstraint(
+            "(status = 'edited') = (reviewed_text IS NOT NULL)", name="text_matches_status"
+        ),
+        CheckConstraint(
+            f"reviewed_text IS NULL OR char_length(reviewed_text) BETWEEN 1 AND {REVIEW_TEXT_MAX}",
+            name="reviewed_text_length",
+        ),
+        CheckConstraint(
+            f"note IS NULL OR char_length(note) BETWEEN 1 AND {REVIEW_NOTE_MAX}",
+            name="note_length",
+        ),
+        CheckConstraint("version >= 1", name="version_positive"),
+    )
+
+
+class OutcomeAssessmentReview(Base):
+    """A lawyer's current decision on one outcome assessment (Phase 7).
+
+    The same rules as a finding's review (Phase 6): no row means unreviewed;
+    ``edited`` stores the lawyer's wording of the summary beside the original;
+    every change increments ``version`` and adds an event in the same
+    transaction; the unique assessment id refuses a concurrent first decision.
+    """
+
+    __tablename__ = "outcome_assessment_reviews"
+    __table_args__ = (
+        *_assessment_review_checks(),
+        UniqueConstraint("assessment_id"),
+        Index("ix_outcome_assessment_reviews_case_id", "case_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    assessment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("outcome_assessments.id", ondelete="CASCADE"), nullable=False
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    reviewed_text: Mapped[str | None] = mapped_column(Text)
+    # Private to reviewers: never in audit details or briefs.
+    note: Mapped[str | None] = mapped_column(Text)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    reviewed_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        server_default=func.now(),
+    )
+
+
+class OutcomeAssessmentReviewEvent(Base):
+    """One change to an assessment's review, kept forever (append-only)."""
+
+    __tablename__ = "outcome_assessment_review_events"
+    __table_args__ = (
+        *_assessment_review_checks(),
+        UniqueConstraint("review_id", "version"),
+        Index("ix_outcome_assessment_review_events_assessment_id", "assessment_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    review_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "outcome_assessment_reviews.id",
+            ondelete="CASCADE",
+            name="fk_outcome_assessment_review_events_review_id",
+        ),
+        nullable=False,
+    )
+    assessment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "outcome_assessments.id",
+            ondelete="CASCADE",
+            name="fk_outcome_assessment_review_events_assessment_id",
+        ),
+        nullable=False,
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
     status: Mapped[str] = mapped_column(Text, nullable=False)
     reviewed_text: Mapped[str | None] = mapped_column(Text)
     note: Mapped[str | None] = mapped_column(Text)

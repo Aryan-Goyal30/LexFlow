@@ -171,6 +171,13 @@ class Settings(BaseSettings):
     # client material needs a privacy, confidentiality and provider-terms review.
     ai_allow_client_data: bool = Field(default=False, alias="LEXFLOW_AI_ALLOW_CLIENT_DATA")
 
+    # --- Outcome assessment (Phase 7: synthetic engineering demo) ------------------------
+    # Off by default. Allowed only with a test or e2e database (like the scripted
+    # provider), so it can never be switched on against the live database. Even
+    # when on, assessments are generated only by the scripted (non-AI) provider:
+    # a real model needs the owner's approval (docs/PHASE7_PLAN.md, D7-1, D7-2).
+    outcome_assessment: bool = Field(default=False, alias="LEXFLOW_OUTCOME_ASSESSMENT")
+
     @field_validator("gemini_model")
     @classmethod
     def _plain_model_name(cls, value: str | None) -> str | None:
@@ -229,6 +236,13 @@ class Settings(BaseSettings):
             raise ValueError(
                 "LEXFLOW_AI_PROVIDER=scripted is a test double: it is only allowed with a "
                 "test or e2e database (a name part 'test' or 'e2e', e.g. lexflow_test)"
+            )
+        if self.outcome_assessment and not (
+            self.env in ("test", "development") and _is_test_database(self.database_url)
+        ):
+            raise ValueError(
+                "LEXFLOW_OUTCOME_ASSESSMENT=true is a synthetic-only demo: it is only allowed "
+                "with a test or e2e database (a name part 'test' or 'e2e', e.g. lexflow_e2e)"
             )
         return self
 

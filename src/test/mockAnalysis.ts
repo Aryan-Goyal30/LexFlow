@@ -38,6 +38,8 @@ interface Config {
   model: string | null;
   sampleOnly: boolean;
   judgmentsAvailable: number;
+  /** Phase 7 demo: the outcome-assessment flag (off by default, as on the server). */
+  assessmentEnabled: boolean;
 }
 
 interface AnalysisState {
@@ -62,6 +64,7 @@ const fresh = (): AnalysisState => ({
     model: null,
     sampleOnly: true,
     judgmentsAvailable: 0,
+    assessmentEnabled: false,
   },
   runs: [],
   nextId: 1,
@@ -254,6 +257,7 @@ export function analysisHandlers(access: (caseId: string) => AnalysisCaseAccess 
         judgmentsAvailable: config.judgmentsAvailable,
         limits: LIMITS,
         activeRunId: config.available ? (active(caseId)?.id ?? null) : null,
+        assessmentEnabled: config.assessmentEnabled,
       };
       return HttpResponse.json(body);
     }),

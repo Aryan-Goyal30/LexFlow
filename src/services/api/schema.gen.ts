@@ -758,6 +758,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases/{case_id}/analysis-runs/{run_id}/assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Assessments
+         * @description The run's assessments, newest first, and whether one can be generated now.
+         */
+        get: operations["list_assessments_api_cases__case_id__analysis_runs__run_id__assessments_get"];
+        put?: never;
+        /**
+         * Generate Assessment
+         * @description Assess the run now from its accepted findings and precedents only. With
+         *     no accepted finding or precedent the assessment is stored as
+         *     'insufficient' and no provider is called.
+         */
+        post: operations["generate_assessment_api_cases__case_id__analysis_runs__run_id__assessments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/analysis-runs/{run_id}/assessments/{assessment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Assessment */
+        get: operations["get_assessment_api_cases__case_id__analysis_runs__run_id__assessments__assessment_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/analysis-runs/{run_id}/assessments/{assessment_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Review Assessment
+         * @description Accept, edit (the summary, in the lawyer's wording), reject or clear one
+         *     ready assessment. The assessment itself is never changed.
+         */
+        put: operations["review_assessment_api_cases__case_id__analysis_runs__run_id__assessments__assessment_id__review_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{case_id}/analysis-runs/{run_id}/assessments/{assessment_id}/review/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Assessment Review History */
+        get: operations["assessment_review_history_api_cases__case_id__analysis_runs__run_id__assessments__assessment_id__review_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/judgments/facets": {
         parameters: {
             query?: never;
@@ -1743,6 +1824,11 @@ export interface components {
             limits: components["schemas"]["AnalysisLimitsOut"];
             /** Activerunid */
             activeRunId: string | null;
+            /**
+             * Assessmentenabled
+             * @description The outcome-assessment demo (Phase 7) is switched on for this server. False by default; when false no assessment route, field or control exists.
+             */
+            assessmentEnabled: boolean;
         };
         /**
          * AnalysisSourceOut
@@ -1782,6 +1868,262 @@ export interface components {
              * @description Occurs verbatim in the passage (whitespace normalised).
              */
             quote: string;
+        };
+        /** AssessmentListOut */
+        AssessmentListOut: {
+            /**
+             * Runid
+             * Format: uuid
+             */
+            runId: string;
+            /** Cangenerate */
+            canGenerate: boolean;
+            /** Cannotgeneratereason */
+            cannotGenerateReason: string | null;
+            /**
+             * Canreview
+             * @description This user may record decisions on assessments now.
+             */
+            canReview: boolean;
+            /**
+             * Acceptedfindings
+             * @description Accepted facts, issues and contradictions.
+             */
+            acceptedFindings: number;
+            /**
+             * Acceptedprecedents
+             * @description Accepted precedent comparisons.
+             */
+            acceptedPrecedents: number;
+            /**
+             * Items
+             * @description Newest first.
+             */
+            items: components["schemas"]["AssessmentOut"][];
+        };
+        /** AssessmentOut */
+        AssessmentOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Runid
+             * Format: uuid
+             */
+            runId: string;
+            /**
+             * Status
+             * @description 'ready' (validated), 'insufficient' (no basis) or 'failed'.
+             * @enum {string}
+             */
+            status: "ready" | "insufficient" | "failed";
+            /** Reasoncode */
+            reasonCode: string | null;
+            /** Reason */
+            reason: string | null;
+            /** Provider */
+            provider: string;
+            /** Providerlabel */
+            providerLabel: string | null;
+            /** Model */
+            model: string;
+            /** Promptversion */
+            promptVersion: string;
+            /** Schemaversion */
+            schemaVersion: string | null;
+            /** Validatorversion */
+            validatorVersion: string | null;
+            requestedBy: components["schemas"]["ActorOut"] | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Inputschanged
+             * @description An input changed since the assessment: a finding's review or a precedent passage. Generate a new assessment to use the current state.
+             */
+            inputsChanged: boolean;
+            /**
+             * Excluded
+             * @description Findings left out of the inputs, by reason (unreviewed, rejected, …).
+             */
+            excluded: {
+                [key: string]: number;
+            };
+            removed: components["schemas"]["AnalysisRemovedOut"] | null;
+            result: components["schemas"]["AssessmentResultOut"] | null;
+            review: components["schemas"]["AssessmentReviewOut"];
+        };
+        /**
+         * AssessmentPrecedentOut
+         * @description A precedent the assessment relies on, with how it bears on the position.
+         */
+        AssessmentPrecedentOut: {
+            /**
+             * Ref
+             * @description The accepted precedent comparison's id in the run, e.g. 'P1'.
+             */
+            ref: string;
+            /**
+             * Judgmentid
+             * Format: uuid
+             */
+            judgmentId: string;
+            /**
+             * Title
+             * @description From the collection, never from the model.
+             */
+            title: string;
+            /** Court */
+            court: string;
+            /** Citation */
+            citation: string | null;
+            /** Year */
+            year: number | null;
+            /**
+             * Synthetic
+             * @description Invented test judgment: fictional, never real law.
+             */
+            synthetic: boolean;
+            passage: components["schemas"]["AnalysisPassageRefOut"];
+            /**
+             * Stance
+             * @enum {string}
+             */
+            stance: "supports" | "cuts_against" | "does_not_resolve";
+            /**
+             * Quote
+             * @description Occurs verbatim in the judgment passage (normalised).
+             */
+            quote: string;
+            /** Explanation */
+            explanation: string;
+        };
+        /** AssessmentResultOut */
+        AssessmentResultOut: {
+            /**
+             * Label
+             * @description Always 'decision-support': not a prediction, not legal advice.
+             * @constant
+             */
+            label: "decision-support";
+            /** Summary */
+            summary: string;
+            /**
+             * Uncertainty
+             * @description A category for the engineering demo; not a validated or statistical measure.
+             * @enum {string}
+             */
+            uncertainty: "insufficient_basis" | "mixed_evidence" | "limited_support" | "evidence_supports_position";
+            /**
+             * Precedents
+             * @description At least one.
+             */
+            precedents: components["schemas"]["AssessmentPrecedentOut"][];
+            /**
+             * Reasoning
+             * @description At least one.
+             */
+            reasoning: components["schemas"]["AssessmentStepOut"][];
+            /** Missingevidence */
+            missingEvidence: string[];
+            /** Limitations */
+            limitations: string[];
+            /** Allprecedentssynthetic */
+            allPrecedentsSynthetic: boolean;
+            /**
+             * Demoonly
+             * @description True when every cited precedent is synthetic or a scripted provider wrote it.
+             */
+            demoOnly: boolean;
+            removed: components["schemas"]["AnalysisRemovedOut"];
+        };
+        /** AssessmentReviewHistoryOut */
+        AssessmentReviewHistoryOut: {
+            /**
+             * Assessmentid
+             * Format: uuid
+             */
+            assessmentId: string;
+            /**
+             * Items
+             * @description Oldest first.
+             */
+            items: components["schemas"]["AnalysisReviewHistoryEntryOut"][];
+        };
+        /**
+         * AssessmentReviewIn
+         * @description A decision on an assessment. ``expectedVersion`` is the version the
+         *     reviewer saw (0 when unreviewed); a stale one is refused with 409.
+         */
+        AssessmentReviewIn: {
+            /**
+             * Status
+             * @description 'unreviewed' clears an earlier decision; the history keeps it.
+             * @enum {string}
+             */
+            status: "unreviewed" | "accepted" | "edited" | "rejected";
+            /**
+             * Reviewedtext
+             * @description The lawyer's wording of the summary; required for 'edited' and only there.
+             */
+            reviewedText?: string | null;
+            /**
+             * Note
+             * @description Optional note or rejection reason, private to reviewers.
+             */
+            note?: string | null;
+            /** Expectedversion */
+            expectedVersion: number;
+        };
+        /** AssessmentReviewOut */
+        AssessmentReviewOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "unreviewed" | "accepted" | "edited" | "rejected";
+            /**
+             * Reviewedtext
+             * @description The lawyer's wording of the summary ('edited').
+             */
+            reviewedText: string | null;
+            /**
+             * Note
+             * @description Shown to reviewers only; null for others.
+             */
+            note: string | null;
+            /**
+             * Version
+             * @description 0 while the assessment has never been reviewed.
+             */
+            version: number;
+            reviewedBy: components["schemas"]["ActorOut"] | null;
+            /** Reviewedat */
+            reviewedAt: string | null;
+        };
+        /** AssessmentStepOut */
+        AssessmentStepOut: {
+            /**
+             * Id
+             * @description R1, R2, …
+             */
+            id: string;
+            /** Text */
+            text: string;
+            /**
+             * Findingids
+             * @description Accepted findings of the run this step rests on.
+             */
+            findingIds: string[];
+            /**
+             * Precedentrefs
+             * @description Cited precedents this step rests on.
+             */
+            precedentRefs: string[];
         };
         /**
          * AuditEventOut
@@ -4877,6 +5219,264 @@ export interface operations {
                 content: {
                     "application/problem+json": unknown;
                     "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_assessments_api_cases__case_id__analysis_runs__run_id__assessments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentListOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    generate_assessment_api_cases__case_id__analysis_runs__run_id__assessments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": unknown;
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_assessment_api_cases__case_id__analysis_runs__run_id__assessments__assessment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                run_id: string;
+                assessment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    review_assessment_api_cases__case_id__analysis_runs__run_id__assessments__assessment_id__review_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                run_id: string;
+                assessment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssessmentReviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentReviewOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    assessment_review_history_api_cases__case_id__analysis_runs__run_id__assessments__assessment_id__review_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+                run_id: string;
+                assessment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentReviewHistoryOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };

@@ -64,6 +64,8 @@ class Action(StrEnum):
     SHARE_DOCUMENT = "share-document"
     RUN_ANALYSIS = "run-analysis"  # start an AI case analysis (Phase 5)
     REVIEW_ANALYSIS = "review-analysis"  # accept, reject or edit AI findings (Phase 6)
+    RUN_ASSESSMENT = "run-assessment"  # generate an outcome assessment (Phase 7 demo)
+    REVIEW_ASSESSMENT = "review-assessment"  # accept, reject or edit it (Phase 7 demo)
 
 
 _STAFF_ON_CASE = frozenset({Relation.ADMIN, Relation.LEAD, Relation.ASSOCIATE, Relation.PARALEGAL})
@@ -92,6 +94,9 @@ ALLOWED: dict[Action, frozenset[Relation]] = {
     # Phase 6: the advocates on the case and Administrators decide on findings;
     # paralegals see the decisions (VIEW) but not the reviewers' notes.
     Action.REVIEW_ANALYSIS: _ADVOCATES_ON_CASE,
+    # Phase 7 (demo): as Phase 6. Paralegals read assessments (VIEW) without notes.
+    Action.RUN_ASSESSMENT: _ADVOCATES_ON_CASE,
+    Action.REVIEW_ASSESSMENT: _ADVOCATES_ON_CASE,
 }
 
 # PATCH /api/cases/{id}: the action each field needs.

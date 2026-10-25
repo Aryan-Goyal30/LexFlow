@@ -33,7 +33,8 @@ from sqlalchemy.orm import Session
 
 from lexflow import authz
 from lexflow.analysis import runs
-from lexflow.api.analysis import changed_evidence
+from lexflow.api.analysis import assessment_enabled, changed_evidence
+from lexflow.assessment import service as assessment_service
 from lexflow.audit import AuditLog, get_audit_log
 from lexflow.auth.deps import require_user
 from lexflow.authz import Action, Relation
@@ -336,7 +337,15 @@ def export_brief(
         )
     items = (run.evidence or {}).get("items", {})
     changed = set(changed_evidence(session, items)) if isinstance(items, dict) else set()
-    people = _people(session, {r.reviewed_by_id for r in stored.values()})
+    assessments_on = assessment_enabled(settings, session)
+    accepted_assessment = (
+        assessment_service.accepted_for_brief(session, run.id) if assessments_on else None
+    )
+    people = _people(
+        session,
+        {r.reviewed_by_id for r in stored.values()}
+        | ({accepted_assessment[1].reviewed_by_id} if accepted_assessment else set()),
+    )
     now = _now()
     content = brief_service.build(
         case=case,
@@ -347,6 +356,7 @@ def export_brief(
         prepared_by=user,
         now=now,
         zone=settings.timezone,
+        assessment=accepted_assessment,
     )
     audit.record(
         "analysis.brief_exported",
@@ -359,6 +369,8 @@ def export_brief(
             "edited": tally.edited,
             "rejected": tally.rejected,
             "unreviewed": tally.unreviewed,
+            # Phase 7 demo: only when the feature is on, so nothing about it appears otherwise.
+            **({"assessmentIncluded": accepted_assessment is not None} if assessments_on else {}),
         },
     )
     day = now.astimezone(ZoneInfo(settings.timezone)).date().isoformat()

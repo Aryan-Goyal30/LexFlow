@@ -16,6 +16,14 @@ What it contains, and what it never contains:
 - who accepted each finding and when, and the decision-support disclaimer;
 - never a reviewer's note, internal ids, or the word "approved" for the
   brief as a whole.
+
+Phase 7 (synthetic engineering demo, off by default): when the outcome
+assessment is switched on and a lawyer accepted an assessment of the run, the
+newest such assessment is added in its own section, labelled as decision
+support (and as a demonstration on synthetic judgments where that applies),
+with its precedents, quotes, reasoning, uncertainty category and limits. It is
+never mixed into the findings; an unreviewed or rejected assessment is never
+included.
 """
 
 from __future__ import annotations
@@ -32,7 +40,14 @@ from zoneinfo import ZoneInfo
 import docx
 from docx.document import Document as DocumentObject
 
-from lexflow.models import AnalysisFindingReview, AnalysisRun, Case, User
+from lexflow.models import (
+    AnalysisFindingReview,
+    AnalysisRun,
+    Case,
+    OutcomeAssessment,
+    OutcomeAssessmentReview,
+    User,
+)
 from lexflow.services.reviews import KIND_LABEL, Finding, findings
 
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -138,6 +153,7 @@ def build(
     prepared_by: User,
     now: datetime,
     zone: str,
+    assessment: tuple[OutcomeAssessment, OutcomeAssessmentReview] | None = None,
 ) -> bytes:
     """The brief as DOCX bytes. The caller checks access and that at least one
     finding is accepted."""
@@ -209,6 +225,9 @@ def build(
             _details(w, finding, accepted, changed)
             w.decision(review)
 
+    if assessment is not None:
+        _assessment(w, *assessment)
+
     doc.add_heading("About this brief", level=1)
     w.line(DISCLAIMER)
     out = io.BytesIO()
@@ -244,3 +263,81 @@ def _details(w: _Writer, finding: Finding, accepted: set[str], changed: set[str]
                 w.line(f"{label} (as stated by the AI): {point}", style="List Bullet")
     elif finding.kind == "contradiction":
         w.sources(list(item.get("sources") or []), changed)
+
+
+ASSESSMENT_LABEL = (
+    "Decision support, not a prediction and not legal advice. It rests only on the findings a "
+    "lawyer accepted in this analysis and on the judgment passages behind the accepted "
+    "precedent comparisons. Its uncertainty is a category, never a probability."
+)
+ASSESSMENT_DEMO = (
+    "DEMONSTRATION ONLY: produced from SYNTHETIC test judgments (fictional, not real law) "
+    "and/or by the scripted test provider (not AI). It says nothing about how a real court "
+    "would decide."
+)
+UNCERTAINTY_WORDS = {
+    "insufficient_basis": "Insufficient basis",
+    "mixed_evidence": "Mixed evidence: the cited precedents point in different directions",
+    "limited_support": "Limited support for the position",
+    "evidence_supports_position": "The cited precedents support the position",
+}
+STANCE_WORDS = {
+    "supports": "supports the position",
+    "cuts_against": "cuts against the position",
+    "does_not_resolve": "does not resolve the question",
+}
+
+
+def _assessment(w: _Writer, row: OutcomeAssessment, review: OutcomeAssessmentReview) -> None:
+    result: Mapping[str, Any] = row.result or {}
+    w.doc.add_heading("Outcome assessment (decision support)", level=1)
+    w.line(ASSESSMENT_LABEL, italic=True)
+    if result.get("demoOnly"):
+        w.line(ASSESSMENT_DEMO, italic=True)
+    pipeline = (row.inputs or {}).get("pipeline") or {}
+    w.labelled(
+        "Generated",
+        f"{w.day(row.created_at)} (provider {row.provider}, model {row.model}; prompt "
+        f"{row.prompt_version}, validation {pipeline.get('validatorVersion', 'unknown')}).",
+    )
+    if review.status == "edited":
+        w.labelled("Summary (lawyer's wording)", review.reviewed_text or "")
+    else:
+        w.labelled("Summary", str(result.get("summary", "")))
+    category = str(result.get("uncertainty", ""))
+    w.labelled("Uncertainty", f"{UNCERTAINTY_WORDS.get(category, category)} (a category).")
+
+    w.doc.add_heading("Precedents relied on", level=2)
+    for item in result.get("precedents") or []:
+        meta = ", ".join(
+            str(x) for x in (item.get("court"), item.get("citation"), item.get("year")) if x
+        )
+        stance = STANCE_WORDS.get(str(item.get("stance")), str(item.get("stance")))
+        w.labelled(
+            f"{item.get('ref')}", f"{item.get('title', '')}{f' ({meta})' if meta else ''}: {stance}"
+        )
+        if item.get("synthetic"):
+            w.line(SYNTHETIC_LABEL, italic=True)
+        w.line(f"Quote: “{item.get('quote', '')}”", style="List Bullet")
+        w.line(
+            f"Explanation (as stated in the assessment): {item.get('explanation', '')}",
+            style="List Bullet",
+        )
+
+    w.doc.add_heading("Reasoning", level=2)
+    for step in result.get("reasoning") or []:
+        refs = [*(step.get("findingIds") or []), *(step.get("precedentRefs") or [])]
+        w.line(
+            f"{step.get('id')}: {step.get('text', '')} (rests on {', '.join(refs)})",
+            style="List Number",
+        )
+    for heading, key in (("Missing evidence", "missingEvidence"), ("Limitations", "limitations")):
+        points = result.get(key) or []
+        if points:
+            w.doc.add_heading(heading, level=2)
+            for point in points:
+                w.line(str(point), style="List Bullet")
+    who = w.people.get(review.reviewed_by_id) if review.reviewed_by_id else None
+    verb = "Accepted with the lawyer's wording" if review.status == "edited" else "Accepted"
+    by = f" by {who.name}" if who is not None else ""
+    w.line(f"Assessment {verb.lower()}{by} on {w.day(review.reviewed_at)}.", italic=True)

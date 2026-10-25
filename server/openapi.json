@@ -2308,6 +2308,400 @@
         }
       }
     },
+    "/api/cases/{case_id}/analysis-runs/{run_id}/assessments": {
+      "get": {
+        "tags": [
+          "assessment"
+        ],
+        "summary": "List Assessments",
+        "description": "The run's assessments, newest first, and whether one can be generated now.",
+        "operationId": "list_assessments_api_cases__case_id__analysis_runs__run_id__assessments_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentListOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "assessment"
+        ],
+        "summary": "Generate Assessment",
+        "description": "Assess the run now from its accepted findings and precedents only. With\nno accepted finding or precedent the assessment is stored as\n'insufficient' and no provider is called.",
+        "operationId": "generate_assessment_api_cases__case_id__analysis_runs__run_id__assessments_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/analysis-runs/{run_id}/assessments/{assessment_id}": {
+      "get": {
+        "tags": [
+          "assessment"
+        ],
+        "summary": "Get Assessment",
+        "operationId": "get_assessment_api_cases__case_id__analysis_runs__run_id__assessments__assessment_id__get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Assessment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/analysis-runs/{run_id}/assessments/{assessment_id}/review": {
+      "put": {
+        "tags": [
+          "assessment"
+        ],
+        "summary": "Review Assessment",
+        "description": "Accept, edit (the summary, in the lawyer's wording), reject or clear one\nready assessment. The assessment itself is never changed.",
+        "operationId": "review_assessment_api_cases__case_id__analysis_runs__run_id__assessments__assessment_id__review_put",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Assessment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentReviewIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentReviewOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{case_id}/analysis-runs/{run_id}/assessments/{assessment_id}/review/history": {
+      "get": {
+        "tags": [
+          "assessment"
+        ],
+        "summary": "Assessment Review History",
+        "operationId": "assessment_review_history_api_cases__case_id__analysis_runs__run_id__assessments__assessment_id__review_history_get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Assessment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentReviewHistoryOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/judgments/facets": {
       "get": {
         "tags": [
@@ -5071,6 +5465,11 @@
               }
             ],
             "title": "Activerunid"
+          },
+          "assessmentEnabled": {
+            "type": "boolean",
+            "title": "Assessmentenabled",
+            "description": "The outcome-assessment demo (Phase 7) is switched on for this server. False by default; when false no assessment route, field or control exists."
           }
         },
         "type": "object",
@@ -5088,7 +5487,8 @@
           "documents",
           "judgmentsAvailable",
           "limits",
-          "activeRunId"
+          "activeRunId",
+          "assessmentEnabled"
         ],
         "title": "AnalysisSetupOut",
         "description": "Whether this case can be analysed now, and what would be sent where."
@@ -5149,6 +5549,586 @@
         ],
         "title": "AnalysisSourceOut",
         "description": "A passage of one of the case's documents that supports an item, with the\nverified quote."
+      },
+      "AssessmentListOut": {
+        "properties": {
+          "runId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Runid"
+          },
+          "canGenerate": {
+            "type": "boolean",
+            "title": "Cangenerate"
+          },
+          "cannotGenerateReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cannotgeneratereason"
+          },
+          "canReview": {
+            "type": "boolean",
+            "title": "Canreview",
+            "description": "This user may record decisions on assessments now."
+          },
+          "acceptedFindings": {
+            "type": "integer",
+            "title": "Acceptedfindings",
+            "description": "Accepted facts, issues and contradictions."
+          },
+          "acceptedPrecedents": {
+            "type": "integer",
+            "title": "Acceptedprecedents",
+            "description": "Accepted precedent comparisons."
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AssessmentOut"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Newest first."
+          }
+        },
+        "type": "object",
+        "required": [
+          "runId",
+          "canGenerate",
+          "cannotGenerateReason",
+          "canReview",
+          "acceptedFindings",
+          "acceptedPrecedents",
+          "items"
+        ],
+        "title": "AssessmentListOut"
+      },
+      "AssessmentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "runId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Runid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "insufficient",
+              "failed"
+            ],
+            "title": "Status",
+            "description": "'ready' (validated), 'insufficient' (no basis) or 'failed'."
+          },
+          "reasonCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoncode"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "providerLabel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerlabel"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "promptVersion": {
+            "type": "string",
+            "title": "Promptversion"
+          },
+          "schemaVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schemaversion"
+          },
+          "validatorVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validatorversion"
+          },
+          "requestedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "inputsChanged": {
+            "type": "boolean",
+            "title": "Inputschanged",
+            "description": "An input changed since the assessment: a finding's review or a precedent passage. Generate a new assessment to use the current state."
+          },
+          "excluded": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Excluded",
+            "description": "Findings left out of the inputs, by reason (unreviewed, rejected, …)."
+          },
+          "removed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisRemovedOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssessmentResultOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "review": {
+            "$ref": "#/components/schemas/AssessmentReviewOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "runId",
+          "status",
+          "reasonCode",
+          "reason",
+          "provider",
+          "providerLabel",
+          "model",
+          "promptVersion",
+          "schemaVersion",
+          "validatorVersion",
+          "requestedBy",
+          "createdAt",
+          "inputsChanged",
+          "excluded",
+          "removed",
+          "result",
+          "review"
+        ],
+        "title": "AssessmentOut"
+      },
+      "AssessmentPrecedentOut": {
+        "properties": {
+          "ref": {
+            "type": "string",
+            "title": "Ref",
+            "description": "The accepted precedent comparison's id in the run, e.g. 'P1'."
+          },
+          "judgmentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Judgmentid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "From the collection, never from the model."
+          },
+          "court": {
+            "type": "string",
+            "title": "Court"
+          },
+          "citation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic",
+            "description": "Invented test judgment: fictional, never real law."
+          },
+          "passage": {
+            "$ref": "#/components/schemas/AnalysisPassageRefOut"
+          },
+          "stance": {
+            "type": "string",
+            "enum": [
+              "supports",
+              "cuts_against",
+              "does_not_resolve"
+            ],
+            "title": "Stance"
+          },
+          "quote": {
+            "type": "string",
+            "title": "Quote",
+            "description": "Occurs verbatim in the judgment passage (normalised)."
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ref",
+          "judgmentId",
+          "title",
+          "court",
+          "citation",
+          "year",
+          "synthetic",
+          "passage",
+          "stance",
+          "quote",
+          "explanation"
+        ],
+        "title": "AssessmentPrecedentOut",
+        "description": "A precedent the assessment relies on, with how it bears on the position."
+      },
+      "AssessmentResultOut": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "const": "decision-support",
+            "title": "Label",
+            "description": "Always 'decision-support': not a prediction, not legal advice."
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "uncertainty": {
+            "type": "string",
+            "enum": [
+              "insufficient_basis",
+              "mixed_evidence",
+              "limited_support",
+              "evidence_supports_position"
+            ],
+            "title": "Uncertainty",
+            "description": "A category for the engineering demo; not a validated or statistical measure."
+          },
+          "precedents": {
+            "items": {
+              "$ref": "#/components/schemas/AssessmentPrecedentOut"
+            },
+            "type": "array",
+            "title": "Precedents",
+            "description": "At least one."
+          },
+          "reasoning": {
+            "items": {
+              "$ref": "#/components/schemas/AssessmentStepOut"
+            },
+            "type": "array",
+            "title": "Reasoning",
+            "description": "At least one."
+          },
+          "missingEvidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missingevidence"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          },
+          "allPrecedentsSynthetic": {
+            "type": "boolean",
+            "title": "Allprecedentssynthetic"
+          },
+          "demoOnly": {
+            "type": "boolean",
+            "title": "Demoonly",
+            "description": "True when every cited precedent is synthetic or a scripted provider wrote it."
+          },
+          "removed": {
+            "$ref": "#/components/schemas/AnalysisRemovedOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "summary",
+          "uncertainty",
+          "precedents",
+          "reasoning",
+          "missingEvidence",
+          "limitations",
+          "allPrecedentsSynthetic",
+          "demoOnly",
+          "removed"
+        ],
+        "title": "AssessmentResultOut"
+      },
+      "AssessmentReviewHistoryOut": {
+        "properties": {
+          "assessmentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assessmentid"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisReviewHistoryEntryOut"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Oldest first."
+          }
+        },
+        "type": "object",
+        "required": [
+          "assessmentId",
+          "items"
+        ],
+        "title": "AssessmentReviewHistoryOut"
+      },
+      "AssessmentReviewIn": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "unreviewed",
+              "accepted",
+              "edited",
+              "rejected"
+            ],
+            "title": "Status",
+            "description": "'unreviewed' clears an earlier decision; the history keeps it."
+          },
+          "reviewedText": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewedtext",
+            "description": "The lawyer's wording of the summary; required for 'edited' and only there."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "Optional note or rejection reason, private to reviewers."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Expectedversion"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "expectedVersion"
+        ],
+        "title": "AssessmentReviewIn",
+        "description": "A decision on an assessment. ``expectedVersion`` is the version the\nreviewer saw (0 when unreviewed); a stale one is refused with 409."
+      },
+      "AssessmentReviewOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "unreviewed",
+              "accepted",
+              "edited",
+              "rejected"
+            ],
+            "title": "Status"
+          },
+          "reviewedText": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewedtext",
+            "description": "The lawyer's wording of the summary ('edited')."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "Shown to reviewers only; null for others."
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "description": "0 while the assessment has never been reviewed."
+          },
+          "reviewedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reviewedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "reviewedText",
+          "note",
+          "version",
+          "reviewedBy",
+          "reviewedAt"
+        ],
+        "title": "AssessmentReviewOut"
+      },
+      "AssessmentStepOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "R1, R2, …"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "findingIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Findingids",
+            "description": "Accepted findings of the run this step rests on."
+          },
+          "precedentRefs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Precedentrefs",
+            "description": "Cited precedents this step rests on."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "findingIds",
+          "precedentRefs"
+        ],
+        "title": "AssessmentStepOut"
       },
       "AuditEventOut": {
         "properties": {
