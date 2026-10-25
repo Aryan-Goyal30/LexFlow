@@ -46,3 +46,21 @@ export type AnalysisReviewList = Schemas['AnalysisReviewListOut'];
 export type AnalysisReviewSummary = Schemas['AnalysisReviewSummaryOut'];
 export type AnalysisReviewHistory = Schemas['AnalysisReviewHistoryOut'];
 export type AnalysisReviewHistoryEntry = Schemas['AnalysisReviewHistoryEntryOut'];
+
+/**
+ * Phase 7 (synthetic engineering demo, off by default): an outcome assessment
+ * of a reviewed run. It rests only on findings a lawyer accepted and on the
+ * judgment passages behind accepted precedent comparisons; every reference
+ * and quote was verified by the server. Its uncertainty is a category, never a
+ * number. It appears only when the setup reports `assessmentEnabled`.
+ */
+export type AssessmentList = Schemas['AssessmentListOut'];
+export type Assessment = Schemas['AssessmentOut'];
+export type AssessmentResult = Schemas['AssessmentResultOut'];
+export type AssessmentPrecedent = Schemas['AssessmentPrecedentOut'];
+export type AssessmentStep = Schemas['AssessmentStepOut'];
+export type AssessmentReview = Schemas['AssessmentReviewOut'];
+export type AssessmentReviewInput = Schemas['AssessmentReviewIn'];
+export type AssessmentReviewHistory = Schemas['AssessmentReviewHistoryOut'];
+export type AssessmentUncertainty = AssessmentResult['uncertainty'];
+export type AssessmentStance = AssessmentPrecedent['stance'];

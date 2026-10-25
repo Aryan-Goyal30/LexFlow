@@ -84,6 +84,11 @@ export function useReviewFinding(caseId: string, runId: string) {
       });
       // The matter timeline shows review actions.
       void queryClient.invalidateQueries({ queryKey: queryKeys.case(caseId), exact: true });
+      // Phase 7 demo: what an assessment may use (accepted findings) changed.
+      void queryClient.invalidateQueries({
+        queryKey: [...analysisKeys.run(caseId, runId), 'assessments'],
+        exact: true,
+      });
     },
     onError: (error) => {
       if (error instanceof ApiError && error.status === 409) {

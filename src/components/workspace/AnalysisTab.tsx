@@ -22,6 +22,7 @@ import {
 } from './AiNotices';
 import { PrecedentCard } from './PrecedentCard';
 import { ExportBrief, FindingReview, ReviewProgress } from './FindingReview';
+import { AssessmentPanel } from './OutcomeAssessment';
 import { useFindingReviews } from '../../hooks/useFindingReviews';
 import { errorMessage } from '../../services/api/client';
 
@@ -97,6 +98,7 @@ export function AnalysisTab({ legalCase: c }: { legalCase: Case }) {
             run={run.data}
             loading={run.isPending}
             error={run.isError ? run.error.message : null}
+            assessmentEnabled={setup.data?.assessmentEnabled ?? false}
           />
         )}
       </div>
@@ -255,11 +257,14 @@ function RunView({
   run,
   loading,
   error,
+  assessmentEnabled,
 }: {
   caseId: string;
   run: AnalysisRun | undefined;
   loading: boolean;
   error: string | null;
+  /** Phase 7 demo: only when the server's setup says so (off by default). */
+  assessmentEnabled: boolean;
 }) {
   if (error) {
     return (
@@ -296,7 +301,12 @@ function RunView({
       </p>
     );
   }
-  return <AnalysisResults caseId={caseId} run={run} />;
+  return (
+    <>
+      <AnalysisResults caseId={caseId} run={run} />
+      {assessmentEnabled && <AssessmentPanel caseId={caseId} runId={run.id} />}
+    </>
+  );
 }
 
 function SourceLine({
@@ -332,8 +342,9 @@ function SourceLine({
 /**
  * A validated result. Every fact and contradiction shows its verified quote
  * with a link to the document page; every precedent links to the judgment
- * passage. Removed items are counted with their reasons. No outcome
- * assessment exists in the contract, so none can be shown.
+ * passage. Removed items are counted with their reasons. The outcome
+ * assessment (Phase 7 demo, off by default) is a separate card below, shown
+ * only when the server enables it.
  *
  * Phase 6: every finding carries its lawyer-review state ("Unreviewed" until
  * a lawyer decides); reviewers accept, edit, reject or clear it in place.

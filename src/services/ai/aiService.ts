@@ -1,5 +1,10 @@
 import { apiFetch, apiFetchFile, type DownloadedFile } from '../api/client';
 import type {
+  Assessment,
+  AssessmentList,
+  AssessmentReview,
+  AssessmentReviewHistory,
+  AssessmentReviewInput,
   AnalysisReview,
   AnalysisReviewHistory,
   AnalysisReviewInput,
@@ -45,6 +50,23 @@ export interface AiService {
   reviewHistory(caseId: string, runId: string, findingId: string): Promise<AnalysisReviewHistory>;
   /** The case brief (DOCX) with the accepted findings only, made by the server. */
   exportBrief(caseId: string, runId: string): Promise<DownloadedFile>;
+  /** Phase 7 demo: the run's outcome assessments, newest first (only when enabled). */
+  assessments(caseId: string, runId: string): Promise<AssessmentList>;
+  /** Generate an assessment now from the run's accepted findings and precedents. */
+  generateAssessment(caseId: string, runId: string): Promise<Assessment>;
+  /** Accept, edit (the summary), reject or clear an assessment (with the version seen). */
+  reviewAssessment(
+    caseId: string,
+    runId: string,
+    assessmentId: string,
+    input: AssessmentReviewInput,
+  ): Promise<AssessmentReview>;
+  /** Every recorded change to an assessment's review, oldest first. */
+  assessmentHistory(
+    caseId: string,
+    runId: string,
+    assessmentId: string,
+  ): Promise<AssessmentReviewHistory>;
 }
 
 const id = (value: string) => encodeURIComponent(value);
@@ -76,4 +98,23 @@ export const aiService: AiService = {
     ),
   exportBrief: (caseId, runId) =>
     apiFetchFile(`/cases/${id(caseId)}/analysis-runs/${id(runId)}/brief`),
+  assessments: (caseId, runId) =>
+    apiFetch<AssessmentList>(`/cases/${id(caseId)}/analysis-runs/${id(runId)}/assessments`),
+  generateAssessment: (caseId, runId) =>
+    apiFetch<Assessment>(`/cases/${id(caseId)}/analysis-runs/${id(runId)}/assessments`, {
+      method: 'POST',
+    }),
+  reviewAssessment: (caseId, runId, assessmentId, input) =>
+    apiFetch<AssessmentReview>(
+      `/cases/${id(caseId)}/analysis-runs/${id(runId)}/assessments/${id(assessmentId)}/review`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      },
+    ),
+  assessmentHistory: (caseId, runId, assessmentId) =>
+    apiFetch<AssessmentReviewHistory>(
+      `/cases/${id(caseId)}/analysis-runs/${id(runId)}/assessments/${id(assessmentId)}/review/history`,
+    ),
 };

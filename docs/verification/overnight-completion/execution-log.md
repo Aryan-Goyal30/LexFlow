@@ -118,3 +118,48 @@ Checkpoint: A — Phase 6 verified by mapping and existing fresh evidence; next:
   - `npm run check`: exit 0.
 
 Checkpoint: B3 — Phase 7 backend complete and verified; next: commit B1–B3, then B4 (UI).
+
+## B4 — Phase 7 UI (2026-10-25)
+
+- **Types:** `src/types/ai.ts` gains aliases of the generated assessment
+  schemas.
+- **Service:** `aiService` gains `assessments`, `generateAssessment`,
+  `reviewAssessment` and `assessmentHistory`.
+- **Hooks:** `src/hooks/useAssessments.ts`:
+  - it fetches only when the setup reports `assessmentEnabled`;
+  - nothing is shown before the server stores it;
+  - a 409 reloads the list.
+
+  A finding review now also refreshes the run's assessment list (its
+  accepted counts and "inputs changed").
+- **Component:** `src/components/workspace/OutcomeAssessment.tsx`, a card
+  labelled as a region. It shows:
+  - the decision-support note and the demo banner (synthetic or scripted);
+  - the uncertainty chip, "(a category, not a probability)";
+  - the precedents, with SYNTHETIC badge, stance, verified quote and a
+    judgment-passage link;
+  - the reasoning with its references;
+  - missing evidence and limitations;
+  - removed items;
+  - the insufficient and failed states;
+  - "inputs changed";
+  - the review controls (accept, edit summary, reject, clear) with
+    reviewer-only notes and history;
+  - earlier assessments.
+
+  `AnalysisTab` renders it under a ready run, only when enabled.
+- **Mock:** `src/test/mockAnalysis.ts` mirrors the assessment routes: 404
+  unless enabled, the gate, roles, archive and versioned review.
+- **Tests:** `src/pages/assessment.test.tsx`, 8 tests:
+  - flag off: nothing shown and no request made;
+  - the gate;
+  - a ready assessment, labelled and synthetic;
+  - insufficient and failed;
+  - request error;
+  - review after the server stores it;
+  - stale 409;
+  - paralegal read-only, no notes.
+- **Fresh run:** `npm run check` exit 0: lint, format, typecheck,
+  `api:check`, `sample-data:check`, **19 files and 201 tests**, build OK.
+
+Checkpoint: B4 — Phase 7 UI complete; next: commit B4, then B5 (e2e, offline harness, mutation checks).
