@@ -1,6 +1,7 @@
 # Phase 7 plan: outcome assessment as a synthetic-only engineering demo
 
-Status: **in progress (2026-10-25).**
+Status: **the synthetic-only engineering demonstration is implemented and
+verified (2026-10-25); the real-world Phase 7 gate is BLOCKED.**
 - Authorised by the owner's "overnight master execution" instruction, which
   asks for a clearly labelled, synthetic-data-only engineering demonstration
   of the outcome-assessment workflow.
@@ -184,19 +185,23 @@ tab below a ready run, and only when `assessmentEnabled`. It shows:
 
 ## 3. Acceptance criteria (synthetic engineering demo)
 
-| # | Criterion | Status at plan time |
-|---|---|---|
-| P7-A1 | Flag off by default; off means no assessment exposed | Not implemented |
-| P7-A2 | No assessment without a verified retrieved precedent | Not implemented |
-| P7-A3 | Citations and quotes validated against the run's evidence | Not implemented |
-| P7-A4 | UI and export label decision support and synthetic evidence | Not implemented |
-| P7-A5 | Only accepted findings and retrieved evidence as input; notes and excluded findings never | Not implemented |
-| P7-A6 | Authorization, audit and archive rules tested | Not implemented |
-| P7-A7 | Review keeps the original; accept, edit, reject, clear | Not implemented |
-| P7-A8 | Offline harness covers the adversarial scenarios and records results | Not implemented |
-| P7-A9 | Full backend, frontend and e2e verification recorded | Not implemented |
-| P7-A10 | Plan, ADR, SRS, traceability, log and checkpoint agree | Not implemented |
-| Real-world gate | Approved source, lawyer-labelled sets and thresholds, privacy sign-off, real-model checks | **Blocked by missing external evidence or approval** (not applicable to the demo) |
+All criteria were "not implemented" when this plan was written. Status at
+closure, with the evidence (all in `docs/verification/phase7/` unless
+noted):
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| P7-A1 | Flag off by default; off means no assessment exposed | **Implemented and verified** | `test_off_by_default_every_route_is_not_found_and_setup_says_so`, `test_with_the_flag_off_an_existing_assessment_never_reaches_the_brief`, `test_the_flag_is_refused_outside_a_test_or_e2e_database`; Vitest "shows nothing and asks nothing while the flag is off"; mutations P7-15, P7-20, P7-21, U7-1 |
+| P7-A2 | No assessment without a verified retrieved precedent | **Implemented and verified** | gate tests and `test_no_verified_precedent_means_no_assessment`; harness scenarios; mutations P7-1, P7-8, P7-13, P7-14 |
+| P7-A3 | Citations and quotes validated against the run's evidence | **Implemented and verified** | 51 adversarial tests in `test_assessment_validation.py`; harness; mutations P7-2 to P7-7, P7-9, P7-11 |
+| P7-A4 | UI and export label decision support and synthetic evidence | **Implemented and verified** | `test_only_an_accepted_assessment_reaches_the_brief_in_its_own_labelled_section` (DOCX opened); Vitest; e2e demo journey; mutations P7-10, U7-2 |
+| P7-A5 | Only accepted findings and retrieved evidence as input; notes and excluded findings never | **Implemented and verified** | `test_only_accepted_findings_reach_the_provider_never_notes_or_excluded_ones`, `test_a_changed_judgment_passage_cannot_support_an_assessment`; mutation P7-12 |
+| P7-A6 | Authorization, audit and archive rules tested | **Implemented and verified** | `test_who_may_generate_read_and_review`, `test_notes_are_private_to_reviewers`, `test_an_archived_case_can_be_read_but_not_assessed_or_reviewed`, `test_runs_and_assessments_must_belong_together`, `test_assessments_are_audited_with_codes_and_counts_only`; e2e; mutations P7-18, P7-22 |
+| P7-A7 | Review keeps the original; accept, edit, reject, clear | **Implemented and verified** | `test_review_keeps_the_original_and_follows_the_phase6_rules`, `test_assessment_review_race.py`; Vitest; mutations P7-16, P7-17, P7-19, U7-3 |
+| P7-A8 | Offline harness covers the adversarial scenarios and records results | **Implemented and verified** | `scripts/evaluate_assessment.py`: 24 of 24 as expected (`assessment-eval-2026-10-25.md`); `test_assessment_evaluation.py` |
+| P7-A9 | Full backend, frontend and e2e verification recorded | **Implemented and verified** | `pytest-full.log`, `static-checks.log`, `npm-check.log`, `playwright.log`, `mutation-report.md`, `phase6-mutation-recheck/` |
+| P7-A10 | Plan, ADR, SRS, traceability, log and checkpoint agree | **Implemented** (checked at closure) | this plan, ADR 0021, SRS FR-20/20a, TRACEABILITY, `docs/verification/overnight-completion/` |
+| Real-world gate | Approved source (R4), lawyer-labelled sets and agreed thresholds (R5, R5a), privacy sign-off (R6), real-model checks (R7) | **Blocked by missing external evidence or approval** | `docs/verification/post-phase6/README.md`; not applicable to the synthetic demo |
 
 ## 4. Milestones
 
@@ -218,3 +223,12 @@ tab below a ready run, and only when `assessmentEnabled`. It shows:
 - Assessment entries on the matter timeline (Phase 6 finding reviews stay
   there).
 - Evaluation of legal quality.
+
+## 6. How to resume
+
+The newest record of this work is
+`docs/verification/overnight-completion/checkpoint.json` (its `next_action`)
+and the end of `docs/verification/overnight-completion/execution-log.md`.
+Real-world Phase 7 work starts only after the owner settles R4, R5, R5a, R6 and
+R7. It would then need a worker-based generation path for a real model and a
+fresh evaluation.

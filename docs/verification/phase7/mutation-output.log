@@ -1,4 +1,4 @@
-Phase 7 mutation checks on the working tree of 6c1a6ca, 2026-10-25 08:51 UTC
+Phase 7 mutation checks on the working tree of 0ce62a4, 2026-10-25 09:18 UTC
 
 === P7-1 CAUGHT: a cited precedent must be an accepted comparison of the run
 file: server/lexflow/assessment/validation.py
@@ -11,7 +11,7 @@ FAILED tests/test_assessment_validation.py::test_an_unsupported_reasoning_step_i
 FAILED tests/test_assessment_validation.py::test_forbidden_prose_in_an_item_removes_only_that_item
 FAILED tests/test_assessment_validation.py::test_the_category_must_fit_the_cited_stances[stances0-evidence_supports_position-mixed_evidence-True]
 FAILED tests/test_assessment_validation.py::test_the_scripted_answer_validates_and_its_planted_errors_are_removed
-14 failed, 37 passed in 0.59s
+14 failed, 37 passed in 0.61s
 
 === P7-2 CAUGHT: a quote must occur in the cited judgment passage
 file: server/lexflow/assessment/validation.py
@@ -24,7 +24,7 @@ tests\test_assessment_validation.py:220: AssertionError
 FAILED tests/test_assessment_validation.py::test_an_unverifiable_quote_removes_the_precedent[Prior use always defeats any registration whatsoever-quote-not-found]
 FAILED tests/test_assessment_validation.py::test_an_unverifiable_quote_removes_the_precedent[the later registered proprietor is protected-quote-not-found]
 FAILED tests/test_assessment_validation.py::test_no_verified_precedent_means_no_assessment
-3 failed, 48 passed in 0.49s
+3 failed, 48 passed in 0.56s
 
 === P7-3 CAUGHT: a reasoning step may rest only on accepted findings
 file: server/lexflow/assessment/validation.py
@@ -37,7 +37,7 @@ FAILED tests/test_assessment_validation.py::test_an_unsupported_reasoning_step_i
 FAILED tests/test_assessment_validation.py::test_an_unsupported_reasoning_step_is_removed[step2]
 FAILED tests/test_assessment_validation.py::test_an_unsupported_reasoning_step_is_removed[step4]
 FAILED tests/test_assessment_validation.py::test_the_scripted_answer_validates_and_its_planted_errors_are_removed
-4 failed, 47 passed in 0.50s
+4 failed, 47 passed in 0.51s
 
 === P7-4 CAUGHT: probability and percentage wording is rejected
 file: server/lexflow/assessment/validation.py
@@ -50,7 +50,7 @@ FAILED tests/test_assessment_validation.py::test_a_forbidden_summary_withholds_t
 FAILED tests/test_assessment_validation.py::test_a_forbidden_summary_withholds_the_whole_assessment[In 3 out of 4 comparable matters the user won.-probability-language]
 FAILED tests/test_assessment_validation.py::test_a_forbidden_summary_withholds_the_whole_assessment[The chances of winning the suit look good.-probability-language]
 FAILED tests/test_assessment_validation.py::test_forbidden_prose_in_an_item_removes_only_that_item
-6 failed, 45 passed in 0.51s
+6 failed, 45 passed in 0.53s
 
 === P7-5 CAUGHT: outcome predictions and definitive claims are rejected
 file: server/lexflow/assessment/validation.py
@@ -63,7 +63,7 @@ FAILED tests/test_assessment_validation.py::test_a_forbidden_summary_withholds_t
 FAILED tests/test_assessment_validation.py::test_a_forbidden_summary_withholds_the_whole_assessment[The plaintiff will certainly win.-outcome-wording]
 FAILED tests/test_assessment_validation.py::test_a_forbidden_summary_withholds_the_whole_assessment[The defendant is bound to lose.-outcome-wording]
 FAILED tests/test_assessment_validation.py::test_forbidden_prose_in_an_item_removes_only_that_item
-5 failed, 46 passed in 0.50s
+5 failed, 46 passed in 0.53s
 
 === P7-6 CAUGHT: a synthetic judgment may not be called real law
 file: server/lexflow/assessment/validation.py
@@ -76,7 +76,7 @@ tests\test_assessment_validation.py:277: AssertionError
 =========================== short test summary info ===========================
 FAILED tests/test_assessment_validation.py::test_a_forbidden_summary_withholds_the_whole_assessment[P1 is a real, binding precedent on this point.-synthetic-misrepresented]
 FAILED tests/test_assessment_validation.py::test_a_forbidden_summary_withholds_the_whole_assessment[P1 is not fictional and is good law.-synthetic-misrepresented]
-2 failed, 49 passed in 0.50s
+2 failed, 49 passed in 0.52s
 
 === P7-7 CAUGHT: a forbidden summary withholds the whole assessment
 file: server/lexflow/assessment/validation.py
@@ -89,7 +89,7 @@ FAILED tests/test_assessment_validation.py::test_a_forbidden_summary_withholds_t
 FAILED tests/test_assessment_validation.py::test_a_forbidden_summary_withholds_the_whole_assessment[As held in Sharma v. Verma, prior use prevails.-unverified-citation]
 FAILED tests/test_assessment_validation.py::test_a_forbidden_summary_withholds_the_whole_assessment[P1 is a real, binding precedent on this point.-synthetic-misrepresented]
 FAILED tests/test_assessment_validation.py::test_a_forbidden_summary_withholds_the_whole_assessment[P1 is not fictional and is good law.-synthetic-misrepresented]
-13 failed, 38 passed in 0.55s
+13 failed, 38 passed in 0.56s
 
 === P7-8 CAUGHT: no assessment without a verified precedent
 file: server/lexflow/assessment/validation.py
@@ -102,7 +102,7 @@ E         Use -v to get more diff
 tests\test_assessment_validation.py:220: AssertionError
 =========================== short test summary info ===========================
 FAILED tests/test_assessment_validation.py::test_no_verified_precedent_means_no_assessment
-1 failed, 50 passed in 0.49s
+1 failed, 50 passed in 0.50s
 
 === P7-9 CAUGHT: the uncertainty category must fit the cited stances
 file: server/lexflow/assessment/validation.py
@@ -115,7 +115,7 @@ FAILED tests/test_assessment_validation.py::test_the_category_must_fit_the_cited
 FAILED tests/test_assessment_validation.py::test_the_category_must_fit_the_cited_stances[stances2-mixed_evidence-limited_support-True]
 FAILED tests/test_assessment_validation.py::test_the_category_must_fit_the_cited_stances[stances4-evidence_supports_position-limited_support-True]
 FAILED tests/test_assessment_validation.py::test_precedents_that_resolve_nothing_give_no_assessment
-4 failed, 47 passed in 0.51s
+4 failed, 47 passed in 0.50s
 
 === P7-10 CAUGHT: the synthetic flag comes from the collection, not the answer
 file: server/lexflow/assessment/validation.py
@@ -123,12 +123,12 @@ file: server/lexflow/assessment/validation.py
         assert "0.7" not in dumped and "70%" not in dumped
 >       assert all(p.synthetic for p in verdict.result.precedents)
 E       assert False
-E        +  where False = all(<generator object test_a_score_or_relabelling_field_is_discarded_and_counted.<locals>.<genexpr> at 0x000001B9809C7D00>)
+E        +  where False = all(<generator object test_a_score_or_relabelling_field_is_discarded_and_counted.<locals>.<genexpr> at 0x000001CCB84B7D00>)
 tests\test_assessment_validation.py:147: AssertionError
 =========================== short test summary info ===========================
 FAILED tests/test_assessment_validation.py::test_a_valid_answer_is_ready_with_server_labels
 FAILED tests/test_assessment_validation.py::test_a_score_or_relabelling_field_is_discarded_and_counted
-2 failed, 49 passed in 0.50s
+2 failed, 49 passed in 0.51s
 
 === P7-11 CAUGHT: fields outside the contract (scores, relabelling) are counted
 file: server/lexflow/assessment/output.py
@@ -141,7 +141,7 @@ E         Use -v to get more diff
 tests\test_assessment_validation.py:144: AssertionError
 =========================== short test summary info ===========================
 FAILED tests/test_assessment_validation.py::test_a_score_or_relabelling_field_is_discarded_and_counted
-1 failed, 50 passed in 0.51s
+1 failed, 50 passed in 0.50s
 
 === P7-12 CAUGHT: rejected and unreviewed findings never reach the provider
 file: server/lexflow/assessment/inputs.py
@@ -154,7 +154,7 @@ E         Use -v to get more diff
 tests\test_assessments_api.py:291: AssertionError
 =========================== short test summary info ===========================
 FAILED tests/test_assessments_api.py::test_only_accepted_findings_reach_the_provider_never_notes_or_excluded_ones
-1 failed, 21 passed in 12.97s
+1 failed, 21 passed in 13.35s
 
 === P7-13 CAUGHT: a changed judgment passage cannot support an assessment
 file: server/lexflow/assessment/inputs.py
@@ -167,7 +167,7 @@ E         Use -v to get more diff
 tests\test_assessments_api.py:316: AssertionError
 =========================== short test summary info ===========================
 FAILED tests/test_assessments_api.py::test_a_changed_judgment_passage_cannot_support_an_assessment
-1 failed, 21 passed in 13.31s
+1 failed, 21 passed in 13.18s
 
 === P7-14 CAUGHT: no accepted finding: no provider call
 file: server/lexflow/assessment/inputs.py
@@ -180,7 +180,7 @@ E         Use -v to get more diff
 tests\test_assessments_api.py:228: AssertionError
 =========================== short test summary info ===========================
 FAILED tests/test_assessments_api.py::test_without_accepted_findings_or_precedents_there_is_no_basis
-1 failed, 21 passed in 13.01s
+1 failed, 21 passed in 13.34s
 
 === P7-15 CAUGHT: with the flag off every route answers 404
 file: server/lexflow/api/assessments.py
@@ -188,12 +188,12 @@ file: server/lexflow/api/assessments.py
 E       AssertionError: assert 200 == 404
 E        +  where 200 = <Response [200 OK]>.status_code
 E        +    where <Response [200 OK]> = get('/api/cases/<uuid>/analysis-runs/<uuid>/assessments/<uuid>')
-E        +      where get = <starlette.testclient.TestClient object at 0x000001DEFA969B50>.get
+E        +      where get = <starlette.testclient.TestClient object at 0x000001F29B9393A0>.get
 tests\test_assessments_api.py:180: AssertionError
 =========================== short test summary info ===========================
 FAILED tests/test_assessments_api.py::test_off_by_default_every_route_is_not_found_and_setup_says_so
 FAILED tests/test_assessments_api.py::test_with_the_flag_off_an_existing_assessment_never_reaches_the_brief
-2 failed, 20 passed in 13.13s
+2 failed, 20 passed in 13.16s
 
 === P7-16 CAUGHT: only a ready assessment can be reviewed
 file: server/lexflow/api/assessments.py
@@ -206,7 +206,7 @@ tests\test_assessments_api.py:552: KeyError
 =========================== short test summary info ===========================
 FAILED tests/test_assessments_api.py::test_a_provider_failure_is_stored_safely_and_a_new_attempt_recovers
 FAILED tests/test_assessments_api.py::test_an_insufficient_assessment_cannot_be_accepted
-2 failed, 20 passed in 12.96s
+2 failed, 20 passed in 12.99s
 
 === P7-17 CAUGHT: a stale review version is refused
 file: server/lexflow/assessment/service.py
@@ -219,7 +219,7 @@ E       KeyError: 'code'
 tests\test_assessments_api.py:517: KeyError
 =========================== short test summary info ===========================
 FAILED tests/test_assessments_api.py::test_review_keeps_the_original_and_follows_the_phase6_rules
-1 failed, 21 passed in 12.84s
+1 failed, 21 passed in 13.13s
 
 === P7-18 CAUGHT: reviewers' notes are hidden from paralegals
 file: server/lexflow/api/assessments.py
@@ -232,7 +232,7 @@ E           rejected and 'SYNTHETIC-PRIVATE-NOTE' is None)
 tests\test_assessments_api.py:455: AssertionError
 =========================== short test summary info ===========================
 FAILED tests/test_assessments_api.py::test_notes_are_private_to_reviewers - A...
-1 failed, 21 passed in 13.03s
+1 failed, 21 passed in 13.01s
 
 === P7-19 CAUGHT: only an accepted assessment reaches the brief
 file: server/lexflow/assessment/service.py
@@ -245,7 +245,7 @@ E         ...Full output truncated (22 lines hidden), use '-vv' to show
 tests\test_assessments_api.py:603: AssertionError
 =========================== short test summary info ===========================
 FAILED tests/test_assessments_api.py::test_only_an_accepted_assessment_reaches_the_brief_in_its_own_labelled_section
-1 failed, 21 passed in 13.05s
+1 failed, 21 passed in 13.27s
 
 === P7-20 CAUGHT: with the flag off the brief has no assessment
 file: server/lexflow/api/reviews.py
@@ -258,7 +258,7 @@ E         ...Full output truncated (22 lines hidden), use '-vv' to show
 tests\test_assessments_api.py:179: AssertionError
 =========================== short test summary info ===========================
 FAILED tests/test_assessments_api.py::test_with_the_flag_off_an_existing_assessment_never_reaches_the_brief
-1 failed, 21 passed in 13.00s
+1 failed, 21 passed in 13.06s
 
 === P7-21 CAUGHT: the flag is refused outside a test or e2e database
 file: server/lexflow/config.py
@@ -271,7 +271,7 @@ E       Failed: DID NOT RAISE ValueError
 tests\test_assessments_api.py:184: Failed
 =========================== short test summary info ===========================
 FAILED tests/test_assessments_api.py::test_the_flag_is_refused_outside_a_test_or_e2e_database
-1 failed, 21 passed in 13.13s
+1 failed, 21 passed in 13.29s
 
 === P7-22 CAUGHT: only advocates on the case and administrators generate
 file: server/lexflow/authz.py
@@ -279,12 +279,12 @@ file: server/lexflow/authz.py
 E       AssertionError: assert 201 == 403
 E        +  where 201 = <Response [201 Created]>.status_code
 E        +    where <Response [201 Created]> = post('/api/cases/<uuid>/analysis-runs/<uuid>/assessments')
-E        +      where post = <starlette.testclient.TestClient object at 0x000001D74E10E3F0>.post
-E        +      and   '/api/cases/<uuid>/analysis-runs/<uuid>/assessments' = url(<lexflow.models.AnalysisRun object at 0x000001D74FEF6750>)
+E        +      where post = <starlette.testclient.TestClient object at 0x000001A15061A9C0>.post
+E        +      and   '/api/cases/<uuid>/analysis-runs/<uuid>/assessments' = url(<lexflow.models.AnalysisRun object at 0x000001A1507E8140>)
 tests\test_assessments_api.py:440: AssertionError
 =========================== short test summary info ===========================
 FAILED tests/test_assessments_api.py::test_who_may_generate_read_and_review
-1 failed, 21 passed in 13.01s
+1 failed, 21 passed in 12.92s
 
 === U7-1 CAUGHT: the card appears only when the server enables the feature
 file: src/components/workspace/AnalysisTab.tsx
@@ -316,11 +316,11 @@ file: src/components/workspace/OutcomeAssessment.tsx
 file: src/components/workspace/OutcomeAssessment.tsx
  ❯ node_modules/@testing-library/dom/dist/query-helpers.js:55:13
  ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
- ❯ src/pages/assessment.test.tsx:333:21
-    331|     expect(within(panel).getByText(/Only the case's advocates and admi…
-    332|     expect(
-    333|       within(panel).queryByRole('button', { name: /Accept assessment|E…
+ ❯ src/pages/assessment.test.tsx:334:21
+    332|     expect(within(panel).getByText(/Only the case's advocates and admi…
+    333|     expect(
+    334|       within(panel).queryByRole('button', { name: /Accept assessment|E…
        |                     ^
-    334|     ).toBeNull();
-    335|     expect(within(panel).queryByText('SYNTHETIC reason')).toBeNull();
+    335|     ).toBeNull();
+    336|     expect(within(panel).queryByText('SYNTHETIC reason')).toBeNull();
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯

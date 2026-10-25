@@ -316,7 +316,8 @@ def _assessment(w: _Writer, row: OutcomeAssessment, review: OutcomeAssessmentRev
         w.labelled(
             f"{item.get('ref')}", f"{item.get('title', '')}{f' ({meta})' if meta else ''}: {stance}"
         )
-        if item.get("synthetic"):
+        synthetic = bool(item.get("synthetic"))  # set by the server from the collection
+        if synthetic:
             w.line(SYNTHETIC_LABEL, italic=True)
         w.line(f"Quote: “{item.get('quote', '')}”", style="List Bullet")
         w.line(

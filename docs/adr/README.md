@@ -27,6 +27,7 @@ building them.
 | [0018](0018-judgment-collection-and-search.md) | Judgment collection: operator imports with provenance, synthetic data fenced off, staff-wide search | Accepted |
 | [0019](0019-ai-case-analysis.md) | AI case analysis: Gemini behind the server, evidence ids, validation before display | Accepted (amended M9, M10) |
 | [0020](0020-lawyer-review-and-case-brief.md) | Lawyer review beside the AI result, review actions kept out of model input, DOCX brief of accepted findings | Accepted |
+| [0021](0021-outcome-assessment-demo.md) | Outcome assessment as a synthetic-only engineering demo: off by default, scripted provider only, strict validation, separate review | Accepted (demo); real-world use blocked |
 
 Format: Context, Decision, Consequences. Superseding a decision means adding a
 new record and marking the old one "Superseded by NNNN", not editing history.

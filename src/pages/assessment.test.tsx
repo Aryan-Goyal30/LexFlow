@@ -268,6 +268,7 @@ describe('The outcome assessment (Phase 7 demo)', () => {
     await user.click(within(lawyer).getByRole('button', { name: 'Accept assessment' }));
     expect(await within(lawyer).findByText('Accepted')).toBeVisible();
     expect(within(lawyer).getByText(/by Aryan Goyal/)).toBeVisible();
+    expect(within(lawyer).getByText(/The case brief includes it in its own section/)).toBeVisible();
 
     await user.click(within(lawyer).getByRole('button', { name: 'Edit summary' }));
     const box = within(lawyer).getByLabelText('Lawyer’s wording of the summary');

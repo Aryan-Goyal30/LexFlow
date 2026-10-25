@@ -431,6 +431,11 @@ function AssessmentReviewControls({
             Not yet reviewed: this is not a lawyer&apos;s view and is not in the case brief.
           </span>
         )}
+        {(review.status === 'accepted' || review.status === 'edited') && (
+          <span className="text-xs text-brand-500">
+            The case brief includes it in its own section, labelled as decision support.
+          </span>
+        )}
       </div>
       {review.status === 'edited' && review.reviewedText && (
         <p className="mt-1.5 text-brand-900">

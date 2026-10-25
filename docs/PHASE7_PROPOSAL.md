@@ -1,7 +1,10 @@
 # Phase 7 proposal — Outcome assessment (DRAFT, not approved)
 
 Status: **proposal for the owner's review (2026-10-25). Nothing here is
-implemented or approved.**
+approved.** *Note added later the same day:* the owner asked for the
+workflow to be built as a **synthetic-only engineering demonstration**
+(`docs/PHASE7_PLAN.md`, ADR 0021). The real-world gate below is unchanged and
+still blocked.
 - Phase 7 must not start until the decisions in §10 are made and the gate
   in §3 is met.
 - Prepared after the post-Phase-6 review (`docs/verification/post-phase6/`).

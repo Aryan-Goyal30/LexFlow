@@ -1,6 +1,7 @@
 # LexFlow — Architecture and UML
 
-As built through Phase 5 (2026-10-20). Requirements: `docs/SRS.md`. Decisions
+As built through Phase 6, plus the Phase 7 outcome-assessment engineering
+demonstration (synthetic data only, off by default), 2026-10-25. Requirements: `docs/SRS.md`. Decisions
 and their reasons: `docs/adr/`. Diagrams are Mermaid (they render on GitHub
 and in most Markdown viewers).
 
@@ -18,6 +19,10 @@ and in most Markdown viewers).
 - **AI provider (optional, Phase 5):** Google's Gemini API through the
   official `google-genai` SDK, called only by the worker; key in
   `server/.env`; off by default.
+- **Outcome assessment (Phase 7 demo, off by default):** generated in the
+  API request by a scripted (non-AI) provider from a reviewed run's
+  lawyer-accepted findings and precedent passages; allowed only with a test
+  or e2e database (`LEXFLOW_OUTCOME_ASSESSMENT`). There is no real-model path.
 - **Database:** PostgreSQL 17 with pgvector (`pgvector/pgvector:pg17-trixie`),
   also used as the job queue (`FOR UPDATE SKIP LOCKED`, leases).
 - **Storage:** uploaded files on local disk behind a `Storage` interface.
@@ -50,9 +55,10 @@ flowchart LR
     uc12[Start an AI case analysis]
     uc13[Read AI analysis results]
     uc14[Review AI findings and export a case brief]
+    uc15[Generate and review an outcome assessment - demo, off by default]
   end
-  admin --> uc1 & uc2 & uc3 & uc4 & uc5 & uc6 & uc7 & uc12 & uc13 & uc14
-  adv --> uc2 & uc3 & uc4 & uc5 & uc6 & uc7 & uc12 & uc13 & uc14
+  admin --> uc1 & uc2 & uc3 & uc4 & uc5 & uc6 & uc7 & uc12 & uc13 & uc14 & uc15
+  adv --> uc2 & uc3 & uc4 & uc5 & uc6 & uc7 & uc12 & uc13 & uc14 & uc15
   para --> uc3 & uc4 & uc5 & uc6 & uc7 & uc13
   client --> uc8
   op --> uc9 & uc10 & uc11
@@ -60,8 +66,10 @@ flowchart LR
 
 Reviewing AI findings (accept, reject, edit; Phase 6) is for the Administrator
 and the case's advocates; paralegals read the decisions (uc13) and may export
-the brief of accepted findings. Outcome assessment (Phase 7) is a later, gated
-phase and is not shown.
+the brief of accepted findings. Outcome assessment (uc15, Phase 7) exists only as
+a synthetic-data engineering demonstration, off by default; paralegals read it
+without notes, clients never reach it. Its real-world use stays blocked
+(section 9).
 
 ## 3. Deployment
 
@@ -122,6 +130,11 @@ classDiagram
   class JudgmentChunk { number; char offsets; text; search_vector }
   class JudgmentChunkEmbedding { model; embedding vector(384) }
   class AnalysisRun { status; provider; model; prompt_version; selection; evidence; result; removed; usage }
+  class AnalysisFindingReview { finding_kind; finding_id; status; reviewed_text?; note?; version }
+  class AnalysisFindingReviewEvent { status; reviewed_text?; note?; version; occurred_at }
+  class OutcomeAssessment { status; reason_code?; provider; model; prompt_version; inputs; result?; removed? }
+  class OutcomeAssessmentReview { status; reviewed_text?; note?; version }
+  class OutcomeAssessmentReviewEvent { status; reviewed_text?; note?; version; occurred_at }
 
   Client "1" --> "*" Case
   User "1" --> "*" Case : leads
@@ -142,6 +155,11 @@ classDiagram
   JudgmentChunk "1" --> "*" JudgmentChunkEmbedding
   Case "1" --> "*" AnalysisRun
   User "0..1" <-- "*" AnalysisRun : requested by
+  AnalysisRun "1" --> "*" AnalysisFindingReview
+  AnalysisFindingReview "1" --> "*" AnalysisFindingReviewEvent : append-only
+  AnalysisRun "1" --> "*" OutcomeAssessment : demo, immutable
+  OutcomeAssessment "1" --> "0..1" OutcomeAssessmentReview
+  OutcomeAssessmentReview "1" --> "*" OutcomeAssessmentReviewEvent : append-only
 ```
 
 Case documents and judgments are separate collections: no query joins them,
@@ -249,3 +267,41 @@ an unreadable answer is asked for once more, then the run fails. Decision:
   commands that preview first.
 - **Database changes are rehearsed** on a restored copy before reaching the
   development database (see the execution logs).
+- **Off means absent**: with `LEXFLOW_OUTCOME_ASSESSMENT` false (the default)
+  the assessment routes answer 404 like unknown routes, the setup reports
+  `assessmentEnabled: false`, the brief has no assessment section and the UI
+  renders nothing.
+
+## 9. Outcome assessment (Phase 7: synthetic engineering demo)
+
+```mermaid
+sequenceDiagram
+  actor Lawyer
+  participant UI as AI Analysis tab
+  participant API as FastAPI
+  participant DB as PostgreSQL
+  participant S as Scripted assessment provider (not AI)
+  Lawyer->>UI: accept findings and a precedent comparison (Phase 6)
+  Lawyer->>UI: Generate assessment
+  UI->>API: POST /api/cases/{id}/analysis-runs/{runId}/assessments
+  API->>API: flag on (else 404), run-assessment on the case,<br/>ready run of this case, sample case, hourly limit
+  API->>DB: accepted findings only; precedent passages re-checked by hash
+  alt no accepted finding or precedent
+    API->>DB: outcome_assessments row 'insufficient' (no provider call)
+  else
+    API->>S: accepted findings + passages (never notes, rejected or unreviewed findings)
+    S-->>API: JSON answer (untrusted)
+    API->>API: assessment-grounding-1: precedents, quotes, reasoning refs,<br/>no probabilities or predictions, synthetic never 'real', category fits stances
+    API->>DB: 'ready' (validated) or 'insufficient' or 'failed' + audit (codes and counts)
+  end
+  API-->>UI: 201 assessment (decision support; demo banner; category, never a number)
+  Lawyer->>UI: accept / edit summary / reject / clear (versioned, 409 when stale)
+  Lawyer->>UI: Export case brief (accepted assessment in its own labelled section)
+```
+
+Generation runs in the request because the only provider is local and
+instant; a real model would need the worker's queue first and is not
+approved (register R7). Decision: `docs/adr/0021-outcome-assessment-demo.md`;
+plan and acceptance criteria: `docs/PHASE7_PLAN.md`. The real-world Phase 7
+gate (approved judgment source, lawyer-labelled evaluation and thresholds,
+privacy sign-off) is **blocked**.

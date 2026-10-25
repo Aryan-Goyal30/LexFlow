@@ -1,6 +1,6 @@
 # Phase 7 mutation checks (outcome assessment demo)
 
-Working tree on commit `6c1a6ca`; run 2026-10-25 08:51 UTC; script `docs/verification/phase7/run_mutation_checks.py` (raw output: `mutation-output.log`).
+Working tree on commit `0ce62a4`; run 2026-10-25 09:18 UTC; script `docs/verification/phase7/run_mutation_checks.py` (raw output: `mutation-output.log`).
 
 Each row removes or weakens one guard, runs the listed tests and restores the file byte for byte (checked after every row; every target's SHA-256 is unchanged at the end). **Caught** = the tests failed with the guard removed.
 
@@ -45,4 +45,4 @@ Each row removes or weakens one guard, runs the listed tests and restores the fi
 - `server/lexflow/authz.py` `602e4304211cfe768327ee6d9caf8a8cb47026b50a10a9645efb05cb6fdc8447`
 - `server/lexflow/config.py` `d5751d36edeb91d5c2e6c64065d8f5de077981eba0198b8080e822d704ceaed7`
 - `src/components/workspace/AnalysisTab.tsx` `ed6cffa120ecc515cf128699552985a2af005c3b20ee648f6c630f1d765461fa`
-- `src/components/workspace/OutcomeAssessment.tsx` `595cacef6b5ecb74c63112689dbb17d14ac46d8adae3e529c085993fdccf780e`
+- `src/components/workspace/OutcomeAssessment.tsx` `42773d6347fee0a11da15931509a00944a700efa7264cb750dc3c79639d8c185`

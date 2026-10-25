@@ -2,7 +2,7 @@
   "task": "overnight completion: Phase 6 verification, synthetic-only Phase 7 demo, integration, verification, docs",
   "updated": "2026-10-25",
   "start_head": "707b002",
-  "head": "707b002",
+  "head": "0ce62a4",
   "brief_sha256": "274ecaed93400f51dd47c42337fbd6e101aa6be366b80d977d1522359b34c2ec",
   "preexisting_uncommitted_untouched": [
     "CLAUDE.md",
@@ -15,24 +15,43 @@
   "live_db_revision": "0012 (read-only check)",
   "milestones": {
     "O0 preflight": "complete",
-    "A Phase 6 verification": "complete (mapping + existing fresh evidence; no defect)",
-    "B Phase 7 synthetic demo": "in progress: B1-B3 backend complete",
-    "C integration": "pending",
-    "D verification": "pending",
-    "E documentation": "pending"
+    "A Phase 6 verification": "complete (verified; no defect)",
+    "B Phase 7 synthetic demo": "complete (B1-B5)",
+    "C integration": "complete (journeys mapped to observed automated tests; 1 UX fix; no manual browser session)",
+    "D verification": "complete (all green on the final tree)",
+    "E documentation": "complete"
   },
-  "commits": [],
+  "commits": [
+    {
+      "f617732": "Phase 7 M1: backend"
+    },
+    {
+      "6c1a6ca": "Phase 7 M2: UI"
+    },
+    {
+      "0ce62a4": "Phase 7 M3: e2e, harness, mutation"
+    },
+    {
+      "(next)": "Phase 7 M4: verification and documentation"
+    }
+  ],
   "acceptance": {
-    "phase6": "verified (no defect found; full suites rerun at milestone D)",
-    "phase7_demo": "backend implemented; P7-A1/A2/A3/A5/A6/A7 covered by backend tests; UI, e2e, harness, docs pending",
-    "phase7_real_world_gate": "BLOCKED (R4, R5, R5a, R6)"
+    "phase6": "verified",
+    "phase7_demo": "P7-A1..P7-A10 implemented and verified (synthetic engineering demo)",
+    "phase7_real_world_gate": "BLOCKED (R4 source, R5/R5a evaluation and thresholds, R6 privacy, R7 real model)"
   },
   "last_tests": {
-    "pytest": "1104 passed, exit 0",
-    "npm run check": "exit 0",
-    "static": "ruff/format/mypy/mypy-linux/openapi all clean",
-    "race (assessment review)": "5/5"
+    "pytest": "1106 passed, exit 0",
+    "static": "ruff, format, mypy, mypy linux, openapi, alembic check (lexflow_test): exit 0",
+    "npm run check": "19 files, 201 tests, build OK, exit 0",
+    "playwright": "43 passed, exit 0",
+    "assessment harness": "24/24 as expected",
+    "phase7 mutation": "25/25 caught",
+    "phase6 mutation recheck": "19/19 caught"
   },
-  "blockers": [],
-  "next_action": "Commit B1-B3 (backend) excluding the 6 pre-existing uncommitted files; then B4 UI."
+  "blockers": [
+    "external: R4, R5, R5a, R6, R7 (owner decisions)"
+  ],
+  "next_action": "Owner: review the Phase 7 demo (docs/DEMO_GUIDE.md) and decide the 6 pre-existing uncommitted audit-correction files; after committing them, update CLAUDE.md handoff to name this checkpoint. Real-world Phase 7 stays blocked on R4/R5/R5a/R6/R7.",
+  "live_db": "lexflow: read-only revision check only (0012); not migrated, not written, not used by tests"
 }

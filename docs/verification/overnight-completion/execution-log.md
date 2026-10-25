@@ -204,3 +204,76 @@ Checkpoint: B4 — Phase 7 UI complete; next: commit B4, then B5 (e2e, offline h
 Checkpoint: B5 — e2e, harness and mutation checks complete; next: commit B5, then D (full verification) and E (documentation).
 
 - *Note:* the trailing spaces of captured pytest `E` lines and a blank last line were removed from `mutation-output.log` (whitespace only). The runner now strips line ends itself.
+
+## C — Integration (2026-10-25)
+
+Each user journey of the instruction was mapped to an automated test that ran
+in this session. No manual browser session was run.
+
+| # | Journey | Covered by |
+|---|---|---|
+| 1 | Sign in | `e2e/auth.spec.ts` |
+| 2 | View and search cases | `e2e/cases.spec.ts`; `CasesPage.test.tsx` |
+| 3 | Open a case and its tabs | `e2e/case-changes.spec.ts` |
+| 4 | Create and edit a case | `e2e/cases.spec.ts`, `e2e/case-changes.spec.ts` |
+| 5 | Upload | `e2e/cases.spec.ts` |
+| 6 | Extraction and text | `e2e/document-text.spec.ts` |
+| 7 | Case document search | `test_search.py`; there is no screen (README limitation) |
+| 8 | Precedent library | `e2e/research.spec.ts` |
+| 9–10 | Analysis and provenance | `e2e/analysis.spec.ts` |
+| 11–13 | Review, history and timeline, brief | `e2e/analysis.spec.ts`, `review.test.tsx` |
+| 14–16 | Demo flag, assessment, review and export | `e2e/analysis.spec.ts` (Phase 7 journey) |
+| 17 | Refusals | `e2e/roles.spec.ts`, `portal.spec.ts`, `analysis.spec.ts` |
+| 18 | Sign-out clears cached data | `router.test.tsx` "forgets cached data"; `auth.spec.ts` |
+| 19 | Empty, error and archived states | `research.spec.ts`, `case-changes.spec.ts`, Vitest |
+
+- **Fix:** the accepted state of an assessment now says that the case brief
+  includes it, in its own decision-support section. Asserted in
+  `assessment.test.tsx`.
+- **Kept Phase 6 records valid:** a Phase 6 mutation snippet (P6-13) had
+  become ambiguous because the new brief section reused its lines. The new
+  code was changed, not the historical runner.
+
+## D — Final verification on the final tree (2026-10-25)
+
+- `pytest`: **1106 passed**, exit 0.
+- Static checks, OpenAPI drift and `alembic check` on `lexflow_test`: all
+  exit 0.
+- `npm run check`: **201 tests**, build OK, exit 0.
+- `npx playwright test`: **43 passed**, exit 0.
+- Assessment harness: **24 of 24** as expected.
+- Phase 7 mutation checks: **25 of 25** caught.
+- Phase 6 mutation recheck: **19 of 19** caught.
+- Logs are in `docs/verification/phase7/`; a secrets scan of them found
+  nothing. The recheck log's line-end whitespace was removed (whitespace
+  only).
+
+## E — Documentation (2026-10-25)
+
+- **New:**
+  - `docs/adr/0021-outcome-assessment-demo.md` (indexed in
+    `docs/adr/README.md`);
+  - `docs/DEMO_GUIDE.md`;
+  - `docs/verification/phase7/README.md`.
+- **Updated:**
+  - `docs/SRS.md`: FR-20 marked synthetic demo done, real use blocked; new
+    FR-20a; constraints; out of scope;
+  - `docs/TRACEABILITY.md`: FR-20 and FR-20a;
+  - `docs/ARCHITECTURE.md`: overview; use case uc15; the data model,
+    including the Phase 6 review tables that were missing; the off-means-
+    absent rule; a sequence for §9;
+  - `docs/PHASE7_PLAN.md`: closure status and evidence per criterion; how
+    to resume;
+  - `docs/PHASE7_PROPOSAL.md`: a dated note only; still a proposal;
+  - `README.md`: the header, intro, AI section, architecture sketch, API
+    table, structure, limitations and status sections were stale (some
+    still described Phase 2: "AI not connected"); they are now corrected to
+    the implemented system.
+- **Not changed:**
+  - `CLAUDE.md` holds the owner's uncommitted, reviewed audit corrections
+    (see O0) and was left untouched. Its handoff therefore still points to
+    the post-Phase-6 checkpoint; this overnight checkpoint is the newest
+    record (see the final report).
+  - The Phase 5 and 6 records are unchanged.
+
+Checkpoint: E — overnight completion done (docs/verification/overnight-completion/checkpoint.json); next: owner review; real-world Phase 7 blocked on R4, R5, R5a, R6, R7.

@@ -1,23 +1,30 @@
 # LexFlow — Legal Case Workspace & Research Assistant
 
-**v0.4 — Phases 2 and 2b (accounts, roles, case work, client portal) implemented
-locally, awaiting review**
+**Status (2026-10-25):** Phases 1–6 implemented and verified locally (accounts,
+roles, cases, documents and text, judgment research, AI case analysis, lawyer
+review and a DOCX case brief). **Phase 7 (outcome assessment) is implemented only
+as a synthetic-data engineering demonstration, off by default;** its real-world
+use is blocked (see [Limitations](#limitations)). For a guided tour, see
+[`docs/DEMO_GUIDE.md`](docs/DEMO_GUIDE.md).
 
 LexFlow helps a law firm work its active cases. Each case has its own
 **workspace** where the team manages the case record, its hearings and the case
-papers. Clients follow their own matters in a separate **client portal**. AI
-analysis and precedent research are designed into the workspace but are **not
-connected to any AI service**.
+papers. Clients follow their own matters in a separate **client portal**.
+Precedent research searches the firm's judgment collection, and an optional AI
+case analysis (Google Gemini, configured by the owner; off by default) proposes
+facts, issues, precedent comparisons and contradictions, each checked against
+its source before it is shown. A lawyer then reviews every finding.
 
 The intended workflow:
 
 **create or open a case → manage case information → upload documents →
 analyse the case → research precedents → review the analysis**
 
-The first three steps work today and are **saved** in PostgreSQL (files on the
-local disk) behind a FastAPI server, with real sign-in and role-based access.
-The last three need an AI service and a collection of past judgments, which are
-later phases.
+All steps work and are **saved** in PostgreSQL (files on the local disk) behind
+a FastAPI server, with real sign-in and role-based access. Two inputs are
+external and not provided: **no real judgment source is approved** (only
+labelled SYNTHETIC judgments exist), and analysing **real client material**
+needs a privacy review first (only sample cases may be analysed).
 
 The sample data is set in an **Indian legal context** (Supreme Court of India,
 High Courts, District & Sessions Courts; "Advocate" terminology). All people,
@@ -126,18 +133,41 @@ clients never reach the staff app.
   that records their source and its terms of use
   (`python -m lexflow.cli.judgments import`, preview first;
   `server/README.md`). LexFlow never downloads judgments. **No source has
-  been approved yet, so the live collection is empty** and the screens say
-  so. Invented test judgments exist only in test databases and are labelled
-  "Synthetic test data" wherever they appear.
+  been approved yet**: the development collection holds only three judgments
+  labelled "SYNTHETIC DEMO — NOT REAL CASE LAW", imported for a
+  demonstration. The other invented test judgments exist only in test
+  databases. Every synthetic judgment is labelled wherever it appears.
 - Results are ranked passages of stored judgments, not legal conclusions.
 
-### Not connected
+### AI analysis, lawyer review and outcome assessment (Phases 5–7)
 
-- **AI Analysis.** The `AiService` interface in
-  `src/services/ai/aiService.ts` is the integration point, but its only
-  implementation reports "not connected". The app never shows generated, sample
-  or simulated analysis. LexFlow's AI is meant as **decision support**; it does
-  not replace a lawyer's judgment or a court's decision.
+- **AI case analysis** (AI Analysis tab; Phase 5): the Administrator and the
+  case's advocates choose documents, confirm what is sent, and start a run. A
+  separate worker sends the selected text to the configured provider (Google
+  Gemini through the server; off by default, key only in `server/.env`) and
+  keeps **only items it can verify**: each fact quotes its document passage
+  verbatim with the page; precedent comparisons cite retrieved judgments only;
+  invented citations and outcome predictions are removed and counted. Only
+  sample (fictional) cases may be analysed until a privacy review allows client
+  material. Automated tests and the e2e app use a **scripted test provider**,
+  labelled "not AI".
+- **Lawyer review and case brief** (Phase 6): every finding starts
+  **Unreviewed**; the case's advocates accept, edit (keeping the AI's wording
+  visible), reject or clear it, with optional private notes and a full
+  history. A **DOCX case brief** contains only accepted findings with their
+  citations, and says how many were left out.
+- **Outcome assessment** (Phase 7, **synthetic-only demo, off by default**):
+  when enabled on a test or e2e database, an assessment of a reviewed run uses
+  only the findings and precedent comparisons a lawyer accepted. It lists the
+  precedents it relies on with verified quotes and a stance, gives reasoning
+  steps that each rest on accepted findings or cited precedents, an
+  **uncertainty category (never a number or probability)**, missing evidence
+  and limitations. It is produced by a scripted provider (not AI), validated
+  strictly, labelled as decision support and as a demonstration on synthetic
+  data, and becomes part of the brief only after a lawyer accepts it. See
+  [`docs/DEMO_GUIDE.md`](docs/DEMO_GUIDE.md).
+- LexFlow's AI is **decision support**; it does not replace a lawyer's
+  judgment or a court's decision.
 - The top-bar search and notifications are placeholders; "Notifications" in
   the sidebar is marked "Soon".
 
@@ -299,15 +329,17 @@ same commands have been run locally.
 ```
  Browser ── staff app (/app) and client portal (/portal)
                 │                                   │
-      hooks (TanStack Query)                 useAiAssistant(case)
+      hooks (TanStack Query)        useCaseAnalysis / useFindingReviews / useAssessments
                 │                                   │
-      typed API client (src/services/api)    AI service seam → "not connected"
+      typed API client (src/services/api)    AI service seam → the LexFlow server only
                 │  fetch /api/... (session cookie, X-LexFlow-Request header)
  Vite dev server ── proxy /api ──► FastAPI on 127.0.0.1:8000 (server/lexflow)
                                       │                    │
                               PostgreSQL 17           local disk storage
                            (SQLAlchemy, Alembic)   (server/var/uploads, behind
-                                                     a Storage interface)
+                                    │                a Storage interface)
+                         worker (python -m lexflow.worker): text extraction,
+                         optional embeddings, queued AI analyses → Gemini (if set)
 ```
 
 - **Access control is on the server.** A session gate refuses anonymous
@@ -342,6 +374,9 @@ same commands have been run locally.
 | `GET /api/cases/{id}/search?q=&mode=keyword\|semantic\|hybrid&limit=` | Passages of the case's documents, best first (audited without the query) |
 | `GET /api/judgments`, `/api/judgments/facets`, `/api/judgments/search?q=&mode=&page=` | The judgment collection: browse, filters and available modes, search (staff; searches audited without the query) |
 | `GET /api/judgments/{id}`, `/api/judgments/{id}/text?section=` | One judgment with its source and terms; its text page by page |
+| `GET /api/cases/{id}/analysis/setup`, `GET`/`POST /api/cases/{id}/analysis-runs`, `GET .../analysis-runs/{runId}` | AI case analysis: what would be sent, start a run, results |
+| `GET .../analysis-runs/{runId}/reviews`, `PUT .../reviews/{findingId}`, `GET .../reviews/{findingId}/history`, `GET .../analysis-runs/{runId}/brief` | Lawyer review of findings; the DOCX case brief |
+| `GET`/`POST .../analysis-runs/{runId}/assessments`, `GET .../assessments/{id}`, `PUT .../assessments/{id}/review`, `GET .../review/history` | Outcome assessment (Phase 7 demo; 404 unless `LEXFLOW_OUTCOME_ASSESSMENT` is on) |
 | `GET`/`POST /api/clients`, `GET`/`PATCH /api/clients/{id}`, `GET /api/clients/options` | Clients |
 | `GET /api/advocates`, `GET /api/staff` | Reference lists |
 | `/api/portal/cases`, `/api/portal/cases/{id}`, `/api/portal/documents/{id}/download` | Client portal (Client accounts only) |
@@ -356,8 +391,8 @@ src/
 ├── main.tsx, router.tsx, index.css
 ├── types/                       # App names for the generated API types; AI contract
 ├── services/api/                # client.ts (fetch, CSRF header, ApiError), lexflow.ts, schema.gen.ts (generated)
-├── services/ai/aiService.ts     # AiService interface + "not connected" implementation
-├── hooks/                       # useCases (cases, documents, hearings, clients, portal), useAdmin, useAiAssistant
+├── services/ai/aiService.ts     # AiService: the server's analysis, review and assessment routes
+├── hooks/                       # useCases, useAdmin, useJudgments, useCaseAnalysis, useFindingReviews, useAssessments
 ├── context/AuthContext.tsx      # Who is signed in (from /api/auth/me); sign-in and sign-out
 ├── data/mockData.ts             # Fictional sample data (source of the seed JSON)
 ├── lib/                         # paths, roles, format, fields, caseOptions, documentFiles, ...
@@ -365,10 +400,10 @@ src/
 ├── pages/                       # staff pages, admin/, portal/
 └── test/                        # setup, renderApp, mockApi (MSW fake API)
 server/
-├── lexflow/                     # FastAPI app: api/, services/, auth/, cli/, seed/, extraction/, worker, authz, audit, models, schemas
-├── migrations/                  # Alembic (0001 to 0010)
+├── lexflow/                     # FastAPI app: api/, services/, auth/, cli/, seed/, extraction/, analysis/, assessment/, worker, authz, audit, models, schemas
+├── migrations/                  # Alembic (0001 to 0013)
 ├── tests/                       # pytest
-└── scripts/                     # export_openapi.py, e2e.py
+└── scripts/                     # export_openapi.py, e2e.py, evaluate_*.py (offline SYNTHETIC evaluations)
 e2e/                             # Playwright tests and the API start/stop helpers
 scripts/                         # api-types.mjs, export-sample-data.mjs
 ```
@@ -384,9 +419,19 @@ scripts/                         # api-types.mjs, export-sample-data.mjs
   tamper-proof.
 - Files are stored unencrypted on the local disk; there is no virus scanning,
   backup or retention policy.
-- No AI analysis, OCR or outcome prediction.
-- **The judgment collection is empty** until a source whose terms of use
-  allow it is approved and imported. Judgment search quality was measured
+- No OCR. AI analysis checks **provenance, not legal correctness**: a quote
+  can be verified while the reading of it is wrong, so every finding needs a
+  lawyer's review. The real model's behaviour under the current prompt is
+  unverified (owner decision R7).
+- **Outcome assessment is a synthetic-only engineering demonstration.** It
+  runs only on test or e2e databases, with SYNTHETIC judgments and a scripted
+  (non-AI) provider. It never gives probabilities or numeric scores and says
+  **nothing about legal accuracy**. Real use is blocked until a judgment source
+  is approved, lawyer-labelled evaluation sets with agreed thresholds exist,
+  the privacy review is signed off and real-model checks are approved
+  (`docs/PHASE7_PLAN.md`, `docs/verification/post-phase6/README.md`).
+- **No real judgments** until a source whose terms of use allow it is
+  approved and imported. Judgment search quality was measured
   only on synthetic data (`docs/verification/phase4/judgment-eval.md`); real
   legal research quality is **unevaluated** (needs a licensed corpus and a
   lawyer's relevance labels).
@@ -398,14 +443,13 @@ scripts/                         # api-types.mjs, export-sample-data.mjs
   files have no text. Word headers, footers and comments are not read, and
   Word text has no page numbers (it is shown in parts).
 
-## Next phase
+## Status and next steps
 
-Phases 3 (document text, optional local embeddings) and 4 (judgment
-collection, search, Research tab, Precedent Library, evaluation machinery)
-are implemented (`docs/PHASE3_EXECUTION_LOG.md`,
-`docs/EMBEDDINGS_EXECUTION_LOG.md`, `docs/PHASE4_EXECUTION_LOG.md`). Phase 4's
-real-world part waits on external inputs: an approved judgment source and a
-lawyer-labelled evaluation set (`docs/PHASE4_PLAN.md`). Next in the brief is
-Phase 5 (AI analysis), which also needs a decision on the model provider.
-Requirements, architecture/UML and traceability: `docs/SRS.md`,
-`docs/ARCHITECTURE.md`, `docs/TRACEABILITY.md`.
+Phases 1–6 are implemented and verified (`docs/PHASE*_EXECUTION_LOG.md`,
+`docs/verification/`). Phase 7 exists as a synthetic-only demonstration
+(`docs/PHASE7_PLAN.md`, `docs/verification/phase7/`). What remains is
+external, for the owner: approve a real judgment source, commission
+lawyer-labelled evaluation sets and agree thresholds, complete the privacy
+review, and decide on real-model checks (`docs/PHASE7_PROPOSAL.md`,
+`docs/phase7-prerequisites/`). Requirements, architecture/UML and
+traceability: `docs/SRS.md`, `docs/ARCHITECTURE.md`, `docs/TRACEABILITY.md`.

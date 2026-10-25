@@ -53,7 +53,8 @@ Status: **Done** = implemented and tested; **Later** = a future phase.
 | FR-18 | AI case analysis with validated citations: facts with source document and page, issues, precedent comparisons, contradictions; unknown sources removed or rejected; insufficient evidence stated | Done (Phase 5, closed 2026-10-25); migration 0011 applied to the live database (2026-10-20); analysing real client material needs the D1 privacy review; real judgment sources are a later dataset decision |
 | FR-18a | Starting an analysis: Administrator and the case's advocates; archived cases refused; sample cases only unless client data is allowed; explicit per-run confirmation of what is sent to the provider | Done (Phase 5) |
 | FR-19 | Lawyer review of AI findings: accept, reject or edit each finding with an optional note (Administrator and the case's advocates; paralegals read; history kept; the AI's wording preserved; unreviewed findings marked); review actions on the matter timeline (never sent to the model); a DOCX case brief containing only accepted findings with citations | Done (Phase 6); migration 0012 applied to the live database (2026-10-25) |
-| FR-20 | Gated outcome assessment | Later (Phase 7) |
+| FR-20 | Outcome assessment as decision support: lists the precedents behind it with verified quotes, explains its reasoning (each step resting on accepted findings or cited precedents), states its limits and an uncertainty category (never a number or probability); never shown without a verified supporting precedent; behind a flag, off by default | **Synthetic engineering demo done** (Phase 7, 2026-10-25): flag allowed only with a test or e2e database; scripted (non-AI) provider only; SYNTHETIC judgments only. **Real-world use blocked**: no approved judgment source (R4), no lawyer-labelled evaluation or agreed thresholds (R5, R5a), no privacy sign-off (R6), real-model behaviour unverified (R7) |
+| FR-20a | Assessment access and review: generate and review by the Administrator and the case's advocates (not on archived cases); paralegals read without notes; clients never; versioned review (accept, edit the summary, reject, clear) keeping the original; an accepted assessment appears in the case brief in its own labelled section | Done (Phase 7 demo) |
 
 ## 4. Non-functional requirements
 
@@ -80,8 +81,13 @@ Status: **Done** = implemented and tested; **Later** = a future phase.
   (imported by the owner on 2026-10-20 for a demonstration; removable with
   `remove --source`).
 - The embedding model is English-only.
+- The outcome-assessment demo (`LEXFLOW_OUTCOME_ASSESSMENT`) is refused by the
+  settings unless the database is a test or e2e one, so it cannot be enabled
+  on the live database.
 
 ## 6. Out of scope (this version)
 
-OCR; crawling or downloading judgments; outcome prediction (Phase 7);
+OCR; crawling or downloading judgments; outcome prediction with numbers or
+probabilities (never); outcome assessment on real judgments or with a real
+model (blocked, see FR-20);
 e-mail; multi-factor sign-in; internet deployment.
