@@ -143,3 +143,59 @@ test('outsiders and clients cannot reach the analysis routes', async ({ browser 
   expect((await client.request.get(`/api/cases/${id}/analysis-runs`)).status()).toBe(403);
   for (const page of [outsider, lead, client]) await page.context().close();
 });
+
+test('the outcome assessment demo: generated from accepted findings, labelled, reviewed (Phase 7)', async ({
+  browser,
+}) => {
+  // F1 was accepted and P1 accepted with the lawyer's wording in the Phase 6 test above.
+  const lead = await signedIn(browser, 'advocate');
+  const id = await sattvikId(lead);
+  await lead.goto(`/app/cases/${id}?tab=analysis`);
+  const panel = lead.getByRole('region', { name: 'Outcome assessment (decision support)' });
+  await expect(panel.getByText(/Decision support, not a prediction/)).toBeVisible({
+    timeout: 60_000,
+  });
+  await expect(
+    panel.getByText(/Uses \d+ accepted findings? and 1 accepted precedent/),
+  ).toBeVisible();
+  await panel.getByRole('button', { name: 'Generate assessment' }).click();
+
+  const view = panel.getByRole('region', { name: /Assessment of/ });
+  await expect(view.getByRole('note', { name: 'Demonstration on synthetic data' })).toBeVisible();
+  await expect(view.getByText('(a category, not a probability)')).toBeVisible();
+  await expect(view.getByText('Limited support')).toBeVisible();
+  await expect(view.getByText('Supports', { exact: true })).toBeVisible();
+  await expect(view.getByText('Synthetic test data')).toBeVisible();
+  await expect(view.getByText(/\[Scripted\] Demonstration assessment/)).toBeVisible();
+  // The scripted double's invented precedent and unsupported step were removed.
+  await expect(view.getByText(/2 items were removed by the server/)).toBeVisible();
+  await expect(view).not.toContainText(/\d\s*%|probability of|chance of winning/i);
+  const passage = view.getByRole('link', { name: /Read the passage/ });
+  await expect(passage).toHaveAttribute('href', /\/app\/precedents\//);
+
+  const review = view.getByRole('region', { name: 'Lawyer review of this assessment' });
+  await expect(review.getByText(/Not yet reviewed: this is not a lawyer/)).toBeVisible();
+  await review.getByRole('button', { name: 'Accept assessment' }).click();
+  await expect(review.getByText('Accepted', { exact: true })).toBeVisible();
+
+  // The brief (checked in detail by the server tests, which open the DOCX) still exports.
+  const downloading = lead.waitForEvent('download');
+  await lead.getByRole('button', { name: 'Export case brief (DOCX)' }).click();
+  const bytes = await readFile(await (await downloading).path());
+  expect(bytes.subarray(0, 2).toString()).toBe('PK');
+
+  // Read-only for a paralegal; unreachable for outsiders and clients.
+  const paralegal = await signedIn(browser, 'paralegal');
+  await paralegal.goto(`/app/cases/${id}?tab=analysis`);
+  const readOnly = paralegal.getByRole('region', { name: 'Outcome assessment (decision support)' });
+  await expect(readOnly.getByText('Accepted', { exact: true })).toBeVisible({ timeout: 60_000 });
+  await expect(readOnly.getByRole('button', { name: 'Generate assessment' })).toBeDisabled();
+  await expect(readOnly.getByRole('button', { name: 'Accept assessment' })).toHaveCount(0);
+  const runs = await (await lead.request.get(`/api/cases/${id}/analysis-runs`)).json();
+  const assessments = `/api/cases/${id}/analysis-runs/${runs.items[0].id}/assessments`;
+  const outsider = await signedIn(browser, 'outsider');
+  expect((await outsider.request.get(assessments)).status()).toBe(404);
+  const client = await signedIn(browser, 'client');
+  expect((await client.request.get(assessments)).status()).toBe(403);
+  for (const page of [lead, paralegal, outsider, client]) await page.context().close();
+});

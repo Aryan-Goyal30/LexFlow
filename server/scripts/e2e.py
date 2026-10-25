@@ -7,7 +7,8 @@
                                     (the harness adds --run-id HEX32 to mark its process)
     python scripts/e2e.py work --run-id HEX32
                                     run the document worker against the same database
-                                    (AI analysis uses the scripted test double, never Gemini)
+                                    (AI analysis uses the scripted test double, never Gemini;
+                                    the outcome-assessment demo is on, SYNTHETIC data only)
 
 The e2e database is the server named by ``DATABASE_URL`` with the database name
 replaced by ``lexflow_e2e`` (override with ``LEXFLOW_E2E_DATABASE``; "e2e" must be a
@@ -182,6 +183,10 @@ def _scripted_analysis() -> None:
     os.environ["GEMINI_API_KEY"] = ""
     os.environ["GEMINI_MODEL"] = ""
     os.environ["LEXFLOW_AI_ALLOW_CLIENT_DATA"] = "false"
+    # The outcome-assessment demo (Phase 7) is on in this app, which only ever uses
+    # the e2e database, SYNTHETIC judgments and the scripted provider. The settings
+    # refuse it with any other database. LEXFLOW_OUTCOME_ASSESSMENT=false turns it off.
+    os.environ.setdefault("LEXFLOW_OUTCOME_ASSESSMENT", "true")
 
 
 def serve() -> int:

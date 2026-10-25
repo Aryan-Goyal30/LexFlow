@@ -163,3 +163,44 @@ Checkpoint: B3 — Phase 7 backend complete and verified; next: commit B1–B3, 
   `api:check`, `sample-data:check`, **19 files and 201 tests**, build OK.
 
 Checkpoint: B4 — Phase 7 UI complete; next: commit B4, then B5 (e2e, offline harness, mutation checks).
+
+## B5 — e2e, offline harness, mutation checks (2026-10-25)
+
+- **e2e app (`server/scripts/e2e.py`):** enables the demo with
+  `setdefault("LEXFLOW_OUTCOME_ASSESSMENT", "true")`. This is allowed only
+  because the app always uses `lexflow_e2e`, the scripted provider and
+  SYNTHETIC judgments. `LEXFLOW_OUTCOME_ASSESSMENT=false` turns it off.
+- **New e2e test** (`e2e/analysis.spec.ts`, serial after the Phase 6 one):
+  - generate an assessment from the accepted F1 and the edited P1;
+  - the labels: demo banner, category, "Supports", SYNTHETIC badge;
+  - removal of the scripted double's 2 planted errors;
+  - no percentage text;
+  - judgment-passage link;
+  - accept;
+  - brief download;
+  - the paralegal read-only;
+  - outsider 404, client 403.
+- **`npx playwright test`: 43 passed**, exit 0 (1.7 min).
+- **Refactor (no behaviour change):** `service.assess(provider, inputs)`
+  is now the database-free gate, call and validation path, used by the API
+  and the harness. `test_assessments_api.py` and
+  `test_assessment_validation.py` (73) passed after it.
+- **Offline harness:**
+  - `server/scripts/evaluate_assessment.py` with
+    `tests/fixtures/assessment/synthetic-scenarios-v1.json`: 24 SYNTHETIC
+    scenarios covering B10 items 1–11 and 16, plus the 3 of B10's
+    "covered elsewhere" items mapped to named tests;
+  - `--write --report-name assessment-eval-2026-10-25`: **24 of 24 as
+    expected**, exit 0, written to `docs/verification/phase7/`;
+  - `tests/test_assessment_evaluation.py` (2) runs it in the suite.
+- **Mutation checks:** `docs/verification/phase7/run_mutation_checks.py`,
+  25 guards (validation, inputs and gate, API, review, brief, flag, roles,
+  UI).
+  - `--dry-run`: 25 of 25 snippets found once.
+  - Run: **25 of 25 caught**, every file restored, tree identical before
+    and after.
+  - Report and redacted log in `docs/verification/phase7/`.
+
+Checkpoint: B5 — e2e, harness and mutation checks complete; next: commit B5, then D (full verification) and E (documentation).
+
+- *Note:* the trailing spaces of captured pytest `E` lines and a blank last line were removed from `mutation-output.log` (whitespace only). The runner now strips line ends itself.

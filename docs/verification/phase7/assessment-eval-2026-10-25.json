@@ -1,0 +1,671 @@
+{
+  "fixture": "tests/fixtures/assessment/synthetic-scenarios-v1.json",
+  "fixture_sha256": "7a58593878ef7fd82625db8bc8807d8aed0413b6c800784a5801c3b25da502da",
+  "pipeline": {
+    "promptVersion": "outcome-assessment-v1",
+    "schemaVersion": "outcome-assessment-schema-1",
+    "validatorVersion": "assessment-grounding-1"
+  },
+  "scenarios": 24,
+  "as_expected": 24,
+  "not_as_expected": [],
+  "b10": {
+    "1": {
+      "scenario": "Feature disabled",
+      "here": 3,
+      "elsewhere": [
+        "server/tests/test_assessments_api.py::test_off_by_default_every_route_is_not_found_and_setup_says_so; src/pages/assessment.test.tsx (flag off: nothing shown, nothing asked)"
+      ]
+    },
+    "2": {
+      "scenario": "Enabled with accepted findings and a retrieved synthetic precedent",
+      "here": 2,
+      "elsewhere": []
+    },
+    "3": {
+      "scenario": "No accepted findings",
+      "here": 1,
+      "elsewhere": []
+    },
+    "4": {
+      "scenario": "No retrieved (accepted) precedents",
+      "here": 1,
+      "elsewhere": []
+    },
+    "5": {
+      "scenario": "Unsupported citation",
+      "here": 2,
+      "elsewhere": []
+    },
+    "6": {
+      "scenario": "Quote not present in the source",
+      "here": 1,
+      "elsewhere": []
+    },
+    "7": {
+      "scenario": "Unsupported reasoning",
+      "here": 3,
+      "elsewhere": []
+    },
+    "8": {
+      "scenario": "A precedent that cuts against the position",
+      "here": 1,
+      "elsewhere": []
+    },
+    "9": {
+      "scenario": "Mixed evidence",
+      "here": 3,
+      "elsewhere": []
+    },
+    "10": {
+      "scenario": "Rejected or unreviewed findings excluded",
+      "here": 1,
+      "elsewhere": []
+    },
+    "11": {
+      "scenario": "Synthetic label preserved",
+      "here": 3,
+      "elsewhere": []
+    },
+    "12": {
+      "scenario": "A user without permission",
+      "here": 0,
+      "elsewhere": [
+        "server/tests/test_assessments_api.py::test_who_may_generate_read_and_review; test_notes_are_private_to_reviewers; e2e/analysis.spec.ts (paralegal, outsider, client)"
+      ]
+    },
+    "13": {
+      "scenario": "Archived case",
+      "here": 0,
+      "elsewhere": [
+        "server/tests/test_assessments_api.py::test_an_archived_case_can_be_read_but_not_assessed_or_reviewed"
+      ]
+    },
+    "14": {
+      "scenario": "Review, edit and rejection",
+      "here": 0,
+      "elsewhere": [
+        "server/tests/test_assessments_api.py::test_review_keeps_the_original_and_follows_the_phase6_rules; test_assessment_review_race.py; src/pages/assessment.test.tsx"
+      ]
+    },
+    "15": {
+      "scenario": "Assessment export behaviour",
+      "here": 0,
+      "elsewhere": [
+        "server/tests/test_assessments_api.py::test_only_an_accepted_assessment_reaches_the_brief_in_its_own_labelled_section; test_with_the_flag_off_an_existing_assessment_never_reaches_the_brief"
+      ]
+    },
+    "16": {
+      "scenario": "Provider failure and recovery",
+      "here": 4,
+      "elsewhere": []
+    }
+  },
+  "removal_reasons_observed": {
+    "outcome-wording": 1,
+    "probability-language": 2,
+    "quote-not-found": 1,
+    "synthetic-misrepresented": 1,
+    "uncertainty-adjusted": 2,
+    "unexpected-field": 3,
+    "unknown-precedent": 5,
+    "unsupported-step": 8,
+    "unverified-citation": 1
+  },
+  "outcomes": [
+    {
+      "id": "config-flag-off",
+      "kind": "config",
+      "covers": [
+        1
+      ],
+      "ok": true,
+      "observed": {
+        "unavailable": "assessment-disabled"
+      }
+    },
+    {
+      "id": "config-real-model",
+      "kind": "config",
+      "covers": [
+        1
+      ],
+      "ok": true,
+      "observed": {
+        "unavailable": "assessment-model-not-approved"
+      }
+    },
+    {
+      "id": "config-live-database",
+      "kind": "config",
+      "covers": [
+        1
+      ],
+      "ok": true,
+      "observed": {
+        "refused": true
+      }
+    },
+    {
+      "id": "config-demo-on",
+      "kind": "config",
+      "covers": [
+        2
+      ],
+      "ok": true,
+      "observed": {
+        "provider": "scripted"
+      }
+    },
+    {
+      "id": "scripted-ready",
+      "kind": "scripted",
+      "covers": [
+        2,
+        11
+      ],
+      "ok": true,
+      "observed": {
+        "status": "ready",
+        "reasonCode": null,
+        "uncertainty": "limited_support",
+        "refs": [
+          "P1"
+        ],
+        "stances": [
+          "supports"
+        ],
+        "steps": 1,
+        "removed": {
+          "unknown-precedent": 1,
+          "unsupported-step": 1
+        },
+        "allSynthetic": true,
+        "demoOnly": true,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "scripted-two-precedents",
+      "kind": "scripted",
+      "covers": [
+        9
+      ],
+      "ok": true,
+      "observed": {
+        "status": "ready",
+        "reasonCode": null,
+        "uncertainty": "mixed_evidence",
+        "refs": [
+          "P1",
+          "P2"
+        ],
+        "stances": [
+          "supports",
+          "cuts_against"
+        ],
+        "steps": 2,
+        "removed": {
+          "unknown-precedent": 1,
+          "unsupported-step": 1
+        },
+        "allSynthetic": true,
+        "demoOnly": true,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "gate-no-accepted-findings",
+      "kind": "scripted",
+      "covers": [
+        3
+      ],
+      "ok": true,
+      "observed": {
+        "status": "insufficient",
+        "reasonCode": "no-accepted-findings",
+        "uncertainty": null,
+        "refs": [],
+        "stances": [],
+        "steps": 0,
+        "removed": {},
+        "allSynthetic": null,
+        "demoOnly": null,
+        "called": false,
+        "calls": 0
+      }
+    },
+    {
+      "id": "gate-no-accepted-precedents",
+      "kind": "scripted",
+      "covers": [
+        4
+      ],
+      "ok": true,
+      "observed": {
+        "status": "insufficient",
+        "reasonCode": "no-accepted-precedents",
+        "uncertainty": null,
+        "refs": [],
+        "stances": [],
+        "steps": 0,
+        "removed": {},
+        "allSynthetic": null,
+        "demoOnly": null,
+        "called": false,
+        "calls": 0
+      }
+    },
+    {
+      "id": "unknown-precedent",
+      "kind": "answer",
+      "covers": [
+        5
+      ],
+      "ok": true,
+      "observed": {
+        "status": "ready",
+        "reasonCode": null,
+        "uncertainty": "limited_support",
+        "refs": [
+          "P1"
+        ],
+        "stances": [
+          "supports"
+        ],
+        "steps": 1,
+        "removed": {
+          "unknown-precedent": 1
+        },
+        "allSynthetic": true,
+        "demoOnly": true,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "invented-case-name",
+      "kind": "answer",
+      "covers": [
+        5
+      ],
+      "ok": true,
+      "observed": {
+        "status": "ready",
+        "reasonCode": null,
+        "uncertainty": "limited_support",
+        "refs": [
+          "P2"
+        ],
+        "stances": [
+          "cuts_against"
+        ],
+        "steps": 1,
+        "removed": {
+          "unverified-citation": 1
+        },
+        "allSynthetic": true,
+        "demoOnly": true,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "quote-not-in-source",
+      "kind": "answer",
+      "covers": [
+        6
+      ],
+      "ok": true,
+      "observed": {
+        "status": "insufficient",
+        "reasonCode": "no-verified-precedent",
+        "uncertainty": null,
+        "refs": [],
+        "stances": [],
+        "steps": 0,
+        "removed": {
+          "quote-not-found": 1,
+          "unsupported-step": 1
+        },
+        "allSynthetic": null,
+        "demoOnly": null,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "unsupported-reasoning",
+      "kind": "answer",
+      "covers": [
+        7
+      ],
+      "ok": true,
+      "observed": {
+        "status": "insufficient",
+        "reasonCode": "no-supported-reasoning",
+        "uncertainty": null,
+        "refs": [],
+        "stances": [],
+        "steps": 0,
+        "removed": {
+          "unsupported-step": 2
+        },
+        "allSynthetic": null,
+        "demoOnly": null,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "cuts-against-only",
+      "kind": "answer",
+      "covers": [
+        8
+      ],
+      "ok": true,
+      "observed": {
+        "status": "ready",
+        "reasonCode": null,
+        "uncertainty": "limited_support",
+        "refs": [
+          "P2"
+        ],
+        "stances": [
+          "cuts_against"
+        ],
+        "steps": 1,
+        "removed": {
+          "uncertainty-adjusted": 1
+        },
+        "allSynthetic": true,
+        "demoOnly": true,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "mixed-evidence",
+      "kind": "answer",
+      "covers": [
+        9
+      ],
+      "ok": true,
+      "observed": {
+        "status": "ready",
+        "reasonCode": null,
+        "uncertainty": "mixed_evidence",
+        "refs": [
+          "P1",
+          "P2"
+        ],
+        "stances": [
+          "supports",
+          "cuts_against"
+        ],
+        "steps": 2,
+        "removed": {},
+        "allSynthetic": true,
+        "demoOnly": true,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "excluded-finding-cited",
+      "kind": "answer",
+      "covers": [
+        10
+      ],
+      "ok": true,
+      "observed": {
+        "status": "ready",
+        "reasonCode": null,
+        "uncertainty": "limited_support",
+        "refs": [
+          "P1"
+        ],
+        "stances": [
+          "supports"
+        ],
+        "steps": 1,
+        "removed": {
+          "unsupported-step": 1
+        },
+        "allSynthetic": true,
+        "demoOnly": true,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "synthetic-label-bypass",
+      "kind": "answer",
+      "covers": [
+        11
+      ],
+      "ok": true,
+      "observed": {
+        "status": "ready",
+        "reasonCode": null,
+        "uncertainty": "limited_support",
+        "refs": [
+          "P2"
+        ],
+        "stances": [
+          "cuts_against"
+        ],
+        "steps": 1,
+        "removed": {
+          "synthetic-misrepresented": 1,
+          "unexpected-field": 1
+        },
+        "allSynthetic": true,
+        "demoOnly": true,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "numeric-score-field",
+      "kind": "answer",
+      "covers": [
+        11
+      ],
+      "ok": true,
+      "observed": {
+        "status": "ready",
+        "reasonCode": null,
+        "uncertainty": "limited_support",
+        "refs": [
+          "P1"
+        ],
+        "stances": [
+          "supports"
+        ],
+        "steps": 1,
+        "removed": {
+          "unexpected-field": 2
+        },
+        "allSynthetic": true,
+        "demoOnly": true,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "probability-summary",
+      "kind": "answer",
+      "covers": [
+        9
+      ],
+      "ok": true,
+      "observed": {
+        "status": "insufficient",
+        "reasonCode": "summary-withheld",
+        "uncertainty": null,
+        "refs": [],
+        "stances": [],
+        "steps": 0,
+        "removed": {
+          "probability-language": 1
+        },
+        "allSynthetic": null,
+        "demoOnly": null,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "definitive-claim-in-step",
+      "kind": "answer",
+      "covers": [
+        7
+      ],
+      "ok": true,
+      "observed": {
+        "status": "ready",
+        "reasonCode": null,
+        "uncertainty": "limited_support",
+        "refs": [
+          "P1"
+        ],
+        "stances": [
+          "supports"
+        ],
+        "steps": 1,
+        "removed": {
+          "outcome-wording": 1,
+          "probability-language": 1
+        },
+        "allSynthetic": true,
+        "demoOnly": true,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "precedents-resolve-nothing",
+      "kind": "answer",
+      "covers": [
+        7
+      ],
+      "ok": true,
+      "observed": {
+        "status": "insufficient",
+        "reasonCode": "assessed-insufficient",
+        "uncertainty": null,
+        "refs": [],
+        "stances": [],
+        "steps": 0,
+        "removed": {
+          "uncertainty-adjusted": 1
+        },
+        "allSynthetic": null,
+        "demoOnly": null,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "provider-timeout",
+      "kind": "attempts",
+      "covers": [
+        16
+      ],
+      "ok": true,
+      "observed": {
+        "status": "failed",
+        "reasonCode": "provider-timeout",
+        "uncertainty": null,
+        "refs": [],
+        "stances": [],
+        "steps": 0,
+        "removed": {},
+        "allSynthetic": null,
+        "demoOnly": null,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "provider-recovers-on-a-new-attempt",
+      "kind": "scripted",
+      "covers": [
+        16
+      ],
+      "ok": true,
+      "observed": {
+        "status": "ready",
+        "reasonCode": null,
+        "uncertainty": "limited_support",
+        "refs": [
+          "P1"
+        ],
+        "stances": [
+          "supports"
+        ],
+        "steps": 1,
+        "removed": {
+          "unknown-precedent": 1,
+          "unsupported-step": 1
+        },
+        "allSynthetic": true,
+        "demoOnly": true,
+        "called": true,
+        "calls": 1
+      }
+    },
+    {
+      "id": "unreadable-twice",
+      "kind": "attempts",
+      "covers": [
+        16
+      ],
+      "ok": true,
+      "observed": {
+        "status": "failed",
+        "reasonCode": "invalid-output",
+        "uncertainty": null,
+        "refs": [],
+        "stances": [],
+        "steps": 0,
+        "removed": {},
+        "allSynthetic": null,
+        "demoOnly": null,
+        "called": true,
+        "calls": 2
+      }
+    },
+    {
+      "id": "cut-off-then-valid",
+      "kind": "attempts",
+      "covers": [
+        16
+      ],
+      "ok": true,
+      "observed": {
+        "status": "ready",
+        "reasonCode": null,
+        "uncertainty": "limited_support",
+        "refs": [
+          "P1"
+        ],
+        "stances": [
+          "supports"
+        ],
+        "steps": 1,
+        "removed": {
+          "unknown-precedent": 1,
+          "unsupported-step": 1
+        },
+        "allSynthetic": true,
+        "demoOnly": true,
+        "called": true,
+        "calls": 2
+      }
+    }
+  ]
+}

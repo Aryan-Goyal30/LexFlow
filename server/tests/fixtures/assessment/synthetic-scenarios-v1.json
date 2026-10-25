@@ -1,0 +1,121 @@
+{
+  "name": "synthetic-assessment-scenarios-v1",
+  "note": "SYNTHETIC: invented findings and invented judgment passages, written for this test only. Not case law, not part of any judgment collection, not lawyer-labelled. These scenarios test LexFlow's checks of an outcome assessment, not legal quality.",
+  "base": {
+    "findings": [
+      {"id": "F1", "kind": "fact", "text": "SYNTHETIC: the plaintiff has used the mark since 2012."},
+      {"id": "F2", "kind": "fact", "text": "SYNTHETIC: the defendant registered the mark in 2018."},
+      {"id": "I1", "kind": "issue", "text": "SYNTHETIC: does prior use defeat the later registration?"}
+    ],
+    "precedents": [
+      {
+        "id": "P1",
+        "title": "Meera Textiles v. Kiran Mills (SYNTHETIC)",
+        "court": "SYNTHETIC High Court (test fixture)",
+        "citation": "(SYN) 2020 TEST 1",
+        "year": 2020,
+        "text": "SYNTHETIC: Prior continuous use of a mark since 2012 outweighs a later registration where the registrant knew of the earlier user and adopted the mark dishonestly."
+      },
+      {
+        "id": "P2",
+        "title": "Oriental Foods v. Sagar Traders (SYNTHETIC)",
+        "court": "SYNTHETIC High Court (test fixture)",
+        "citation": "(SYN) 2021 TEST 2",
+        "year": 2021,
+        "text": "SYNTHETIC: Where the earlier user abandoned the mark for several years, the later registered proprietor is protected and the earlier use does not defeat the registration."
+      }
+    ]
+  },
+  "scenarios": [
+    {"id": "config-flag-off", "covers": [1], "kind": "config", "settings": {"LEXFLOW_OUTCOME_ASSESSMENT": false, "LEXFLOW_AI_PROVIDER": "scripted"}, "expect": {"unavailable": "assessment-disabled"}},
+    {"id": "config-real-model", "covers": [1], "kind": "config", "settings": {"LEXFLOW_OUTCOME_ASSESSMENT": true, "LEXFLOW_AI_PROVIDER": "gemini", "GEMINI_API_KEY": "AIzaFAKE-eval-key-not-real", "GEMINI_MODEL": "eval-model"}, "expect": {"unavailable": "assessment-model-not-approved"}},
+    {"id": "config-live-database", "covers": [1], "kind": "config", "settings": {"LEXFLOW_OUTCOME_ASSESSMENT": true, "LEXFLOW_AI_PROVIDER": "scripted", "DATABASE_URL": "postgresql+psycopg://eval@127.0.0.1:1/lexflow"}, "expect": {"refused": true}},
+    {"id": "config-demo-on", "covers": [2], "kind": "config", "settings": {"LEXFLOW_OUTCOME_ASSESSMENT": true, "LEXFLOW_AI_PROVIDER": "scripted"}, "expect": {"provider": "scripted"}},
+
+    {"id": "scripted-ready", "covers": [2, 11], "kind": "scripted", "inputs": {"findings": ["F1", "F2", "I1"], "precedents": ["P1"]}, "expect": {"status": "ready", "uncertainty": "limited_support", "refs": ["P1"], "stances": ["supports"], "removed": {"unknown-precedent": 1, "unsupported-step": 1}, "demoOnly": true, "called": true}},
+    {"id": "scripted-two-precedents", "covers": [9], "kind": "scripted", "inputs": {"findings": ["F1", "I1"], "precedents": ["P1", "P2"]}, "expect": {"status": "ready", "uncertainty": "mixed_evidence", "refs": ["P1", "P2"], "stances": ["supports", "cuts_against"]}},
+    {"id": "gate-no-accepted-findings", "covers": [3], "kind": "scripted", "inputs": {"findings": [], "precedents": ["P1"]}, "expect": {"status": "insufficient", "reasonCode": "no-accepted-findings", "called": false}},
+    {"id": "gate-no-accepted-precedents", "covers": [4], "kind": "scripted", "inputs": {"findings": ["F1"], "precedents": []}, "expect": {"status": "insufficient", "reasonCode": "no-accepted-precedents", "called": false}},
+
+    {"id": "unknown-precedent", "covers": [5], "kind": "answer", "inputs": {"findings": ["F1"], "precedents": ["P1"]},
+     "answer": {"summary": "P1 bears on F1.", "uncertainty": "limited_support",
+       "precedents": [
+         {"precedent": "P1", "stance": "supports", "quote": "Prior continuous use of a mark since 2012 outweighs a later registration", "explanation": "P1 weighs prior use."},
+         {"precedent": "P9", "stance": "supports", "quote": "Prior continuous use of a mark since 2012 outweighs a later registration", "explanation": "An invented precedent."}],
+       "reasoning": [{"text": "F1 and P1.", "findings": ["F1"], "precedents": ["P1"]}], "missing_evidence": [], "limitations": []},
+     "expect": {"status": "ready", "refs": ["P1"], "removed": {"unknown-precedent": 1}}},
+    {"id": "invented-case-name", "covers": [5], "kind": "answer", "inputs": {"findings": ["F1"], "precedents": ["P1", "P2"]},
+     "answer": {"summary": "P2 bears on F1.", "uncertainty": "limited_support",
+       "precedents": [
+         {"precedent": "P1", "stance": "supports", "quote": "Prior continuous use of a mark since 2012 outweighs a later registration", "explanation": "As held in Sharma v. Verma, prior use prevails."},
+         {"precedent": "P2", "stance": "cuts_against", "quote": "the later registered proprietor is protected", "explanation": "P2 protects a registered proprietor."}],
+       "reasoning": [{"text": "F1 and P2.", "findings": ["F1"], "precedents": ["P2"]}], "missing_evidence": [], "limitations": []},
+     "expect": {"status": "ready", "refs": ["P2"], "stances": ["cuts_against"], "removed": {"unverified-citation": 1}}},
+    {"id": "quote-not-in-source", "covers": [6], "kind": "answer", "inputs": {"findings": ["F1"], "precedents": ["P1"]},
+     "answer": {"summary": "P1 bears on F1.", "uncertainty": "limited_support",
+       "precedents": [{"precedent": "P1", "stance": "supports", "quote": "Prior use always defeats any registration whatsoever", "explanation": "Invented quote."}],
+       "reasoning": [{"text": "F1 and P1.", "findings": ["F1"], "precedents": ["P1"]}], "missing_evidence": [], "limitations": []},
+     "expect": {"status": "insufficient", "reasonCode": "no-verified-precedent", "removed": {"quote-not-found": 1, "unsupported-step": 1}}},
+    {"id": "unsupported-reasoning", "covers": [7], "kind": "answer", "inputs": {"findings": ["F1"], "precedents": ["P1"]},
+     "answer": {"summary": "P1 bears on F1.", "uncertainty": "limited_support",
+       "precedents": [{"precedent": "P1", "stance": "supports", "quote": "Prior continuous use of a mark since 2012 outweighs a later registration", "explanation": "P1 weighs prior use."}],
+       "reasoning": [{"text": "Rests on nothing.", "findings": [], "precedents": []}, {"text": "Rests on an invented finding.", "findings": ["F7"], "precedents": []}], "missing_evidence": [], "limitations": []},
+     "expect": {"status": "insufficient", "reasonCode": "no-supported-reasoning", "removed": {"unsupported-step": 2}}},
+    {"id": "cuts-against-only", "covers": [8], "kind": "answer", "inputs": {"findings": ["F2"], "precedents": ["P2"]},
+     "answer": {"summary": "P2 bears on F2.", "uncertainty": "evidence_supports_position",
+       "precedents": [{"precedent": "P2", "stance": "cuts_against", "quote": "the later registered proprietor is protected", "explanation": "P2 protects a registered proprietor."}],
+       "reasoning": [{"text": "F2 and P2.", "findings": ["F2"], "precedents": ["P2"]}], "missing_evidence": [], "limitations": []},
+     "expect": {"status": "ready", "uncertainty": "limited_support", "stances": ["cuts_against"], "removed": {"uncertainty-adjusted": 1}}},
+    {"id": "mixed-evidence", "covers": [9], "kind": "answer", "inputs": {"findings": ["F1", "F2"], "precedents": ["P1", "P2"]},
+     "answer": {"summary": "The precedents point in different directions.", "uncertainty": "mixed_evidence",
+       "precedents": [
+         {"precedent": "P1", "stance": "supports", "quote": "Prior continuous use of a mark since 2012 outweighs a later registration", "explanation": "P1 weighs prior use."},
+         {"precedent": "P2", "stance": "cuts_against", "quote": "the later registered proprietor is protected", "explanation": "P2 protects a registered proprietor."}],
+       "reasoning": [{"text": "F1 and P1.", "findings": ["F1"], "precedents": ["P1"]}, {"text": "F2 and P2.", "findings": ["F2"], "precedents": ["P2"]}], "missing_evidence": ["Whether use was continuous."], "limitations": []},
+     "expect": {"status": "ready", "uncertainty": "mixed_evidence", "refs": ["P1", "P2"], "removed": {}}},
+    {"id": "excluded-finding-cited", "covers": [10], "kind": "answer", "inputs": {"findings": ["F1"], "precedents": ["P1"]},
+     "answer": {"summary": "P1 bears on F1.", "uncertainty": "limited_support",
+       "precedents": [{"precedent": "P1", "stance": "supports", "quote": "Prior continuous use of a mark since 2012 outweighs a later registration", "explanation": "P1 weighs prior use."}],
+       "reasoning": [{"text": "F1 and P1.", "findings": ["F1"], "precedents": ["P1"]}, {"text": "F2 (rejected by the lawyer) and P1.", "findings": ["F2"], "precedents": ["P1"]}], "missing_evidence": [], "limitations": []},
+     "expect": {"status": "ready", "steps": 1, "removed": {"unsupported-step": 1}}},
+    {"id": "synthetic-label-bypass", "covers": [11], "kind": "answer", "inputs": {"findings": ["F1"], "precedents": ["P1", "P2"]},
+     "answer": {"summary": "The cited passages bear on F1.", "uncertainty": "limited_support", "synthetic": false,
+       "precedents": [
+         {"precedent": "P1", "stance": "supports", "quote": "Prior continuous use of a mark since 2012 outweighs a later registration", "explanation": "P1 is a binding precedent on this point."},
+         {"precedent": "P2", "stance": "cuts_against", "quote": "the later registered proprietor is protected", "explanation": "P2 protects a registered proprietor."}],
+       "reasoning": [{"text": "F1 and P2.", "findings": ["F1"], "precedents": ["P2"]}], "missing_evidence": [], "limitations": []},
+     "expect": {"status": "ready", "refs": ["P2"], "allSynthetic": true, "demoOnly": true, "removed": {"unexpected-field": 1, "synthetic-misrepresented": 1}}},
+    {"id": "numeric-score-field", "covers": [11], "kind": "answer", "inputs": {"findings": ["F1"], "precedents": ["P1"]},
+     "answer": {"summary": "P1 bears on F1.", "uncertainty": "limited_support", "probability": 0.72, "win_chance": "72%",
+       "precedents": [{"precedent": "P1", "stance": "supports", "quote": "Prior continuous use of a mark since 2012 outweighs a later registration", "explanation": "P1 weighs prior use."}],
+       "reasoning": [{"text": "F1 and P1.", "findings": ["F1"], "precedents": ["P1"]}], "missing_evidence": [], "limitations": []},
+     "expect": {"status": "ready", "removed": {"unexpected-field": 2}, "absent": ["0.72", "72%"]}},
+    {"id": "probability-summary", "covers": [9], "kind": "answer", "inputs": {"findings": ["F1"], "precedents": ["P1"]},
+     "answer": {"summary": "The plaintiff has a 70% chance of winning.", "uncertainty": "evidence_supports_position",
+       "precedents": [{"precedent": "P1", "stance": "supports", "quote": "Prior continuous use of a mark since 2012 outweighs a later registration", "explanation": "P1 weighs prior use."}],
+       "reasoning": [{"text": "F1 and P1.", "findings": ["F1"], "precedents": ["P1"]}], "missing_evidence": [], "limitations": []},
+     "expect": {"status": "insufficient", "reasonCode": "summary-withheld", "removed": {"probability-language": 1}, "absent": ["70%"]}},
+    {"id": "definitive-claim-in-step", "covers": [7], "kind": "answer", "inputs": {"findings": ["F1"], "precedents": ["P1"]},
+     "answer": {"summary": "P1 bears on F1.", "uncertainty": "limited_support",
+       "precedents": [{"precedent": "P1", "stance": "supports", "quote": "Prior continuous use of a mark since 2012 outweighs a later registration", "explanation": "P1 weighs prior use."}],
+       "reasoning": [{"text": "F1 and P1.", "findings": ["F1"], "precedents": ["P1"]}, {"text": "The court will hold for the plaintiff.", "findings": ["F1"], "precedents": ["P1"]}], "missing_evidence": [], "limitations": ["A 60% estimate.", "Only one passage."]},
+     "expect": {"status": "ready", "steps": 1, "removed": {"outcome-wording": 1, "probability-language": 1}}},
+    {"id": "precedents-resolve-nothing", "covers": [7], "kind": "answer", "inputs": {"findings": ["F1"], "precedents": ["P1"]},
+     "answer": {"summary": "P1 does not decide the question.", "uncertainty": "limited_support",
+       "precedents": [{"precedent": "P1", "stance": "does_not_resolve", "quote": "Prior continuous use of a mark since 2012 outweighs a later registration", "explanation": "P1 concerns dishonest adoption."}],
+       "reasoning": [{"text": "F1 and P1.", "findings": ["F1"], "precedents": ["P1"]}], "missing_evidence": [], "limitations": []},
+     "expect": {"status": "insufficient", "reasonCode": "assessed-insufficient"}},
+
+    {"id": "provider-timeout", "covers": [16], "kind": "attempts", "inputs": {"findings": ["F1"], "precedents": ["P1"]}, "attempts": [{"error": "provider-timeout"}], "expect": {"status": "failed", "reasonCode": "provider-timeout", "calls": 1}},
+    {"id": "provider-recovers-on-a-new-attempt", "covers": [16], "kind": "scripted", "inputs": {"findings": ["F1"], "precedents": ["P1"]}, "expect": {"status": "ready"}},
+    {"id": "unreadable-twice", "covers": [16], "kind": "attempts", "inputs": {"findings": ["F1"], "precedents": ["P1"]}, "attempts": [{"text": "not json"}, {"text": "[]"}], "expect": {"status": "failed", "reasonCode": "invalid-output", "calls": 2}},
+    {"id": "cut-off-then-valid", "covers": [16], "kind": "attempts", "inputs": {"findings": ["F1"], "precedents": ["P1"]}, "attempts": [{"truncated": true}, {"scripted": true}], "expect": {"status": "ready", "calls": 2}}
+  ],
+  "covered_elsewhere": [
+    {"covers": [1], "test": "server/tests/test_assessments_api.py::test_off_by_default_every_route_is_not_found_and_setup_says_so; src/pages/assessment.test.tsx (flag off: nothing shown, nothing asked)"},
+    {"covers": [12], "test": "server/tests/test_assessments_api.py::test_who_may_generate_read_and_review; test_notes_are_private_to_reviewers; e2e/analysis.spec.ts (paralegal, outsider, client)"},
+    {"covers": [13], "test": "server/tests/test_assessments_api.py::test_an_archived_case_can_be_read_but_not_assessed_or_reviewed"},
+    {"covers": [14], "test": "server/tests/test_assessments_api.py::test_review_keeps_the_original_and_follows_the_phase6_rules; test_assessment_review_race.py; src/pages/assessment.test.tsx"},
+    {"covers": [15], "test": "server/tests/test_assessments_api.py::test_only_an_accepted_assessment_reaches_the_brief_in_its_own_labelled_section; test_with_the_flag_off_an_existing_assessment_never_reaches_the_brief"}
+  ]
+}

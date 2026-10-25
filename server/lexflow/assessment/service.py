@@ -105,35 +105,26 @@ def _row(
     )
 
 
-def generate(
-    session: Session,
-    run: AnalysisRun,
-    provider: AssessmentProvider,
-    *,
-    requested_by: uuid.UUID,
-    now: datetime,
-) -> Generated:
-    """Assess a ready run and store the outcome (flushes; the caller commits)."""
-    gathered = inputs_mod.gather(session, run)
-    record = {**gathered.record(), "pipeline": pipeline_record()}
-    row = _row(run, provider, requested_by=requested_by, record=record, now=now)
-    called = False
+@dataclass(frozen=True)
+class Assessed:
+    """The outcome of assessing one set of inputs (no database involved)."""
+
+    status: str  # "ready", "insufficient" or "failed"
+    reason_code: str | None
+    reason: str | None
+    result: dict[str, Any] | None
+    removed: dict[str, Any] | None
+    usage: dict[str, int]
+    called: bool  # whether the provider was asked at all
+
+
+def assess(provider: AssessmentProvider, gathered: inputs_mod.Inputs) -> Assessed:
+    """Gate, ask and validate. No database access: the API calls it for a run,
+    and the offline evaluation (``scripts/evaluate_assessment.py``) for its
+    SYNTHETIC scenarios, so both exercise the same code."""
     gate = gathered.gate()
     if gate is not None:
-        row.status, row.reason_code, row.reason = (
-            "insufficient",
-            gate,
-            inputs_mod.GATE_REASONS[gate],
-        )
-    else:
-        called = True
-        _ask(row, provider, gathered)
-    session.add(row)
-    session.flush()
-    return Generated(row, called)
-
-
-def _ask(row: OutcomeAssessment, provider: AssessmentProvider, gathered: inputs_mod.Inputs) -> None:
+        return Assessed("insufficient", gate, inputs_mod.GATE_REASONS[gate], None, None, {}, False)
     request = AssessmentRequest(
         system_instruction=prompt.SYSTEM_INSTRUCTION,
         prompt=prompt.render(gathered),
@@ -147,14 +138,11 @@ def _ask(row: OutcomeAssessment, provider: AssessmentProvider, gathered: inputs_
         try:
             response = provider.generate(request)
         except ProviderError as error:
-            row.status, row.reason_code, row.reason = "failed", error.code, error.message
-            row.usage = usage
-            return
+            return Assessed("failed", error.code, error.message, None, None, usage, True)
         except Exception as error:  # a provider bug must not fail the request
+            # Only the type is logged: an exception's text could echo the request.
             logger.error("assessment: provider raised %s", type(error).__name__)
-            row.status, row.reason_code, row.reason = "failed", "provider-error", PROVIDER_FAULT
-            row.usage = usage
-            return
+            return Assessed("failed", "provider-error", PROVIDER_FAULT, None, None, usage, True)
         for key, value in response.usage.items():
             usage[key] = usage.get(key, 0) + value
         if response.truncated:
@@ -168,20 +156,38 @@ def _ask(row: OutcomeAssessment, provider: AssessmentProvider, gathered: inputs_
             continue
         except Exception as error:  # never store an answer that was not fully checked
             logger.error("assessment: checking the answer raised %s", type(error).__name__)
-            row.status, row.reason_code, row.reason = "failed", "validation-error", CHECK_FAULT
-            row.usage = usage
-            return
-        row.status = verdict.status
-        row.reason_code, row.reason = verdict.reason_code, verdict.reason
-        row.result = (
-            verdict.result.model_dump(mode="json", by_alias=True) if verdict.result else None
+            return Assessed("failed", "validation-error", CHECK_FAULT, None, None, usage, True)
+        return Assessed(
+            verdict.status,
+            verdict.reason_code,
+            verdict.reason,
+            verdict.result.model_dump(mode="json", by_alias=True) if verdict.result else None,
+            verdict.removed.model_dump(mode="json", by_alias=True),
+            usage,
+            True,
         )
-        row.removed = verdict.removed.model_dump(mode="json", by_alias=True)
-        row.usage = usage
-        return
-    row.status, row.reason_code = "failed", "invalid-output"
-    row.reason = f"The assessment could not be used twice in a row: {problem.message}"
-    row.usage = usage
+    message = f"The assessment could not be used twice in a row: {problem.message}"
+    return Assessed("failed", "invalid-output", message, None, None, usage, True)
+
+
+def generate(
+    session: Session,
+    run: AnalysisRun,
+    provider: AssessmentProvider,
+    *,
+    requested_by: uuid.UUID,
+    now: datetime,
+) -> Generated:
+    """Assess a ready run and store the outcome (flushes; the caller commits)."""
+    gathered = inputs_mod.gather(session, run)
+    record = {**gathered.record(), "pipeline": pipeline_record()}
+    row = _row(run, provider, requested_by=requested_by, record=record, now=now)
+    outcome = assess(provider, gathered)
+    row.status, row.reason_code, row.reason = outcome.status, outcome.reason_code, outcome.reason
+    row.result, row.removed, row.usage = outcome.result, outcome.removed, outcome.usage
+    session.add(row)
+    session.flush()
+    return Generated(row, outcome.called)
 
 
 def current_inputs(session: Session, run: AnalysisRun) -> dict[str, Any]:
