@@ -331,6 +331,32 @@ describe('A finished analysis', () => {
     expect(screen.getByText(/Not enough evidence for a useful analysis/)).toBeVisible();
     expect(screen.getByText('No verified facts.')).toBeVisible();
   });
+
+  it('warns about document text that reads like instructions to an AI', async () => {
+    const { first } = await openFinished((r) => ({
+      ...r,
+      instructionLikePassages: [
+        {
+          evidenceId: 'D1',
+          documentId: r.facts[0].source.documentId,
+          documentName: r.facts[0].source.documentName,
+          sectionNumber: 2,
+          pageNumber: 2,
+        },
+      ],
+    }));
+    const warning = screen.getByText(/Possible prompt injection/).closest('div');
+    expect(warning).toHaveTextContent(/It was not used as evidence/);
+    expect(within(warning as HTMLElement).getByRole('link')).toHaveAttribute(
+      'href',
+      `/app/cases/${CASE_ID}/documents/${encodeURIComponent(first.id)}/text?section=2`,
+    );
+  });
+
+  it('shows no injection warning when nothing was flagged', async () => {
+    await openFinished();
+    expect(screen.queryByText(/Possible prompt injection/)).toBeNull();
+  });
 });
 
 describe('Runs that fail or do not match', () => {

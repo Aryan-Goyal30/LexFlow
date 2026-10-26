@@ -404,6 +404,29 @@ function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) 
               different text, or none.
             </p>
           )}
+          {(result.instructionLikePassages ?? []).length > 0 && (
+            <div
+              role="alert"
+              className="rounded-md bg-amber-50 px-3 py-2 text-amber-900 ring-1 ring-inset ring-amber-600/30"
+            >
+              <p>
+                <strong>Possible prompt injection.</strong> Some document text reads like
+                instructions to an AI system. It was not used as evidence; check these passages:
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-xs">
+                {(result.instructionLikePassages ?? []).map((p) => (
+                  <li key={p.evidenceId}>
+                    <Link
+                      to={documentTextPath(caseId, p.documentId, p.sectionNumber)}
+                      className="font-medium underline-offset-2 hover:underline"
+                    >
+                      {p.documentName}, {place(p.pageNumber, p.sectionNumber)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {result.insufficientEvidence && (
             <p className="rounded-md bg-brand-50 px-3 py-2 text-brand-800 ring-1 ring-inset ring-brand-200">
               <strong>Not enough evidence for a useful analysis.</strong>{' '}

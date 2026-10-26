@@ -1,0 +1,52 @@
+........................................................................ [  5%]
+........................................................................ [ 11%]
+........................................................................ [ 17%]
+........................................................................ [ 23%]
+........................................................................ [ 29%]
+........................................................................ [ 35%]
+........................................................................ [ 41%]
+........................................................................ [ 47%]
+........................................................................ [ 52%]
+........................................................................ [ 58%]
+........................................................................ [ 64%]
+........................................................................ [ 70%]
+........................................................................ [ 76%]
+........................................................................ [ 82%]
+........................................................................ [ 88%]
+.....F.................................................................. [ 94%]
+.......................................................................  [100%]
+================================== FAILURES ===================================
+_______________ test_unsharing_or_deleting_withdraws_it_at_once _______________
+
+as_ = <function as_.<locals>.get at 0x00000272005623E0>
+as_client = <function as_client.<locals>.get at 0x0000027200A0D8A0>
+db = <sqlalchemy.orm.session.Session object at 0x00000272001F7A70>
+storage_root = WindowsPath('<home>/AppData/Local/Temp/pytest-of-Aryan/pytest-475/test_unsharing_or_deleting_wit0/uploads')
+
+    def test_unsharing_or_deleting_withdraws_it_at_once(
+        as_: As, as_client: As, db: Session, storage_root: Any
+    ) -> None:
+        first = upload(as_("lead"), "First.pdf")
+>       second = upload(as_("lead"), "Second.pdf")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_portal.py:247: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+http = <starlette.testclient.TestClient object at 0x000002720080A4B0>
+name = 'Second.pdf', case_id = UUID('6532cb29-c4e4-5f6b-a787-bd49e6bb3025')
+
+    def upload(http: TestClient, name: str = "Advice.pdf", case_id: Any = SATTVIK) -> dict[str, Any]:
+        response = http.post(
+            f"/api/cases/{case_id}/documents", files={"file": (name, PDF, "application/pdf")}
+        )
+>       assert response.status_code == 201, response.text
+E       AssertionError: {"type":"https://lexflow.invalid/problems/duplicate-content","title":"Conflict","status":409,"detail":"Second.pdf has the same content as First.pdf, which is already attached to this case.","code":"duplicate-content","errors":[]}
+E       assert 409 == 201
+E        +  where 409 = <Response [409 Conflict]>.status_code
+
+tests\test_portal.py:89: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_portal.py::test_unsharing_or_deleting_withdraws_it_at_once
+1 failed, 1222 passed in 172.56s (0:02:52)
+exit=1

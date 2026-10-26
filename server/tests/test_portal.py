@@ -82,9 +82,16 @@ def concrete(path: str) -> str:
     return re.sub(r"\{[^}]+\}", str(uuid.uuid4()), path)
 
 
+def pdf_named(name: str) -> bytes:
+    """The fixture PDF with a comment naming it: different files have different content
+    (the same content twice on one case is refused)."""
+    return PDF if name == "Advice.pdf" else PDF + f"% {name}\n".encode()
+
+
 def upload(http: TestClient, name: str = "Advice.pdf", case_id: Any = SATTVIK) -> dict[str, Any]:
     response = http.post(
-        f"/api/cases/{case_id}/documents", files={"file": (name, PDF, "application/pdf")}
+        f"/api/cases/{case_id}/documents",
+        files={"file": (name, pdf_named(name), "application/pdf")},
     )
     assert response.status_code == 201, response.text
     body: dict[str, Any] = response.json()
@@ -232,7 +239,11 @@ def test_a_shared_document_reaches_its_client_only(
         "document.shared",
         "Associate Advocate",
     )
-    reads = [e for e in events if e.action == "document.downloaded"]
+    reads = [
+        e
+        for e in events
+        if e.action == "document.downloaded" and e.target_id == uuid.UUID(document["id"])
+    ]  # this test's document only
     assert [e.actor_id for e in reads] == [portal_people["client"].id]
 
 

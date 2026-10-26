@@ -199,3 +199,16 @@ def test_purge_removes_only_deleted_documents(as_: As, db: Session, storage_root
     assert len(stored_files(storage_root)) == 1
     download = as_("lead").get(live["downloadUrl"])
     assert download.status_code == 200 and download.content == PDF
+
+
+def test_restoring_waits_while_the_same_content_is_on_the_case_under_another_name(
+    as_: As, storage_root: Path
+) -> None:
+    first = upload(as_("lead"), "Reply.pdf")
+    as_("lead").delete(f"/api/documents/{first['id']}")
+    second = upload(as_("lead"), "Reply (copy).pdf")  # same content, new name: allowed now
+    clash = as_("lead").post(f"/api/documents/{first['id']}/restore")
+    assert (clash.status_code, clash.json()["code"]) == (409, "duplicate-content")
+    assert "Reply (copy).pdf" in clash.json()["detail"]
+    as_("lead").delete(f"/api/documents/{second['id']}")
+    assert as_("lead").post(f"/api/documents/{first['id']}/restore").status_code == 200

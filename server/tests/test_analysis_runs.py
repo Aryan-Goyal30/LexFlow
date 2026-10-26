@@ -344,7 +344,7 @@ def test_the_scripted_run_ends_ready_with_verified_sources_only(
     (done,) = events(db, "analysis.completed")
     assert done.details["providerCalled"] is True and done.details["removed"] == 1
     assert done.details["schemaVersion"] == "case-analysis-schema-2"
-    assert done.details["validatorVersion"] == "grounding-4"
+    assert done.details["validatorVersion"] == "grounding-5"
     row = db.get(AnalysisRun, uuid.UUID(run_id))
     assert row is not None and row.evidence is not None
     assert row.evidence["pipeline"] == runs.pipeline_record()

@@ -56,6 +56,7 @@ from lexflow.analysis.output import EVIDENCE_ID, ParsedOutput
 from lexflow.schemas import (
     AnalysisContradictionOut,
     AnalysisFactOut,
+    AnalysisFlaggedPassageOut,
     AnalysisIssueOut,
     AnalysisPassageRefOut,
     AnalysisPrecedentOut,
@@ -71,8 +72,11 @@ QUOTE_MIN = 15
 # distinct contradiction sources); "grounding-3": M9 review (outcome wording
 # narrowed to litigation outcomes, so factual statements are kept);
 # "grounding-4": M10 (quotes shortened with "..." checked piece by piece;
-# overlapping quotes of one passage are one contradiction source).
-VALIDATOR_VERSION = "grounding-4"
+# overlapping quotes of one passage are one contradiction source);
+# "grounding-5": Batch 3 (text that reads like instructions to an AI system is
+# never evidence: quotes from it are removed, it cannot vouch for a citation,
+# and the result lists its passages).
+VALIDATOR_VERSION = "grounding-5"
 # A quote may be shortened with "...", "…" (NFKC turns it into "..."), "[...]"
 # or "(...)"; at most this many pieces.
 _ELISION = re.compile(r"\s*[\[(]?\.{3,}[\])]?\s*")
@@ -91,6 +95,10 @@ REASONS: dict[str, str] = {
     "malformed": "Did not have the expected shape.",
     "over-limit": "Went beyond the number of items allowed.",
     "outcome-discarded": "An outcome assessment was returned; LexFlow does not show one.",
+    "instruction-text": (
+        "Quoted document text that reads like instructions to an AI system (possible "
+        "prompt injection); it is not used as evidence."
+    ),
 }
 
 NO_PASSAGES = "None of the selected documents had text that could be analysed."
@@ -197,6 +205,63 @@ def normalise(text: str) -> str:
     return _SPACE.sub(" ", unicodedata.normalize("NFKC", text).translate(_TYPOGRAPHY)).strip()
 
 
+# Text in a document that addresses an AI system rather than a court or a party:
+# an attempt to steer the model (prompt injection). On the 1,267 chunks of the
+# 17 genuine judgments (Batch 3) these patterns match nothing; in the fixtures
+# only the deliberate injection of the Phase 5 smoke notice. Such text stays in
+# the document but is never evidence: quotes from it are removed, it cannot
+# vouch for a citation, and the result names the passage.
+_INSTRUCTION = re.compile(
+    "|".join(
+        (
+            r"\b(?:ignore|disregard|forget|override)\b[^.]{0,40}?"
+            r"\b(?:your|all|any|previous|prior|above|earlier|system)\b[^.]{0,25}?"
+            r"\b(?:rules|instructions|prompts?|guidelines|directives)\b",
+            r"\bsystem\s+(?:override|prompt|message|instructions?)\b",
+            r"\b(?:you are|act as|pretend to be|as an?)\s+(?:now\s+)?(?:an?\s+)?"
+            r"(?:ai|a\.i\.|assistant|chatbot|language model|llm)\b",
+            r"(?:^|\n)\s*(?:system|assistant)\s*:|<\|[a-z_]+\|>|\[/?INST\]",
+            r"\bnew\s+instructions?\s*:",
+        )
+    ),
+    re.IGNORECASE,
+)
+
+
+def instruction_spans(raw: str) -> list[tuple[int, int]]:
+    """Where a passage reads like instructions to an AI, in normalised offsets.
+
+    Each span runs from the start of the sentence that matches to the end of
+    its paragraph (a blank line or the end of the passage), so the rest of an
+    injected paragraph is covered and the passage's other text is not.
+    """
+    normal = normalise(raw)
+    spans: list[tuple[int, int]] = []
+    for match in _INSTRUCTION.finditer(raw):
+        start = max(raw.rfind(mark, 0, match.start()) for mark in (". ", "! ", "? ", "\n")) + 1
+        end = raw.find("\n\n", match.end())
+        piece = normalise(raw[start : end if end >= 0 else len(raw)])
+        at = normal.find(piece) if piece else -1
+        if at >= 0:
+            spans.append((at, at + len(piece)))
+    merged: list[tuple[int, int]] = []
+    for start, end in sorted(spans):
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def _without(text: str, spans: list[tuple[int, int]]) -> str:
+    kept, position = [], 0
+    for start, end in spans:
+        kept.append(text[position:start])
+        position = end
+    kept.append(text[position:])
+    return " ".join(kept)
+
+
 class _Tally:
     def __init__(self) -> None:
         self.counts: Counter[str] = Counter()
@@ -243,7 +308,12 @@ class _Checker:
     def __init__(self, evidence: Evidence) -> None:
         self.evidence = evidence
         self._normal = {p.id: normalise(p.text) for p in evidence.passages}
-        known = [normalise(p.text) for p in evidence.passages]
+        self.instructions = {
+            p.id: spans for p in evidence.passages if (spans := instruction_spans(p.text))
+        }
+        known = [
+            _without(self._normal[p.id], self.instructions.get(p.id, [])) for p in evidence.passages
+        ]
         known += [normalise(j.text) for j in evidence.judgments]
         known += [normalise(j.citation) for j in evidence.judgments if j.citation]
         known += [normalise(j.title) for j in evidence.judgments]
@@ -269,6 +339,11 @@ class _Checker:
         )
         if span is None:
             return "quote-not-found"
+        if any(
+            span[0] < end and start < span[1]
+            for start, end in self.instructions.get(passage.id, [])
+        ):
+            return "instruction-text"
         verified = AnalysisSourceOut(
             evidence_id=passage.id,
             document_id=passage.document_id,
@@ -436,6 +511,17 @@ def validate(parsed: ParsedOutput, evidence: Evidence) -> AnalysisResultOut:
         insufficient_reason=reason,
         precedents_available=bool(evidence.judgments),
         removed=tally.result(),
+        instruction_like_passages=[
+            AnalysisFlaggedPassageOut(
+                evidence_id=p.id,
+                document_id=p.document_id,
+                document_name=p.document_name,
+                section_number=p.section_number,
+                page_number=p.page_number,
+            )
+            for p in evidence.passages
+            if p.id in check.instructions
+        ],
     )
 
 

@@ -1,0 +1,219 @@
+{
+ "run_at": "2026-10-25T18:33:06+00:00",
+ "database": "lexflow_e2e",
+ "judgments": 17,
+ "pages": 631,
+ "chunks": 1267,
+ "pages_with_printed_marker": 240,
+ "printed_markers_agreeing": 167,
+ "failed": 0,
+ "warnings": 1,
+ "results": [
+  {
+   "id": "nc-2025-INSC-981",
+   "title": "Pernod Ricard India Private Limited & Another v. Karanveer Singh Chhabra",
+   "problems": [],
+   "warnings": [],
+   "pages": 97,
+   "printed_markers": {
+    "pages_with_marker": 0,
+    "agree": 0
+   },
+   "chunks": 224
+  },
+  {
+   "id": "sha256-9db7ac8cefd50d2e",
+   "title": "Indian Performing Rights Society Ltd. v. Sanjay Dalia & Anr.",
+   "problems": [],
+   "warnings": [],
+   "pages": 50,
+   "printed_markers": {
+    "pages_with_marker": 0,
+    "agree": 0
+   },
+   "chunks": 102
+  },
+  {
+   "id": "sha256-75afcfade16dfba7",
+   "title": "Whirlpool Corporation v. Registrar of Trade Marks, Mumbai & Ors.",
+   "problems": [],
+   "warnings": [],
+   "pages": 19,
+   "printed_markers": {
+    "pages_with_marker": 19,
+    "agree": 19
+   },
+   "chunks": 74
+  },
+  {
+   "id": "sha256-dbcbb6d4167b11c6",
+   "title": "Renaissance Hotel Holdings Inc. v. B. Vijaya Sai and Others",
+   "problems": [],
+   "warnings": [],
+   "pages": 61,
+   "printed_markers": {
+    "pages_with_marker": 0,
+    "agree": 0
+   },
+   "chunks": 98
+  },
+  {
+   "id": "sha256-ab93f027284b90a8",
+   "title": "Amritdhara Pharmacy v. Satyadeo Gupta",
+   "problems": [],
+   "warnings": [],
+   "pages": 10,
+   "printed_markers": {
+    "pages_with_marker": 10,
+    "agree": 10
+   },
+   "chunks": 36
+  },
+  {
+   "id": "sha256-3493637ea535eb5f",
+   "title": "Milmet Oftho Industries & Ors. v. Allergan Inc.",
+   "problems": [],
+   "warnings": [],
+   "pages": 3,
+   "printed_markers": {
+    "pages_with_marker": 3,
+    "agree": 3
+   },
+   "chunks": 11
+  },
+  {
+   "id": "nc-2025-INSC-687",
+   "title": "K. Mangayarkarasi & Anr. v. N.J. Sundaresan & Anr.",
+   "problems": [],
+   "warnings": [],
+   "pages": 28,
+   "printed_markers": {
+    "pages_with_marker": 28,
+    "agree": 28
+   },
+   "chunks": 50
+  },
+  {
+   "id": "sha256-843dab1e08d0d71a",
+   "title": "Parle Products (P) Ltd. v. J. P. & Co., Mysore",
+   "problems": [],
+   "warnings": [],
+   "pages": 6,
+   "printed_markers": {
+    "pages_with_marker": 6,
+    "agree": 6
+   },
+   "chunks": 22
+  },
+  {
+   "id": "sha256-21ce7ca3b2ca6e91",
+   "title": "Shyam Sel and Power Limited and Another v. Shyam Steel Industries Limited",
+   "problems": [],
+   "warnings": [],
+   "pages": 46,
+   "printed_markers": {
+    "pages_with_marker": 0,
+    "agree": 0
+   },
+   "chunks": 62
+  },
+  {
+   "id": "nc-2025-INSC-1190",
+   "title": "Lifestyle Equities C.V. & Anr. v. Amazon Technologies Inc.",
+   "problems": [],
+   "warnings": [
+    "the document's printed page numbers run 1 behind the PDF pages (on all 73 numbered pages, e.g. an unnumbered cover page): LexFlow references are PDF pages, so its page N is printed page N - 1"
+   ],
+   "pages": 74,
+   "printed_markers": {
+    "pages_with_marker": 73,
+    "agree": 0
+   },
+   "chunks": 151
+  },
+  {
+   "id": "sha256-3b1bd8736b1bf78d",
+   "title": "Royal Orchid Hotels Ltd. v. Kamat Hotels (India) Ltd. & Ors.",
+   "problems": [],
+   "warnings": [],
+   "pages": 10,
+   "printed_markers": {
+    "pages_with_marker": 0,
+    "agree": 0
+   },
+   "chunks": 10
+  },
+  {
+   "id": "sha256-d066def12c140e00",
+   "title": "M/s Gujarat Bottling Co. Ltd. & Ors. v. The Coca Cola Co. & Ors.",
+   "problems": [],
+   "warnings": [],
+   "pages": 26,
+   "printed_markers": {
+    "pages_with_marker": 26,
+    "agree": 26
+   },
+   "chunks": 99
+  },
+  {
+   "id": "sha256-da4c1b6c26dc790b",
+   "title": "Wockhardt Limited v. Torrent Pharmaceuticals Ltd. and Anr.",
+   "problems": [],
+   "warnings": [],
+   "pages": 15,
+   "printed_markers": {
+    "pages_with_marker": 0,
+    "agree": 0
+   },
+   "chunks": 25
+  },
+  {
+   "id": "sha256-624744063b0e2ff8",
+   "title": "M/s. Nandhini Deluxe v. M/s. Karnataka Co-operative Milk Producers Federation Ltd.",
+   "problems": [],
+   "warnings": [],
+   "pages": 47,
+   "printed_markers": {
+    "pages_with_marker": 47,
+    "agree": 47
+   },
+   "chunks": 99
+  },
+  {
+   "id": "nc-2025-INSC-828",
+   "title": "Asian Paints Limited v. Ram Babu & Another",
+   "problems": [],
+   "warnings": [],
+   "pages": 28,
+   "printed_markers": {
+    "pages_with_marker": 28,
+    "agree": 28
+   },
+   "chunks": 46
+  },
+  {
+   "id": "sha256-9e5d743b9544891e",
+   "title": "Ajanta LLP v. Casio Keisanki Kabushiki Kaisha d/b/a Casio Computer Co. Ltd.",
+   "problems": [],
+   "warnings": [],
+   "pages": 50,
+   "printed_markers": {
+    "pages_with_marker": 0,
+    "agree": 0
+   },
+   "chunks": 52
+  },
+  {
+   "id": "sha256-65e6644393613c42",
+   "title": "Canara Bank v. N.G. Subbaraya Setty & Anr.",
+   "problems": [],
+   "warnings": [],
+   "pages": 61,
+   "printed_markers": {
+    "pages_with_marker": 0,
+    "agree": 0
+   },
+   "chunks": 106
+  }
+ ]
+}

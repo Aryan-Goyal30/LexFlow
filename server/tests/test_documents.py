@@ -657,3 +657,20 @@ def test_files_survive_an_application_restart(
         response = fresh.get(created["downloadUrl"])
         assert response.status_code == 200 and response.content == PDF
         assert fresh.get(f"/api/cases/{CASE}").json()["documents"][0]["id"] == created["id"]
+
+
+def test_rejects_the_same_content_under_another_name_on_the_same_case(
+    client: TestClient, seeded: Session
+) -> None:
+    assert upload(client, "Rejoinder.pdf", PDF).status_code == 201
+    body = problem(upload(client, "Rejoinder copy.pdf", PDF), 409, "duplicate-content")
+    assert "same content as Rejoinder.pdf" in body["detail"]
+    assert document_count(seeded) == 5
+
+
+def test_the_same_content_is_accepted_again_once_the_first_copy_is_deleted(
+    client: TestClient, seeded: Session
+) -> None:
+    first = upload(client, "Rejoinder.pdf", PDF).json()["id"]
+    assert client.delete(f"/api/documents/{first}").status_code == 204
+    assert upload(client, "Rejoinder (again).pdf", PDF).status_code == 201

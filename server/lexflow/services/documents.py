@@ -126,6 +126,21 @@ def upload_document(
 
         if size == 0:
             raise ProblemError(422, "empty", f"{name} is empty.")
+        # The same file under another name would put the same evidence in the
+        # case twice (analysis would count it twice); other cases may hold it.
+        same = session.scalar(
+            select(Document.name).where(
+                Document.case_id == case_id,
+                Document.sha256 == hasher.hexdigest(),
+                Document.deleted_at.is_(None),
+            )
+        )
+        if same is not None:
+            raise ProblemError(
+                409,
+                "duplicate-content",
+                f"{name} has the same content as {same}, which is already attached to this case.",
+            )
         if not content_matches(kind, head, staged_path, text.ok):
             raise ProblemError(
                 415,
@@ -205,7 +220,8 @@ def restore(session: Session, document: Document) -> bool:
     """Bring a deleted document back. Commits. False if it was not deleted.
 
     Refused (409 ``duplicate``) while a live document on the case has the same
-    name: one of them must be renamed or deleted first.
+    name, and (409 ``duplicate-content``) while one has the same content: one of
+    them must be renamed or deleted first.
     """
     if document.deleted_at is None:
         return False
@@ -218,6 +234,21 @@ def restore(session: Session, document: Document) -> bool:
     )
     if clash is not None:
         raise _name_taken(document.name)
+    if document.sha256 is not None:
+        same = session.scalar(
+            select(Document.name).where(
+                Document.case_id == document.case_id,
+                Document.sha256 == document.sha256,
+                Document.deleted_at.is_(None),
+            )
+        )
+        if same is not None:
+            raise ProblemError(
+                409,
+                "duplicate-content",
+                f"{same} on this case has the same content as {document.name}. "
+                "Delete it, then restore.",
+            )
     document.deleted_at, document.deleted_by_id = None, None
     try:
         session.commit()

@@ -1,0 +1,53 @@
+e2e database 'lexflow_e2e_playwright' ready: 70 sample rows, 6 sign-in accounts, 13 SYNTHETIC judgments.
+
+Running 47 tests using 1 worker
+
+[1/47] [chromium] › e2e\admin.spec.ts:8:1 › a new account signs in, must change its password, and can be disabled
+[2/47] [chromium] › e2e\admin.spec.ts:55:1 › the audit log records sign-ins and is for administrators only
+[3/47] [chromium] › e2e\analysis.spec.ts:32:1 › an advocate analyses a sample case and every claim links to its source
+[4/47] [chromium] › e2e\analysis.spec.ts:80:1 › a lawyer reviews the findings and exports a brief of the accepted ones (Phase 6)
+[5/47] [chromium] › e2e\analysis.spec.ts:121:1 › a paralegal sees the result but cannot start an analysis
+[6/47] [chromium] › e2e\analysis.spec.ts:137:1 › outsiders and clients cannot reach the analysis routes
+[7/47] [chromium] › e2e\analysis.spec.ts:147:1 › the outcome assessment demo: generated from accepted findings, labelled, reviewed (Phase 7)
+[8/47] [chromium] › e2e\auth.spec.ts:12:1 › signs in with the form, signs out, and the old session is then useless
+[9/47] [chromium] › e2e\auth.spec.ts:42:1 › a wrong password gets the same answer as an unknown account
+[10/47] [chromium] › e2e\auth.spec.ts:51:1 › five wrong passwords lock the account: the sixth try fails even when right
+[11/47] [chromium] › e2e\auth.spec.ts:64:1 › changes need the app header, and the dev server grants no CORS
+[12/47] [chromium] › e2e\case-changes.spec.ts:27:1 › the lead edits the case, and the timeline records who did it
+[13/47] [chromium] › e2e\case-changes.spec.ts:57:1 › a paralegal may change the court but not the title
+[14/47] [chromium] › e2e\case-changes.spec.ts:86:1 › an archived case is read-only for everyone until restored
+[15/47] [chromium] › e2e\case-changes.spec.ts:132:1 › adding someone to the team gives them the case; removing takes it away
+[16/47] [chromium] › e2e\case-changes.spec.ts:166:1 › a deleted document is kept and the lead can restore it, file and all
+[17/47] [chromium] › e2e\case-changes.spec.ts:201:1 › a paralegal schedules, changes and cancels a hearing
+[18/47] [chromium] › e2e\case-changes.spec.ts:240:1 › an administrator adds a client and opens their first case
+[19/47] [chromium] › e2e\case-changes.spec.ts:275:1 › the Hearings page lists only the hearings of your cases
+[20/47] [chromium] › e2e\cases.spec.ts:33:1 › the case list comes from the API, with sample cases labelled
+[21/47] [chromium] › e2e\cases.spec.ts:47:1 › a new case is saved on the server and survives a reload
+[22/47] [chromium] › e2e\cases.spec.ts:67:1 › documents upload, open, persist and delete
+[23/47] [chromium] › e2e\cases.spec.ts:105:1 › the server rejects a file whose contents do not match its type
+[24/47] [chromium] › e2e\cases.spec.ts:123:1 › cases and files are still there after the API restarts
+[25/47] [chromium] › e2e\cases.spec.ts:134:1 › an unknown case shows "Case not found"
+[26/47] [chromium] › e2e\demo-workflow.spec.ts:33:1 › a lawyer opens a fictional client and case and files the fictional papers
+[27/47] [chromium] › e2e\demo-workflow.spec.ts:74:1 › the extracted text is page-aware and both sides of the planted contradiction are found
+[28/47] [chromium] › e2e\demo-workflow.spec.ts:109:1 › analyse, review (accept, edit, reject), export the brief and assess the fictional case
+[29/47] [chromium] › e2e\demo-workflow.spec.ts:170:1 › people outside the fictional case cannot reach it
+[30/47] [chromium] › e2e\document-text.spec.ts:38:1 › a 3-page PDF is processed in the background and read page by page
+[31/47] [chromium] › e2e\document-text.spec.ts:70:1 › a PDF without a text layer fails visibly and can be retried
+[32/47] [chromium] › e2e\document-text.spec.ts:95:1 › clients and outsiders cannot read extracted text
+[33/47] [chromium] › e2e\harness.spec.ts:62:1 › leaves an unrelated process alone when its pid is in the record
+[34/47] [chromium] › e2e\harness.spec.ts:72:1 › leaves an e2e API from another run alone
+[35/47] [chromium] › e2e\harness.spec.ts:81:1 › stops the process only when pid and run id both match
+[36/47] [chromium] › e2e\harness.spec.ts:92:1 › treats a pid that is no longer running as nothing to stop
+[37/47] [chromium] › e2e\harness.spec.ts:101:1 › ignores a missing or malformed record
+[38/47] [chromium] › e2e\portal.spec.ts:10:1 › a shared document reaches the client, and leaves when unshared
+[39/47] [chromium] › e2e\portal.spec.ts:58:1 › a client account reaches nothing of the staff app
+[40/47] [chromium] › e2e\research.spec.ts:28:1 › research from a case finds a judgment and opens it with its source
+[41/47] [chromium] › e2e\research.spec.ts:68:1 › empty and unmatched searches are handled, and a failed search can be retried
+[42/47] [chromium] › e2e\research.spec.ts:100:1 › the Precedent Library browses, filters and pages the collection
+[43/47] [chromium] › e2e\research.spec.ts:126:1 › the library works at phone width without sideways scrolling
+[44/47] [chromium] › e2e\research.spec.ts:138:1 › clients and anonymous callers cannot reach the collection
+[45/47] [chromium] › e2e\research.spec.ts:152:1 › a private case document never appears in judgment search
+[46/47] [chromium] › e2e\roles.spec.ts:13:3 › a Paralegal on the Sattvik case team › sees only that case, adds a document, and cannot remove one
+[47/47] [chromium] › e2e\roles.spec.ts:49:3 › an Advocate who does not work on the Sattvik case › cannot find it, by screen or by API
+  47 passed (1.7m)
+exit=0

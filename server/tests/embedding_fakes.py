@@ -73,7 +73,9 @@ def make_ready(
         document_type="PDF",
         content_type="application/pdf",
         size_bytes=100,
-        sha256="0" * 64,
+        # Distinct per document, as for real files (the same content twice on one
+        # case is refused on upload and restore).
+        sha256=hashlib.sha256(f"{name}\n{pages!r}".encode()).hexdigest(),
         storage_key=uuid.uuid4().hex,
         uploaded_on=NOW.date(),
     )

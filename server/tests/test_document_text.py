@@ -211,7 +211,8 @@ def test_no_retry_on_an_archived_case_or_for_a_deleted_document(
 
 
 def failed_scan_named(as_: As, db: Session, root: Path, name: str) -> str:
-    document = upload(as_("lead"), name, pdf_without_text())
+    # Three pages: not the same file as the other scan (identical content is refused).
+    document = upload(as_("lead"), name, pdf_without_text(pages=3))
     process(db, root)
     return document
 
