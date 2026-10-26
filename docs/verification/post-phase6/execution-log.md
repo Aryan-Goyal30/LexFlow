@@ -333,3 +333,42 @@ Checkpoint: V5 — post-Phase-6 review complete (docs/verification/post-phase6/c
   cases.
 
 Checkpoint: F5 — follow-up complete (docs/verification/post-phase6/checkpoint.json); next action: owner decides R4 (source, with a lawyer's review of the terms), R5 (reviewer and pilot) and R6 (D1 checklist).
+
+## F6 — Corrections after the read-only audit of `707b002` (2026-10-25)
+
+- **State at start:** HEAD `707b002` (parent `0d6914c`), `master`, clean
+  tree, no remote. Brief SHA-256 matches.
+- **Documentation only.** No application code, tests, configuration,
+  schema, migrations, databases, backups or saved evidence were changed.
+  No web research was done.
+- **Changes, each answering an audit finding:**
+  1. `docs/phase7-prerequisites/SOURCE_CANDIDATE_SCI_JUDGMENTS.md`:
+     - §2 relabelled from "Verified facts" to claims reported by the AWS
+       registry and the maintainer, not preserved in this repository. The
+       web-fetch tool summarises pages, so quotations may not be exact.
+     - New §2a: the evidence that can be inspected here (none about the
+       dataset itself).
+     - New question 8: the reported claims are themselves unverified.
+     - An explicit rule in the status and the recommendation: no download,
+       import or use before the source and legal approvals are documented.
+     - Suitability statements qualified as "if the reported columns are
+       present".
+  2. `docs/phase7-prerequisites/PRIVACY_REVIEW_CHECKLIST.md`, section D:
+     - a new item on the application access log, `lexflow.access`;
+     - what the code shows: method, path (with ids), status and duration;
+       standard error through `logging.basicConfig`;
+     - questions for verification: destination, access, fields, retention
+       and deletion, backups, external collection, other loggers;
+     - section F: application logs added to retention.
+  3. `CLAUDE.md`:
+     - the handoff now points to this checkpoint, the register, this log,
+       the Phase 7 draft and the prerequisite drafts;
+     - a new resume instruction; the Phase 6 one is kept as history;
+     - the checkpoint rule now says the Phase 6 script writes only the
+       Phase 6 checkpoint, and how this one is updated.
+  4. `docs/verification/post-phase6/README.md`: one note under the
+     follow-up register.
+- **Open risks:** none removed, resolved or downgraded. R4, R5, R5a and R6
+  still block Phase 7. The proposal remains a draft.
+
+Checkpoint: F6 — audit documentation corrections recorded (docs/verification/post-phase6/checkpoint.json); next action unchanged: owner decides R4, R5 and R6.

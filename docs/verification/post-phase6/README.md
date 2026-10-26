@@ -89,6 +89,15 @@ remains **blocked**.
 required for any real case. Then the decisions in `docs/PHASE7_PROPOSAL.md`
 §10.
 
+**Audit corrections (2026-10-25, log F6):**
+- The R4 evidence above consists of claims reported by the AWS registry and
+  the maintainer. No copy of those pages is preserved in this repository
+  (source assessment §2 and §2a).
+- The dataset must not be downloaded, imported or used before the source
+  and legal approvals are documented.
+- The privacy checklist now covers the application access log.
+- The status of R4, R5, R5a and R6 is unchanged.
+
 ## Resume
 
 > Resume the LexFlow post-Phase-6 review from `docs/verification/post-phase6/checkpoint.json`. Read its `next_action`, check Git state and the protected-file hash, and continue without repeating completed checks.

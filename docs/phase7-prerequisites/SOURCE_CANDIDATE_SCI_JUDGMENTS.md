@@ -2,6 +2,12 @@
 
 Status: **candidate only (2026-10-25). Not approved, not downloaded, not
 imported.**
+- **Do not download, import or otherwise use this dataset** (not even a
+  sample or a subset) until both of these are documented in this
+  repository:
+  - the owner's approval of the source;
+  - the legal review of its licence and upstream terms (register R4).
+- Nothing in this document approves the licence or the upstream terms.
 - No licence terms were accepted.
 - This is a desk review of public pages, not legal advice. Whether LexFlow
   may store and search the corpus is for the owner to decide, ideally with
@@ -10,6 +16,15 @@ imported.**
 ## 1. What was checked, and how
 
 Read on 2026-10-25 with a web fetch; nothing was downloaded from the bucket.
+
+**How reliable this is.** The fetch tool returns a summary of each page, so
+the short quotations in §2 may not be exact.
+- **No copy of any page was saved in this repository.**
+- The statements in §2 are therefore claims as reported by the registry and
+  the maintainer, recorded once on 2026-10-25. They are not evidence that
+  can be inspected here.
+- Before any approval, save dated copies of the pages, or a lawyer reads
+  them directly (§4, question 8).
 
 | Source | Kind | Result |
 |---|---|---|
@@ -21,7 +36,11 @@ Read on 2026-10-25 with a web fetch; nothing was downloaded from the bucket.
 | <https://www.sci.gov.in/website-policies/> | Supreme Court website policies | **HTTP 403**, not read |
 | India Code (Copyright Act 1957, s. 52); copyright.gov.in exceptions page | statute (primary) | **HTTP 403** and a redirect, not read |
 
-## 2. Verified facts (from the pages above)
+## 2. Claims reported by the AWS registry and the maintainer (not preserved here)
+
+*Each item below is what the pages said, as summarised on 2026-10-25. None
+was checked against the dataset itself, and none is preserved in this
+repository.*
 
 - **Name and steward:** "Indian Supreme Court Judgments". The registry
   names Dattam Labs (dattam.in, contact@dattam.in) as manager. The code and
@@ -65,6 +84,19 @@ Read on 2026-10-25 with a web fetch; nothing was downloaded from the bucket.
   rules, redaction or anonymisation, any privacy statement, or a
   disclaimer.
 
+## 2a. Evidence preserved and inspectable in this repository
+
+- **About the dataset itself: none.** No page copy, licence file copy,
+  metadata sample or judgment is stored here.
+- **What can be inspected here:**
+  - this document;
+  - the execution-log entry that records the desk review
+    (`docs/verification/post-phase6/execution-log.md`, F2);
+  - LexFlow's own requirements for any source: the `judgment_sources` model
+    in `server/lexflow/models.py` (terms URL, date checked, who checked,
+    permitted use) and the Phase 4 plan (Gate 2; "no crawling or
+    downloading by LexFlow").
+
 ## 3. Secondary information (not verified against the primary text)
 
 - **Copyright Act 1957, s. 52(1)(q)(iv)**, as reproduced by secondary
@@ -81,7 +113,7 @@ Read on 2026-10-25 with a web fetch; nothing was downloaded from the bucket.
 
 A lawyer should confirm both points against the official text.
 
-## 4. Unresolved questions (legal or factual; for the owner and a lawyer)
+## 4. Unverified and unresolved questions (legal or factual; for the owner and a lawyer)
 
 1. **What does CC BY 4.0 cover here?** A licence can only grant rights the
    licensor holds. If the judgment texts themselves may be reproduced under
@@ -112,11 +144,16 @@ A lawyer should confirm both points against the official text.
    (licence link, licensor, "changes made", e.g. text extraction and
    chunking) enough? Should it appear on every passage, on the judgment page,
    or in an "about the collection" page?
+8. **The reported claims themselves (§2).** Licence, steward, origin,
+   coverage, layout and fields are unverified until someone saves dated
+   copies of the pages or reads them directly. Fields and coverage can only
+   be confirmed on an approved sample.
 
 ## 5. Suitability for LexFlow (engineering view)
 
 **Fits:**
-- `path`, `cnr`, `case_id`, `decision_date` and `scraped_at` give per-judgment
+- If the reported columns are present (§2, unverified): `path`, `cnr`,
+  `case_id`, `decision_date` and `scraped_at` would give per-judgment
   provenance and a natural de-duplication key (`cnr`). This fits the Phase 4
   importer, which already requires a terms URL, the date checked, who
   checked and the permitted use (`judgment_sources`), and de-duplicates by
@@ -143,12 +180,15 @@ named PDFs) and place it locally for the importer.
 
 ## 6. Recommendation
 
-- **Keep it as the leading candidate.** It is openly published, says which
-  licence it uses, and carries the provenance fields LexFlow needs.
-- **Do not approve it until questions 1–4 are answered** by the owner with a
-  lawyer's review, and the upstream portal's terms are read in full and
-  recorded (URL, date, reader, what they permit) in the form
+- **Keep it as the leading candidate.** It is reported to be openly
+  published, to state its licence and to carry the provenance fields
+  LexFlow needs (§2, unverified).
+- **Do not approve it until questions 1–4 and 8 are answered** by the owner
+  with a lawyer's review, and the upstream portal's terms are read in full
+  and recorded (URL, date, reader, what they permit) in the form
   `judgment_sources` needs.
+- **No download, import or use before that approval is documented** (see
+  Status). Questions 5–7 should also be settled before any real use.
 - Then pilot with one practice area and a small subset (a few hundred
   judgments, per the brief), recording the attribution decided in question
   7.

@@ -33,6 +33,7 @@
     "F2 candidate source review": "complete (desk review; not approved; nothing downloaded)",
     "F3 annotation guide": "complete (draft)",
     "F4 privacy checklist": "complete (checklist; review not done)",
-    "F5 register update": "complete (README follow-up section; proposal still draft)"
+    "F5 register update": "complete (README follow-up section; proposal still draft)",
+    "F6 audit documentation corrections": "complete (documentation only: source claims relabelled, no-use-before-approval rule, access-log privacy questions, CLAUDE.md handoff; see log F6)"
   }
 }

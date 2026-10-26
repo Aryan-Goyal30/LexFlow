@@ -81,6 +81,37 @@ current code (checked 2026-10-25, HEAD `0d6914c` plus the race test).
 - ☐ Is the machine shared, and who has OS-level access?
 - ☐ The secrets policy is adequate (keys only in `server/.env`, never
   logged).
+- ☐ **Application access log (`lexflow.access`).**
+  - **What the code shows** (checked 2026-10-25):
+    - `server/lexflow/main.py` logs one line per request: method, path,
+      status and duration.
+    - Its comment says it logs no bodies, query strings or file contents.
+    - Paths carry identifiers: case, run, finding, document, client,
+      hearing, judgment, user and team-member ids (for example
+      `/api/cases/{case_id}/analysis-runs/{run_id}/reviews/{finding_id}`).
+    - Case ids in paths are UUIDs (`parse_case_id`).
+    - `server/lexflow/__main__.py` sets `logging.basicConfig` with no file
+      handler, so the lines go to the process's standard error. Uvicorn's own
+      access log is off.
+  - **To verify** (no evidence in the repository; answer for each way
+    LexFlow is run):
+    - ☐ **Destination:** where standard error ends up (the terminal, a file,
+      a service manager or Docker log, or a collector).
+    - ☐ **Access:** who can read those log files or streams on this machine.
+    - ☐ **Fields:** do ids plus timestamps, linked with the database, count
+      as personal data or reveal client matters? Should any path segment be
+      masked?
+    - ☐ **Retention and deletion:** how long log output is kept; whether it
+      rotates; how it is deleted, including after a client's erasure
+      request.
+    - ☐ **Backup copies:** are log files included in machine or backup
+      copies?
+    - ☐ **External collection:** is any log shipped off the machine (none is
+      configured in the code; confirm for the deployment)?
+    - ☐ **Other loggers:** what do `lexflow.errors`, `lexflow.audit`,
+      `lexflow.analysis`, `lexflow.worker`, `lexflow.documents`,
+      `lexflow.extraction` and `lexflow.health` write? Their contents were
+      not reviewed for this checklist.
 
 ## E. External transfers
 
@@ -116,7 +147,7 @@ current code (checked 2026-10-25, HEAD `0d6914c` plus the race test).
 ## F. Retention and deletion
 
 - ☐ Set a retention period per category (case files, analysis results,
-  reviews and notes, audit, sessions, backups).
+  reviews and notes, audit, sessions, application logs (see D), backups).
 - ☐ Deletion today:
   - documents are soft-deleted (restorable) until an Administrator runs
     `python -m lexflow.cli.documents purge` (it previews first);
