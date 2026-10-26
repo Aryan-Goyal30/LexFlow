@@ -21,7 +21,14 @@ from sqlalchemy.orm import Session
 
 from lexflow.api.search import get_search_provider
 from lexflow.extraction import Extracted, Limits, extract
-from lexflow.models import AuditEvent, Judgment, JudgmentChunk, JudgmentSection
+from lexflow.models import (
+    AuditEvent,
+    Judgment,
+    JudgmentChunk,
+    JudgmentProvenance,
+    JudgmentSection,
+    JudgmentSource,
+)
 from lexflow.services import judgment_import as importer
 from lexflow.services import judgments as service
 from tests.access_fixtures import SATTVIK
@@ -370,3 +377,119 @@ def test_judgment_searches_are_audited_without_the_query(
     assert event.actor_id == people["paralegal"].id
     assert event.details == {"mode": "keyword", "results": 0, "page": 2}
     assert "confidential" not in str(event.details)
+
+
+# --- genuine and synthetic, provenance (Batch 2) ------------------------------------------------
+
+
+@pytest.fixture
+def mixed(db: Session, collection: None) -> None:
+    """Two of the invented judgments moved to a source NOT flagged synthetic.
+
+    Test-only and rolled back: the texts stay invented, the source's name says
+    so, and nothing here is a genuine judgment.
+    """
+    source = JudgmentSource(
+        key="test-unflagged-source",
+        name="TEST ONLY: unflagged source (not real law)",
+        terms_url="https://terms.example.org/test-only",
+        terms_checked_on=NOW.date(),
+        terms_checked_by="LexFlow tests",
+        permitted_use="Test only.",
+        is_synthetic=False,
+    )
+    db.add(source)
+    db.flush()
+    for name in ("syn-001", "syn-002"):
+        judgment = db.get(Judgment, uuid.UUID(jid(name)))
+        assert judgment is not None
+        judgment.source_id = source.id
+    db.flush()
+
+
+def test_browsing_and_search_filter_by_origin(as_: As, mixed: None) -> None:
+    http = as_("lead")
+    genuine = http.get("/api/judgments", params={"origin": "genuine"}).json()
+    assert genuine["total"] == 2 and {i["id"] for i in genuine["items"]} == {
+        jid("syn-001"),
+        jid("syn-002"),
+    }
+    assert all(not i["synthetic"] for i in genuine["items"])
+    synthetic = http.get("/api/judgments", params={"origin": "synthetic", "pageSize": 50}).json()
+    assert synthetic["total"] == 11 and all(i["synthetic"] for i in synthetic["items"])
+    everything = search(http, "the").json()["total"]
+    split = [search(http, "the", origin=o).json() for o in ("genuine", "synthetic")]
+    assert sum(s["total"] for s in split) == everything
+    assert all(not h["judgment"]["synthetic"] for h in split[0]["results"])
+    assert all(h["judgment"]["synthetic"] for h in split[1]["results"])
+    assert http.get("/api/judgments", params={"origin": "real"}).status_code == 422
+
+
+def test_provenance_is_shown_when_recorded(as_: As, db: Session, collection: None) -> None:
+    http = as_("lead")
+    # A format-1 import records only the file's own hash.
+    plain = http.get(f"/api/judgments/{jid('syn-006')}").json()["provenance"]
+    assert (plain["neutralCitation"], plain["attribution"], plain["dataset"]) == (None,) * 3
+    assert list(plain["sourceRecord"]) == ["file_sha256"]
+    row = db.get(JudgmentProvenance, uuid.UUID(jid("syn-006")))
+    assert row is not None
+    row.neutral_citation = "SYN-NC-006"
+    row.source_record = {"file_sha256": "0" * 64, "selected_by": "LexFlow tests"}
+    row.dataset = {
+        "name": "LexFlow synthetic fixtures",
+        "publisher": "LexFlow developers",
+        "url": "https://fixtures.lexflow.invalid/synthetic",
+        "version": None,
+        "retrieved_on": "2026-10-25",
+    }
+    row.attribution = "SYNTHETIC test judgments - not real law."
+    db.flush()
+    body = http.get(f"/api/judgments/{jid('syn-006')}").json()["provenance"]
+    assert body["neutralCitation"] == "SYN-NC-006"
+    assert body["attribution"] == "SYNTHETIC test judgments - not real law."
+    assert body["dataset"]["retrievedOn"] == "2026-10-25" and body["dataset"]["version"] is None
+    assert body["sourceRecord"] == {"file_sha256": "0" * 64, "selected_by": "LexFlow tests"}
+
+
+def test_without_migration_0014_there_is_no_provenance(
+    db: Session, collection: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_scalar = db.scalar
+
+    def missing_table(statement: Any, *args: Any, **kwargs: Any) -> Any:
+        if "to_regclass('judgment_provenance')" in str(statement):
+            return None
+        return real_scalar(statement, *args, **kwargs)
+
+    monkeypatch.setattr(db, "scalar", missing_table)
+    assert service.provenance(db, uuid.UUID(jid("syn-006"))) is None
+
+
+def test_keyword_search_says_when_it_falls_back_to_any_word(as_: As, collection: None) -> None:
+    http = as_("lead")
+    strict = search(http, "rent arrears").json()
+    assert strict["keywordMatch"] == "all" and strict["total"] > 0
+    # No passage has every word ("zebra" appears nowhere): passages with some words, said so.
+    loose = search(http, "rent arrears zebra").json()
+    assert loose["keywordMatch"] == "any" and loose["total"] > 0
+    assert {h["judgment"]["id"] for h in loose["results"]} >= {
+        h["judgment"]["id"] for h in strict["results"]
+    }
+    nothing = search(http, "zebra quokka").json()
+    assert (nothing["keywordMatch"], nothing["total"]) == ("any", 0)
+
+
+def test_semantic_search_reports_no_keyword_match(
+    as_: As, db: Session, collection: None, words: WordsProvider
+) -> None:
+    index_all(db, words)
+    body = search(as_("lead"), "rent", mode="semantic").json()
+    assert body["keywordMatch"] is None
+    assert search(as_("lead"), "rent", mode="hybrid").json()["keywordMatch"] == "all"
+    # Hybrid never fuses the any-word fallback: with no every-word match it is semantic only.
+    hybrid = search(as_("lead"), "rent arrears zebra", mode="hybrid").json()
+    semantic = search(as_("lead"), "rent arrears zebra", mode="semantic").json()
+    assert hybrid["keywordMatch"] == "all"
+    assert [h["judgment"]["id"] for h in hybrid["results"]] == [
+        h["judgment"]["id"] for h in semantic["results"]
+    ]

@@ -1,7 +1,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { JudgmentSearchMode } from '../types';
-import type { JudgmentFilters, JudgmentQuery } from '../services/api/lexflow';
+import type { JudgmentFilters, JudgmentOrigin, JudgmentQuery } from '../services/api/lexflow';
 import { useJudgmentFacets, useJudgmentList } from '../hooks/useJudgments';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Card, CardBody } from '../components/ui/Card';
@@ -44,6 +44,7 @@ export function PrecedentLibraryPage() {
     court: params.get('court') || undefined,
     yearFrom: year(params.get('yearFrom')),
     yearTo: year(params.get('yearTo')),
+    origin: origin(params.get('origin')),
   };
   const query: JudgmentQuery | null = q ? { q, mode, page, ...filters } : null;
   const list = useJudgmentList(filters, page, query === null);
@@ -125,12 +126,16 @@ export function PrecedentLibraryPage() {
             courts={f.courts}
             yearMin={f.yearMin}
             yearMax={f.yearMax}
-            canClear={Boolean(filters.court || filters.yearFrom || filters.yearTo || q)}
+            showOrigin={f.synthetic > 0 && f.synthetic < f.total}
+            canClear={Boolean(
+              filters.court || filters.yearFrom || filters.yearTo || filters.origin || q,
+            )}
             onApply={(next) =>
               update({
                 court: next.court,
                 yearFrom: next.yearFrom?.toString(),
                 yearTo: next.yearTo?.toString(),
+                origin: next.origin,
                 page: undefined,
               })
             }
@@ -177,12 +182,17 @@ export function PrecedentLibraryPage() {
   );
 }
 
-/** Court and year filters; reset from the address whenever it changes (key). */
+function origin(raw: string | null): JudgmentOrigin | undefined {
+  return raw === 'genuine' || raw === 'synthetic' ? raw : undefined;
+}
+
+/** Court, year and origin filters; reset from the address whenever it changes (key). */
 function FilterForm({
   initial,
   courts,
   yearMin,
   yearMax,
+  showOrigin,
   canClear,
   onApply,
   onClear,
@@ -191,6 +201,7 @@ function FilterForm({
   courts: string[];
   yearMin: number | null;
   yearMax: number | null;
+  showOrigin: boolean;
   canClear: boolean;
   onApply: (filters: JudgmentFilters) => void;
   onClear: () => void;
@@ -198,13 +209,20 @@ function FilterForm({
   const [court, setCourt] = useState(initial.court ?? '');
   const [from, setFrom] = useState(initial.yearFrom?.toString() ?? '');
   const [to, setTo] = useState(initial.yearTo?.toString() ?? '');
+  const [kind, setKind] = useState(initial.origin ?? '');
   const courtId = useId();
+  const originId = useId();
   const fromId = useId();
   const toId = useId();
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    onApply({ court: court || undefined, yearFrom: year(from), yearTo: year(to) });
+    onApply({
+      court: court || undefined,
+      yearFrom: year(from),
+      yearTo: year(to),
+      origin: origin(kind),
+    });
   };
 
   return (
@@ -261,6 +279,23 @@ function FilterForm({
           className="input-field w-28"
         />
       </div>
+      {(showOrigin || initial.origin) && (
+        <div>
+          <label htmlFor={originId} className="label-text">
+            Origin
+          </label>
+          <select
+            id={originId}
+            value={kind}
+            onChange={(e) => setKind(e.target.value)}
+            className="input-field"
+          >
+            <option value="">Genuine and synthetic</option>
+            <option value="genuine">Genuine judgments only</option>
+            <option value="synthetic">Synthetic test data only</option>
+          </select>
+        </div>
+      )}
       <Button type="submit" variant="secondary">
         Apply filters
       </Button>

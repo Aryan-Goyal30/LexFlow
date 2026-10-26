@@ -1,0 +1,375 @@
+{
+ "run_at": "2026-10-25T18:21:27+00:00",
+ "commit": "10a44c5",
+ "database": "lexflow_e2e",
+ "manifest_sha256": "4b3134b7b9de3d0740153c93463ef9cb7e4fae32b30a9eb8d9b24e48ac4cb3f3",
+ "judgments": 17,
+ "model": "BAAI/bge-small-en-v1.5@5c38ec7c405e",
+ "sets": {
+  "sci-tm-known-item": {
+   "label": "MODEL-GENERATED labels (17 queries, by claude-code): a technical check, not expert relevance",
+   "modes": {
+    "keyword": {
+     "queries_with_no_results": 14,
+     "by_k": {
+      "1": {
+       "k": 1,
+       "queries": 17,
+       "recall": 0.1765,
+       "precision": 0.1765,
+       "mrr": 0.1765,
+       "ndcg": 0.1765,
+       "unjudged": 0,
+       "skipped": []
+      },
+      "3": {
+       "k": 3,
+       "queries": 17,
+       "recall": 0.1765,
+       "precision": 0.0588,
+       "mrr": 0.1765,
+       "ndcg": 0.1765,
+       "unjudged": 0,
+       "skipped": []
+      },
+      "5": {
+       "k": 5,
+       "queries": 17,
+       "recall": 0.1765,
+       "precision": 0.0353,
+       "mrr": 0.1765,
+       "ndcg": 0.1765,
+       "unjudged": 0,
+       "skipped": []
+      },
+      "10": {
+       "k": 10,
+       "queries": 17,
+       "recall": 0.1765,
+       "precision": 0.0176,
+       "mrr": 0.1765,
+       "ndcg": 0.1765,
+       "unjudged": 0,
+       "skipped": []
+      }
+     },
+     "first_relevant_rank": {
+      "ki-01": null,
+      "ki-02": null,
+      "ki-03": null,
+      "ki-04": null,
+      "ki-05": null,
+      "ki-06": 1,
+      "ki-07": 1,
+      "ki-08": 1,
+      "ki-09": null,
+      "ki-10": null,
+      "ki-11": null,
+      "ki-12": null,
+      "ki-13": null,
+      "ki-14": null,
+      "ki-15": null,
+      "ki-16": null,
+      "ki-17": null
+     }
+    },
+    "semantic": {
+     "queries_with_no_results": 0,
+     "by_k": {
+      "1": {
+       "k": 1,
+       "queries": 17,
+       "recall": 0.8824,
+       "precision": 0.9412,
+       "mrr": 0.9412,
+       "ndcg": 0.9076,
+       "unjudged": 1,
+       "skipped": []
+      },
+      "3": {
+       "k": 3,
+       "queries": 17,
+       "recall": 0.9412,
+       "precision": 0.3529,
+       "mrr": 0.9706,
+       "ndcg": 0.9481,
+       "unjudged": 33,
+       "skipped": []
+      },
+      "5": {
+       "k": 5,
+       "queries": 17,
+       "recall": 1.0,
+       "precision": 0.2353,
+       "mrr": 0.9706,
+       "ndcg": 0.9643,
+       "unjudged": 65,
+       "skipped": []
+      },
+      "10": {
+       "k": 10,
+       "queries": 17,
+       "recall": 1.0,
+       "precision": 0.1176,
+       "mrr": 0.9706,
+       "ndcg": 0.9643,
+       "unjudged": 150,
+       "skipped": []
+      }
+     },
+     "first_relevant_rank": {
+      "ki-01": 1,
+      "ki-02": 1,
+      "ki-03": 1,
+      "ki-04": 2,
+      "ki-05": 1,
+      "ki-06": 1,
+      "ki-07": 1,
+      "ki-08": 1,
+      "ki-09": 1,
+      "ki-10": 1,
+      "ki-11": 1,
+      "ki-12": 1,
+      "ki-13": 1,
+      "ki-14": 1,
+      "ki-15": 1,
+      "ki-16": 1,
+      "ki-17": 1
+     }
+    },
+    "hybrid": {
+     "queries_with_no_results": 0,
+     "by_k": {
+      "1": {
+       "k": 1,
+       "queries": 17,
+       "recall": 0.8824,
+       "precision": 0.9412,
+       "mrr": 0.9412,
+       "ndcg": 0.9076,
+       "unjudged": 1,
+       "skipped": []
+      },
+      "3": {
+       "k": 3,
+       "queries": 17,
+       "recall": 0.9412,
+       "precision": 0.3529,
+       "mrr": 0.9706,
+       "ndcg": 0.9481,
+       "unjudged": 33,
+       "skipped": []
+      },
+      "5": {
+       "k": 5,
+       "queries": 17,
+       "recall": 1.0,
+       "precision": 0.2353,
+       "mrr": 0.9706,
+       "ndcg": 0.9643,
+       "unjudged": 65,
+       "skipped": []
+      },
+      "10": {
+       "k": 10,
+       "queries": 17,
+       "recall": 1.0,
+       "precision": 0.1176,
+       "mrr": 0.9706,
+       "ndcg": 0.9643,
+       "unjudged": 150,
+       "skipped": []
+      }
+     },
+     "first_relevant_rank": {
+      "ki-01": 1,
+      "ki-02": 1,
+      "ki-03": 1,
+      "ki-04": 2,
+      "ki-05": 1,
+      "ki-06": 1,
+      "ki-07": 1,
+      "ki-08": 1,
+      "ki-09": 1,
+      "ki-10": 1,
+      "ki-11": 1,
+      "ki-12": 1,
+      "ki-13": 1,
+      "ki-14": 1,
+      "ki-15": 1,
+      "ki-16": 1,
+      "ki-17": 1
+     }
+    }
+   }
+  },
+  "sci-tm-citation-context": {
+   "label": "citation-derived proxy labels (7 queries): NOT lawyer relevance",
+   "modes": {
+    "keyword": {
+     "queries_with_no_results": 7,
+     "by_k": {
+      "1": {
+       "k": 1,
+       "queries": 7,
+       "recall": 0.0,
+       "precision": 0.0,
+       "mrr": 0.0,
+       "ndcg": 0.0,
+       "unjudged": 0,
+       "skipped": []
+      },
+      "3": {
+       "k": 3,
+       "queries": 7,
+       "recall": 0.0,
+       "precision": 0.0,
+       "mrr": 0.0,
+       "ndcg": 0.0,
+       "unjudged": 0,
+       "skipped": []
+      },
+      "5": {
+       "k": 5,
+       "queries": 7,
+       "recall": 0.0,
+       "precision": 0.0,
+       "mrr": 0.0,
+       "ndcg": 0.0,
+       "unjudged": 0,
+       "skipped": []
+      },
+      "10": {
+       "k": 10,
+       "queries": 7,
+       "recall": 0.0,
+       "precision": 0.0,
+       "mrr": 0.0,
+       "ndcg": 0.0,
+       "unjudged": 0,
+       "skipped": []
+      }
+     },
+     "first_relevant_rank": {
+      "cite-nc-2025-INSC-9-sha256-843dab1-1": null,
+      "cite-nc-2025-INSC-9-sha256-ab93f02-1": null,
+      "cite-nc-2025-INSC-9-sha256-ab93f02-2": null,
+      "cite-nc-2025-INSC-9-sha256-ab93f02-3": null,
+      "cite-sha256-21ce7ca-sha256-dbcbb6d-1": null,
+      "cite-sha256-dbcbb6d-sha256-6247440-1": null,
+      "cite-sha256-dbcbb6d-sha256-6247440-2": null
+     }
+    },
+    "semantic": {
+     "queries_with_no_results": 0,
+     "by_k": {
+      "1": {
+       "k": 1,
+       "queries": 7,
+       "recall": 0.2857,
+       "precision": 0.2857,
+       "mrr": 0.2857,
+       "ndcg": 0.2857,
+       "unjudged": 5,
+       "skipped": []
+      },
+      "3": {
+       "k": 3,
+       "queries": 7,
+       "recall": 0.5714,
+       "precision": 0.1905,
+       "mrr": 0.4048,
+       "ndcg": 0.4473,
+       "unjudged": 17,
+       "skipped": []
+      },
+      "5": {
+       "k": 5,
+       "queries": 7,
+       "recall": 1.0,
+       "precision": 0.2,
+       "mrr": 0.5048,
+       "ndcg": 0.6256,
+       "unjudged": 28,
+       "skipped": []
+      },
+      "10": {
+       "k": 10,
+       "queries": 7,
+       "recall": 1.0,
+       "precision": 0.1,
+       "mrr": 0.5048,
+       "ndcg": 0.6256,
+       "unjudged": 63,
+       "skipped": []
+      }
+     },
+     "first_relevant_rank": {
+      "cite-nc-2025-INSC-9-sha256-843dab1-1": 1,
+      "cite-nc-2025-INSC-9-sha256-ab93f02-1": 4,
+      "cite-nc-2025-INSC-9-sha256-ab93f02-2": 5,
+      "cite-nc-2025-INSC-9-sha256-ab93f02-3": 3,
+      "cite-sha256-21ce7ca-sha256-dbcbb6d-1": 4,
+      "cite-sha256-dbcbb6d-sha256-6247440-1": 2,
+      "cite-sha256-dbcbb6d-sha256-6247440-2": 1
+     }
+    },
+    "hybrid": {
+     "queries_with_no_results": 0,
+     "by_k": {
+      "1": {
+       "k": 1,
+       "queries": 7,
+       "recall": 0.2857,
+       "precision": 0.2857,
+       "mrr": 0.2857,
+       "ndcg": 0.2857,
+       "unjudged": 5,
+       "skipped": []
+      },
+      "3": {
+       "k": 3,
+       "queries": 7,
+       "recall": 0.5714,
+       "precision": 0.1905,
+       "mrr": 0.4048,
+       "ndcg": 0.4473,
+       "unjudged": 17,
+       "skipped": []
+      },
+      "5": {
+       "k": 5,
+       "queries": 7,
+       "recall": 1.0,
+       "precision": 0.2,
+       "mrr": 0.5048,
+       "ndcg": 0.6256,
+       "unjudged": 28,
+       "skipped": []
+      },
+      "10": {
+       "k": 10,
+       "queries": 7,
+       "recall": 1.0,
+       "precision": 0.1,
+       "mrr": 0.5048,
+       "ndcg": 0.6256,
+       "unjudged": 63,
+       "skipped": []
+      }
+     },
+     "first_relevant_rank": {
+      "cite-nc-2025-INSC-9-sha256-843dab1-1": 1,
+      "cite-nc-2025-INSC-9-sha256-ab93f02-1": 4,
+      "cite-nc-2025-INSC-9-sha256-ab93f02-2": 5,
+      "cite-nc-2025-INSC-9-sha256-ab93f02-3": 3,
+      "cite-sha256-21ce7ca-sha256-dbcbb6d-1": 4,
+      "cite-sha256-dbcbb6d-sha256-6247440-1": 2,
+      "cite-sha256-dbcbb6d-sha256-6247440-2": 1
+     }
+    }
+   },
+   "queries": 7
+  }
+ }
+}

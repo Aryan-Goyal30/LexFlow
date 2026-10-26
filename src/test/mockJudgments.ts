@@ -61,6 +61,7 @@ export function syntheticJudgment(
       charCount: sections.join('').length,
       extractor: 'pypdf 6.21.1',
       importedAt: '2026-10-20T09:00:00Z',
+      provenance: null,
       ...extra,
     },
   };
@@ -155,30 +156,43 @@ export function judgmentHandlers(staff: () => Response | undefined) {
       if (state.failSearch) return problem(503, 'unavailable', 'The search service failed.');
       if (state.slowQuery && q === state.slowQuery) await delay(400);
       const words = q.toLowerCase().split(/\s+/);
-      const hits = newestFirst(state.judgments).flatMap((j) => {
-        const index = j.sections.findIndex((text) =>
-          words.every((w) => `${j.detail.title} ${text}`.toLowerCase().includes(w)),
-        );
-        if (index < 0) return [];
-        const text = j.sections[index];
-        return [
-          {
-            judgment: summary(j),
-            score: 1,
-            passage: {
-              chunkId: `${j.detail.id}-chunk-${index + 1}`,
-              sectionNumber: index + 1,
-              pageNumber: index + 1,
-              charStart: 0,
-              charEnd: text.length,
-              text,
+      const origin = url.searchParams.get('origin');
+      const pool = newestFirst(state.judgments).filter(
+        (j) => !origin || j.detail.synthetic === (origin === 'synthetic'),
+      );
+      // Like the server: every word required; if nothing matches, any word.
+      const matching = (needed: 'all' | 'any') =>
+        pool.flatMap((j) => {
+          const index = j.sections.findIndex((text) => {
+            const haystack = `${j.detail.title} ${text}`.toLowerCase();
+            return needed === 'all'
+              ? words.every((w) => haystack.includes(w))
+              : words.some((w) => haystack.includes(w));
+          });
+          if (index < 0) return [];
+          const text = j.sections[index];
+          return [
+            {
+              judgment: summary(j),
+              score: 1,
+              passage: {
+                chunkId: `${j.detail.id}-chunk-${index + 1}`,
+                sectionNumber: index + 1,
+                pageNumber: index + 1,
+                charStart: 0,
+                charEnd: text.length,
+                text,
+              },
             },
-          },
-        ];
-      });
+          ];
+        });
+      const strict = matching('all');
+      const keywordMatch = mode === 'semantic' ? null : strict.length > 0 ? 'all' : 'any';
+      const hits = keywordMatch === 'any' ? matching('any') : strict;
       return HttpResponse.json({
         mode,
         model: mode === 'keyword' ? null : 'BAAI/bge-small-en-v1.5@5c38ec7c405e',
+        keywordMatch,
         total: hits.length,
         maxResults: 100,
         page,
@@ -194,7 +208,12 @@ export function judgmentHandlers(staff: () => Response | undefined) {
       const page = Number(url.searchParams.get('page') ?? 1);
       const pageSize = Number(url.searchParams.get('pageSize') ?? 20);
       const court = url.searchParams.get('court');
-      const list = newestFirst(state.judgments).filter((j) => !court || j.detail.court === court);
+      const origin = url.searchParams.get('origin');
+      const list = newestFirst(state.judgments).filter(
+        (j) =>
+          (!court || j.detail.court === court) &&
+          (!origin || j.detail.synthetic === (origin === 'synthetic')),
+      );
       return HttpResponse.json({
         items: list.slice((page - 1) * pageSize, page * pageSize).map(summary),
         total: list.length,

@@ -24,11 +24,13 @@ from lexflow.embeddings import EmbeddingProvider
 from lexflow.errors import ProblemError, problem_responses
 from lexflow.models import Judgment, JudgmentSource, User
 from lexflow.schemas import (
+    JudgmentDatasetOut,
     JudgmentDetailOut,
     JudgmentFacetsOut,
     JudgmentHitOut,
     JudgmentPageOut,
     JudgmentPassageOut,
+    JudgmentProvenanceOut,
     JudgmentSearchModesOut,
     JudgmentSearchOut,
     JudgmentSourceOut,
@@ -59,11 +61,19 @@ def _summary(judgment: Judgment, source: JudgmentSource) -> JudgmentSummaryOut:
     )
 
 
-def _filters(court: str | None, year_from: int | None, year_to: int | None) -> service.Filters:
+def _filters(
+    court: str | None,
+    year_from: int | None,
+    year_to: int | None,
+    origin: service.Origin | None = None,
+) -> service.Filters:
     if year_from is not None and year_to is not None and year_from > year_to:
         raise ProblemError(422, "invalid-years", "yearFrom must not be after yearTo.")
     return service.Filters(
-        court=court.strip() if court else None, year_from=year_from, year_to=year_to
+        court=court.strip() if court else None,
+        year_from=year_from,
+        year_to=year_to,
+        origin=origin,
     )
 
 
@@ -80,6 +90,10 @@ def _modes(provider: EmbeddingProvider | str) -> JudgmentSearchModesOut:
 Court = Query(default=None, max_length=200, description="Only this court (exact name).")
 YearFrom = Query(default=None, ge=1800, le=2100, alias="yearFrom")
 YearTo = Query(default=None, ge=1800, le=2100, alias="yearTo")
+OriginFilter = Query(
+    default=None,
+    description="genuine: from real sources only; synthetic: invented test data only.",
+)
 
 
 @router.get("/judgments/facets", response_model=JudgmentFacetsOut)
@@ -106,12 +120,13 @@ def list_judgments(
     court: str | None = Court,
     year_from: int | None = YearFrom,
     year_to: int | None = YearTo,
+    origin: service.Origin | None = OriginFilter,
     page: int = Query(default=1, ge=1, le=10_000),
     page_size: int = Query(default=20, ge=1, le=50, alias="pageSize"),
     session: Session = Depends(get_session),
 ) -> JudgmentPageOut:
     """The collection, newest decision first (undated last), with stable paging."""
-    filters = _filters(court, year_from, year_to)
+    filters = _filters(court, year_from, year_to, origin)
     rows = session.execute(
         service.browse_query(filters).offset((page - 1) * page_size).limit(page_size)
     ).all()
@@ -132,6 +147,7 @@ def search_judgments(
     court: str | None = Court,
     year_from: int | None = YearFrom,
     year_to: int | None = YearTo,
+    origin: service.Origin | None = OriginFilter,
     page: int = Query(default=1, ge=1, le=SEARCH_PAGES),
     page_size: int = Query(default=10, ge=1, le=SEARCH_PAGE_MAX, alias="pageSize"),
     user: User = Depends(require_user),
@@ -147,13 +163,13 @@ def search_judgments(
     query = q.strip()
     if not query:
         raise ProblemError(422, "query-empty", "Type something to search for.")
-    filters = _filters(court, year_from, year_to)
+    filters = _filters(court, year_from, year_to, origin)
     active: EmbeddingProvider | None = None
     if mode != "keyword":
         if isinstance(provider, str):
             raise ProblemError(409, "semantic-search-unavailable", provider)
         active = provider
-    ranked = service.search(session, mode, query, filters, active)
+    ranked, keyword_match = service.search_with_match(session, mode, query, filters, active)
     window = ranked[(page - 1) * page_size : page * page_size]
     found = service.judgments_by_id(session, [hit.judgment_id for hit in window])
     audit.record(
@@ -165,6 +181,7 @@ def search_judgments(
     return JudgmentSearchOut(
         mode=mode,
         model=active.model if active else None,
+        keyword_match=keyword_match,
         total=len(ranked),
         max_results=service.MAX_RESULTS,
         page=page,
@@ -192,8 +209,9 @@ def search_judgments(
     "/judgments/{judgment_id}", response_model=JudgmentDetailOut, responses=problem_responses(404)
 )
 def get_judgment(judgment_id: str, session: Session = Depends(get_session)) -> JudgmentDetailOut:
-    """One judgment with its source and the terms-of-use record of that source."""
+    """One judgment with its source, the source's terms record and its provenance."""
     judgment, source = service.get(session, judgment_id)
+    recorded = service.provenance(session, judgment.id)
     return JudgmentDetailOut(
         **_summary(judgment, source).model_dump(),
         bench=judgment.bench,
@@ -205,6 +223,19 @@ def get_judgment(judgment_id: str, session: Session = Depends(get_session)) -> J
             terms_checked_by=source.terms_checked_by,
             permitted_use=source.permitted_use,
             synthetic=source.is_synthetic,
+        ),
+        provenance=None
+        if recorded is None
+        else JudgmentProvenanceOut(
+            neutral_citation=recorded.neutral_citation,
+            attribution=recorded.attribution,
+            dataset=JudgmentDatasetOut.model_validate(recorded.dataset)
+            if recorded.dataset
+            else None,
+            source_record={
+                k: v for k, v in recorded.source_record.items() if isinstance(v, str | int)
+            },
+            recorded_at=recorded.recorded_at,
         ),
         page_count=judgment.page_count,
         section_count=judgment.section_count,

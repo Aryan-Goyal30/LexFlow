@@ -1,0 +1,23 @@
+Source: Supreme Court of India - judgments published on sci.gov.in (sci-judgments)
+Terms: https://www.sci.gov.in/website-policies/ — checked 2026-10-25 by Technical check only: Claude Code (AI assistant), 2026-10-25. No legal review yet.
+Source record: new
+  new       nc-2025-INSC-981  Pernod Ricard India Private Limited & Another v. Karanveer Singh Chhabra
+  new       sha256-9db7ac8cefd50d2e  Indian Performing Rights Society Ltd. v. Sanjay Dalia & Anr.
+  new       sha256-75afcfade16dfba7  Whirlpool Corporation v. Registrar of Trade Marks, Mumbai & Ors.
+  new       sha256-dbcbb6d4167b11c6  Renaissance Hotel Holdings Inc. v. B. Vijaya Sai and Others
+  new       sha256-ab93f027284b90a8  Amritdhara Pharmacy v. Satyadeo Gupta
+  new       sha256-3493637ea535eb5f  Milmet Oftho Industries & Ors. v. Allergan Inc.
+  new       nc-2025-INSC-687  K. Mangayarkarasi & Anr. v. N.J. Sundaresan & Anr.
+  new       sha256-843dab1e08d0d71a  Parle Products (P) Ltd. v. J. P. & Co., Mysore
+  new       sha256-21ce7ca3b2ca6e91  Shyam Sel and Power Limited and Another v. Shyam Steel Industries Limited
+  new       nc-2025-INSC-1190  Lifestyle Equities C.V. & Anr. v. Amazon Technologies Inc.
+  new       sha256-3b1bd8736b1bf78d  Royal Orchid Hotels Ltd. v. Kamat Hotels (India) Ltd. & Ors.
+  new       sha256-d066def12c140e00  M/s Gujarat Bottling Co. Ltd. & Ors. v. The Coca Cola Co. & Ors.
+  new       sha256-da4c1b6c26dc790b  Wockhardt Limited v. Torrent Pharmaceuticals Ltd. and Anr.
+  new       sha256-624744063b0e2ff8  M/s. Nandhini Deluxe v. M/s. Karnataka Co-operative Milk Producers Federation Ltd.
+  new       nc-2025-INSC-828  Asian Paints Limited v. Ram Babu & Another
+  new       sha256-9e5d743b9544891e  Ajanta LLP v. Casio Keisanki Kabushiki Kaisha d/b/a Casio Computer Co. Ltd.
+  new       sha256-65e6644393613c42  Canara Bank v. N.G. Subbaraya Setty & Anr.
+17 new, 0 changed (left alone without --update), 0 unchanged, 0 duplicate, 0 invalid.
+Preview only: nothing was changed. To import these 17, run the same command with --confirm 17.
+Checks passed: manifest SHA-256 as approved; database 'lexflow_e2e' is marked.

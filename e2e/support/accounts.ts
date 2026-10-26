@@ -5,7 +5,7 @@
  * to `server/scripts/e2e.py prepare` in an environment variable (never on a
  * command line, which other processes can read) and keeps it only in
  * `e2e/.state/credentials.json` (git-ignored, not uploaded by CI). The accounts
- * exist only in the throwaway `lexflow_e2e` database; `E2E_ACCOUNTS` in
+ * exist only in the throwaway e2e database (`lexflow_e2e_playwright`); `E2E_ACCOUNTS` in
  * `e2e.py` lists the same addresses.
  *
  * Global setup also signs the main roles in through the API and saves each

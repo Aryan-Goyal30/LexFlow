@@ -27,6 +27,18 @@ export function SyntheticBadge() {
   );
 }
 
+/** A judgment from a real source: genuine text, still to be checked before it is relied on. */
+export function GenuineBadge() {
+  return (
+    <span
+      className="inline-flex items-center rounded px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-inset ring-emerald-600/40"
+      title="From a real source whose terms were recorded at import. Check the official copy before relying on it."
+    >
+      Genuine judgment
+    </span>
+  );
+}
+
 /** A link to the judgment at its source: https only, opened without access to this page. */
 export function SourceLink({ url, name }: { url: string; name: string }) {
   if (!url.startsWith('https://')) return null;
@@ -62,7 +74,7 @@ export function JudgmentCard({
             {j.title}
           </Link>
         </h3>
-        {j.synthetic && <SyntheticBadge />}
+        {j.synthetic ? <SyntheticBadge /> : <GenuineBadge />}
       </div>
       <p className="mt-1 text-xs text-brand-500">{judgmentLine(j)}</p>
       {passage && (
@@ -227,6 +239,12 @@ export function JudgmentResults({
             (body.total >= body.maxResults ? ` (the first ${body.maxResults} are ranked)` : '') +
             ` · ${MODE_LABELS[body.mode]}`}
       </p>
+      {body.keywordMatch === 'any' && body.total > 0 && (
+        <p className="text-sm text-amber-800">
+          No passage contains every word of your search, so these passages contain some of the
+          words. Try fewer or different words for a closer match.
+        </p>
+      )}
       {body.results.map((hit) => (
         <JudgmentCard key={hit.judgment.id} judgment={hit.judgment} hit={hit} />
       ))}

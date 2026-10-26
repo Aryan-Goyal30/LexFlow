@@ -1,0 +1,170 @@
+[
+ {
+  "file": "sci-dataset-README.md",
+  "url": "https://raw.githubusercontent.com/vanga/indian-supreme-court-judgments/main/README.md",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 5929,
+  "sha256": "726318017de58138d5f6c0f5a6db159542c7f495feeefdfdf116fc782dfc734c"
+ },
+ {
+  "file": "sci-dataset-LICENSE.md",
+  "url": "https://raw.githubusercontent.com/vanga/indian-supreme-court-judgments/main/LICENSE.md",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 18649,
+  "sha256": "95df2e9564862e51d69683a899b6dcc8218d577057bdf67322880769ff85f29e"
+ },
+ {
+  "file": "aws-registry-sci.yaml",
+  "url": "https://raw.githubusercontent.com/awslabs/open-data-registry/main/datasets/indian-supreme-court-judgments.yaml",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 1369,
+  "sha256": "bb41ac9fd357c6dd7740fd40776c641af79c203f1210d88c3c297f886022dc59"
+ },
+ {
+  "file": "hc-dataset-README.md",
+  "url": "https://raw.githubusercontent.com/vanga/indian-high-court-judgments/main/README.md",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 7722,
+  "sha256": "ba10033be6d05268e83a49ea9c96a3e748c32897524e22a99515ec4e52f1d800"
+ },
+ {
+  "file": "aws-registry-hc.yaml",
+  "url": "https://raw.githubusercontent.com/awslabs/open-data-registry/main/datasets/indian-high-court-judgments.yaml",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 1533,
+  "sha256": "2b9ae680972a4333cc0aa989f0319b67addebfe36712b7f16e70554b42a864e0"
+ },
+ {
+  "file": "sci-website-policies.html",
+  "url": "https://www.sci.gov.in/website-policies/",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 118539,
+  "sha256": "55efa48ba579cf2b69de4b5768f88ee3a0af1cd1d3c40dd70485655e797d7ea4"
+ },
+ {
+  "file": "scr-home.html",
+  "url": "https://scr.sci.gov.in/scrsearch/",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 67657,
+  "sha256": "018402ada13ee1ef87322c25cba18eca71173ed2c1dac83e547f876a0181850d"
+ },
+ {
+  "file": "scr-footer-cp.html",
+  "url": "https://scr.sci.gov.in/scrsearch/?p=pdf_search/footerlinks/cp",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 61166,
+  "sha256": "4105547d377965e44b4452728d6e9b0816f3f08afaa0c002a7ffd96fca5b32aa"
+ },
+ {
+  "file": "scr-footer-tc.html",
+  "url": "https://scr.sci.gov.in/scrsearch/?p=pdf_search/footerlinks/tc",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 63103,
+  "sha256": "1952cfbce5a3830e30173ca420ef1594ed9654ad4a9c4c76e17a22afc5e44054"
+ },
+ {
+  "file": "scr-footer-di.html",
+  "url": "https://scr.sci.gov.in/scrsearch/?p=pdf_search/footerlinks/di",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 62506,
+  "sha256": "c972274359bb25486bd8c0d1419211ef48c6722e9e2aecb9184ac1280b7b7601"
+ },
+ {
+  "file": "scr-footer-hl.html",
+  "url": "https://scr.sci.gov.in/scrsearch/?p=pdf_search/footerlinks/hl",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 61206,
+  "sha256": "643d8f038566d497716bb6bed639c9748db55770bc0b23b491e84ae8b0e663f5"
+ },
+ {
+  "file": "scr-footer-ab.html",
+  "url": "https://scr.sci.gov.in/scrsearch/?p=pdf_search/footerlinks/ab",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 61400,
+  "sha256": "744de887c9ef1303484365a79e89a07f7947d8bf538374e8b089c2c4a3243b53"
+ },
+ {
+  "file": "ecourts-judgments-home.html",
+  "url": "https://judgments.ecourts.gov.in/",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 61076,
+  "sha256": "aed6e4924ad9fc2320a9c4c92563022b3b239ce492c0d4ad61b9579c2065c0bf"
+ },
+ {
+  "file": "ecourts-footer-cp.html",
+  "url": "https://judgments.ecourts.gov.in/pdfsearch/?p=pdf_search/footerlinks/cp",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 57486,
+  "sha256": "f3385bd7c49c7f6809d9c998b58454c7ed8a728d29f873c305969d3b56d2a1ce"
+ },
+ {
+  "file": "ecourts-footer-tc.html",
+  "url": "https://judgments.ecourts.gov.in/pdfsearch/?p=pdf_search/footerlinks/tc",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 59423,
+  "sha256": "7013dadb84bf971e46023f45b6f13c57a47eaaf687a48b300594c15f2342b440"
+ },
+ {
+  "file": "indiankanoon-api-home.html",
+  "url": "https://api.indiankanoon.org/",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 4465,
+  "sha256": "df7c86c1e3fe63f048f5d70a3fd1579c74c07ce8b841d25fddaea9397f501516"
+ },
+ {
+  "file": "indiankanoon-api-terms.html",
+  "url": "https://api.indiankanoon.org/terms/",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 10780,
+  "sha256": "96bdb58259368fa23172b57c9cd0ca03a78a7ba09c765217cecfccdd2a791b7f"
+ },
+ {
+  "file": "indiankanoon-api-pricing.html",
+  "url": "https://api.indiankanoon.org/pricing/",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 3630,
+  "sha256": "a81e2f5a6984b664c3d3a31e3528e46272c0affa82a66818be512a320d4a82fd"
+ },
+ {
+  "file": "indiankanoon-disclaimer.html",
+  "url": "https://indiankanoon.org/disclaimer.html",
+  "fetched": "2026-10-25",
+  "httpStatus": 200,
+  "bytes": 10352,
+  "sha256": "dff4214fc619a5b8ab37f4f853b4d4301d87f2af1f7b224d482f43777c0018df"
+ },
+ {
+  "file": null,
+  "url": "https://www.indiacode.nic.in/bitstream/123456789/1367/1/A1957-14.pdf",
+  "fetched": "2026-10-25",
+  "httpStatus": null,
+  "note": "timed out (60 s, twice); statute text not captured"
+ },
+ {
+  "file": "sci-download.py",
+  "url": "https://raw.githubusercontent.com/vanga/indian-supreme-court-judgments/main/download.py",
+  "fetched": "2026-10-25",
+  "httpStatus": null,
+  "bytes": 58859,
+  "sha256": "705f63b123054320a3ef8c42614b216418c2b6e87f8111698ca436f1a2b13e58",
+  "note": "Third-party code (the AWS dataset's downloader), kept locally as evidence of its CAPTCHA solving (lines 494-600); not committed (.git/info/exclude). HTTP status was not recorded at fetch time."
+ }
+]

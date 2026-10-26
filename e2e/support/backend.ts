@@ -2,7 +2,7 @@
  * Starts and stops the isolated API used by the end-to-end tests.
  *
  * The API runs through `server/scripts/e2e.py`, against its own database
- * (`lexflow_e2e`) and upload folder, on 127.0.0.1:8001. The database URL stays
+ * (`lexflow_e2e_playwright`, see E2E_DATABASE) and upload folder, on 127.0.0.1:8001. The database URL stays
  * inside that Python process; nothing here reads or prints it.
  *
  * Stopping is identity-checked. Each start passes a random run id on the API's
@@ -30,6 +30,15 @@ import { fileURLToPath } from 'node:url';
 
 export const API_PORT = Number(process.env.LEXFLOW_E2E_API_PORT ?? 8001);
 export const APP_PORT = Number(process.env.LEXFLOW_E2E_APP_PORT ?? 5174);
+
+/**
+ * Playwright's own throwaway database, recreated by every run. `lexflow_e2e` is
+ * the persistent demo database (it holds the imported genuine judgments), so the
+ * tests use it only if LEXFLOW_E2E_DATABASE names it; even then `e2e.py prepare`
+ * refuses to drop a database that holds genuine judgments. Set here, in the
+ * environment every Playwright process passes to `e2e.py` (prepare, serve, work).
+ */
+export const E2E_DATABASE = (process.env.LEXFLOW_E2E_DATABASE ??= 'lexflow_e2e_playwright');
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const SERVER = path.join(ROOT, 'server');

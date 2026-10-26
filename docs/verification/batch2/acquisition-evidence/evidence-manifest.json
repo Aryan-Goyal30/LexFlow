@@ -1,0 +1,58 @@
+[
+ {
+  "file": "sci-robots.txt",
+  "url": "https://www.sci.gov.in/robots.txt",
+  "fetched_on": "2026-10-25",
+  "bytes": 67,
+  "sha256": "9311bab30d8b5d05f5fa5563a251b8c96b8470873bb77c62d3d17c146d7acab7",
+  "captcha_mentions": 0
+ },
+ {
+  "file": "sci-judgment-search-by-date.html",
+  "url": "https://www.sci.gov.in/judgements-judgement-date/",
+  "fetched_on": "2026-10-25",
+  "bytes": 139731,
+  "sha256": "9e6b1e3d82fabebcb1a40f19a60241f638bb3be0b92416cf01783b722816bc03",
+  "captcha_mentions": 25
+ },
+ {
+  "file": "sci-judgment-search-by-case-no.html",
+  "url": "https://www.sci.gov.in/judgements-case-no/",
+  "fetched_on": "2026-10-25",
+  "bytes": 127011,
+  "sha256": "86a6d9477979440275996d924229f8038b1a711f6a79b8061dd274a9f6b0410f",
+  "captcha_mentions": 25
+ },
+ {
+  "file": "sci-neutral-citation-search.html",
+  "url": "https://www.sci.gov.in/neutral-citation/",
+  "fetched_on": "2026-10-25",
+  "bytes": 138743,
+  "sha256": "cc6a9ce9ec28a21eb361a1992d9739c476718e403de00cf617475717179b16a1",
+  "captcha_mentions": 25
+ },
+ {
+  "file": "escr-search.html",
+  "url": "https://scr.sci.gov.in/scrsearch/",
+  "fetched_on": "2026-10-25",
+  "bytes": 67658,
+  "sha256": "1e197d48da5c27626461a43782c505264557eeecef5e3d13954ce063edb89000",
+  "captcha_mentions": 35
+ },
+ {
+  "file": "sci-landmark-summaries-2026.html",
+  "url": "https://www.sci.gov.in/landmark-judgment-summaries/",
+  "fetched_on": "2026-10-25",
+  "bytes": 267585,
+  "sha256": "bace088a1a8a6576c5fdd6b332ceb91c375e3dd8e3d3441ecac12fedac2b26f3",
+  "captcha_mentions": 0
+ },
+ {
+  "file": "sci-view-pdf-viewer-example.html",
+  "url": "https://www.sci.gov.in/view-pdf/?diary_no=526632024&type=j&order_date=2025-04-15&from=latest_judgements_order",
+  "fetched_on": "2026-10-25",
+  "bytes": 111106,
+  "sha256": "becae6feef2d073086e7b6d71633c601af3b05c0742c21181df8ad05e4d6956b",
+  "captcha_mentions": 0
+ }
+]

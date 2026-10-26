@@ -1,0 +1,47 @@
+# Retrieval evaluation on the genuine corpus (generated)
+
+- Run: 2026-10-25T18:27:04+00:00; commit `10a44c5` (plus uncommitted changes)
+- Database: `lexflow_e2e` (read-only); filter `origin=genuine`
+- Corpus manifest SHA-256 `4b3134b7b9de3d0740153c93463ef9cb7e4fae32b30a9eb8d9b24e48ac4cb3f3`; 17 judgments
+- Embedding model: `BAAI/bge-small-en-v1.5@5c38ec7c405e` (local files)
+
+## sci-tm-known-item
+
+**MODEL-GENERATED labels (17 queries, by claude-code): a technical check, not expert relevance**
+
+| Mode | k | Queries scored | Recall@k | Precision@k | MRR | nDCG@k | Unjudged in top k | Queries with no results |
+|---|---|---|---|---|---|---|---|---|
+| keyword | 1 | 17 | 0.294 | 0.353 | 0.353 | 0.353 | 11 | 0 |
+| keyword | 3 | 17 | 0.471 | 0.196 | 0.422 | 0.430 | 35 | 0 |
+| keyword | 5 | 17 | 0.618 | 0.153 | 0.451 | 0.488 | 60 | 0 |
+| keyword | 10 | 17 | 0.882 | 0.106 | 0.485 | 0.574 | 125 | 0 |
+| semantic | 1 | 17 | 0.882 | 0.941 | 0.941 | 0.908 | 1 | 0 |
+| semantic | 3 | 17 | 0.941 | 0.353 | 0.971 | 0.948 | 33 | 0 |
+| semantic | 5 | 17 | 1.000 | 0.235 | 0.971 | 0.964 | 65 | 0 |
+| semantic | 10 | 17 | 1.000 | 0.118 | 0.971 | 0.964 | 150 | 0 |
+| hybrid | 1 | 17 | 0.882 | 0.941 | 0.941 | 0.908 | 1 | 0 |
+| hybrid | 3 | 17 | 0.941 | 0.353 | 0.971 | 0.948 | 33 | 0 |
+| hybrid | 5 | 17 | 1.000 | 0.235 | 0.971 | 0.964 | 65 | 0 |
+| hybrid | 10 | 17 | 1.000 | 0.118 | 0.971 | 0.964 | 150 | 0 |
+
+## sci-tm-citation-context
+
+**citation-derived proxy labels (7 queries): NOT lawyer relevance**
+
+| Mode | k | Queries scored | Recall@k | Precision@k | MRR | nDCG@k | Unjudged in top k | Queries with no results |
+|---|---|---|---|---|---|---|---|---|
+| keyword | 1 | 7 | 0.000 | 0.000 | 0.000 | 0.000 | 5 | 2 |
+| keyword | 3 | 7 | 0.429 | 0.143 | 0.191 | 0.252 | 12 | 2 |
+| keyword | 5 | 7 | 0.429 | 0.086 | 0.191 | 0.252 | 22 | 2 |
+| keyword | 10 | 7 | 0.429 | 0.043 | 0.191 | 0.252 | 47 | 2 |
+| semantic | 1 | 7 | 0.286 | 0.286 | 0.286 | 0.286 | 5 | 0 |
+| semantic | 3 | 7 | 0.571 | 0.191 | 0.405 | 0.447 | 17 | 0 |
+| semantic | 5 | 7 | 1.000 | 0.200 | 0.505 | 0.626 | 28 | 0 |
+| semantic | 10 | 7 | 1.000 | 0.100 | 0.505 | 0.626 | 63 | 0 |
+| hybrid | 1 | 7 | 0.286 | 0.286 | 0.286 | 0.286 | 5 | 0 |
+| hybrid | 3 | 7 | 0.571 | 0.191 | 0.405 | 0.447 | 17 | 0 |
+| hybrid | 5 | 7 | 1.000 | 0.200 | 0.505 | 0.626 | 28 | 0 |
+| hybrid | 10 | 7 | 1.000 | 0.100 | 0.505 | 0.626 | 63 | 0 |
+
+
+exit=0

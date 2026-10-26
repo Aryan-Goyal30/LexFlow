@@ -3,7 +3,8 @@ import { API_PORT, APP_PORT } from './e2e/support/backend';
 
 /**
  * End-to-end tests: a real browser, the Vite dev server, the real API and a real
- * PostgreSQL database. Global setup recreates a separate `lexflow_e2e` database
+ * PostgreSQL database. Global setup recreates a separate throwaway database
+ * (`lexflow_e2e_playwright`, never the persistent demo database `lexflow_e2e`)
  * with the sample data and starts the API on 127.0.0.1:8001; Vite (port 5174)
  * forwards /api there. The development database is never touched.
  *

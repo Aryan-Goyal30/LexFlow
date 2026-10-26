@@ -42,6 +42,8 @@ APP_TABLES = {
     "outcome_assessments",
     "outcome_assessment_reviews",
     "outcome_assessment_review_events",
+    "judgment_provenance",
+    "judgment_import_runs",
 }
 
 

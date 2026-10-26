@@ -1,0 +1,3 @@
+# sci-tm-known-item v1 (MODEL-GENERATED labels)
+
+Written by Claude Code (AI assistant) on 2026-10-25 for the genuine corpus `sci-tm-v2` (manifest SHA-256 `4b3134b7…cb3f3`). Each query paraphrases the central issue of one judgment, as located in that judgment's own text (the `passage` of each label); a few grade-2 labels mark another judgment discussing the same issue. **These are not lawyer labels and not expert relevance**: they test whether the search machinery finds a judgment from a description of its subject. Every report on this set carries the words "MODEL-GENERATED labels". Unlabelled judgments count as grade 0, so precision and nDCG are lower bounds when other judgments are in fact relevant.

@@ -8,7 +8,7 @@ import { formatDate } from '../lib/format';
 import { judgmentLine } from '../lib/judgments';
 import { Card, CardBody } from '../components/ui/Card';
 import { ErrorState, LoadingState } from '../components/ui/QueryState';
-import { SourceLink, SyntheticBadge } from '../components/research/Judgments';
+import { GenuineBadge, SourceLink, SyntheticBadge } from '../components/research/Judgments';
 
 function sectionFrom(raw: string | null): number {
   const value = Number(raw ?? '1');
@@ -71,7 +71,7 @@ export function JudgmentPage() {
         <h1 className="flex flex-wrap items-center gap-2 text-xl font-bold text-brand-900">
           <Scale className="h-5 w-5 text-brand-400" aria-hidden="true" />
           {j.title}
-          {j.synthetic && <SyntheticBadge />}
+          {j.synthetic ? <SyntheticBadge /> : <GenuineBadge />}
         </h1>
         <p className="mt-1 text-sm text-brand-500">{judgmentLine(j)}</p>
         {j.bench && <p className="text-sm text-brand-500">Bench: {j.bench}</p>}
@@ -88,6 +88,12 @@ export function JudgmentPage() {
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           Synthetic test data: this judgment was invented for testing. It is not real and must never
           be cited.
+        </p>
+      )}
+      {!j.synthetic && (
+        <p className="mb-4 rounded-md bg-brand-50 px-3 py-2 text-sm text-brand-700 ring-1 ring-inset ring-brand-200">
+          A genuine judgment, kept for reference. LexFlow found it by matching text, not by judging
+          its legal relevance: check the official copy before relying on it.
         </p>
       )}
 
@@ -116,6 +122,74 @@ export function JudgmentPage() {
             </dd>
             <dt className="text-brand-500">Permitted use</dt>
             <dd className="text-brand-800">{j.source.permittedUse}</dd>
+            {j.provenance?.attribution && (
+              <>
+                <dt className="text-brand-500">Attribution</dt>
+                <dd className="text-brand-800">{j.provenance.attribution}</dd>
+              </>
+            )}
+            {j.provenance?.neutralCitation && (
+              <>
+                <dt className="text-brand-500">Neutral citation</dt>
+                <dd className="text-brand-800">{j.provenance.neutralCitation}</dd>
+              </>
+            )}
+            {j.provenance?.dataset && (
+              <>
+                <dt className="text-brand-500">Dataset</dt>
+                <dd className="text-brand-800">
+                  {j.provenance.dataset.name} ({j.provenance.dataset.publisher}
+                  {j.provenance.dataset.version ? `, ${j.provenance.dataset.version}` : ''}),
+                  retrieved {formatDate(j.provenance.dataset.retrievedOn)}
+                </dd>
+              </>
+            )}
+            {j.provenance?.sourceRecord.selected_by && (
+              <>
+                <dt className="text-brand-500">Prepared by</dt>
+                <dd className="text-brand-800">{j.provenance.sourceRecord.selected_by}</dd>
+              </>
+            )}
+            {j.provenance && !j.synthetic && (
+              <>
+                <dt className="text-brand-500">Legal review</dt>
+                <dd className="text-brand-800">
+                  {j.provenance.sourceRecord.legal_review ?? 'Not recorded'}
+                </dd>
+              </>
+            )}
+            {j.provenance?.sourceRecord.corpus_role && (
+              <>
+                <dt className="text-brand-500">Role in the collection</dt>
+                <dd className="text-brand-800">{j.provenance.sourceRecord.corpus_role}</dd>
+              </>
+            )}
+            {j.provenance?.sourceRecord.notes && (
+              <>
+                <dt className="text-brand-500">Notes</dt>
+                <dd className="text-brand-800">{j.provenance.sourceRecord.notes}</dd>
+              </>
+            )}
+            {j.provenance?.sourceRecord.original_transform && (
+              <>
+                <dt className="text-brand-500">Change to the file</dt>
+                <dd className="text-brand-800">
+                  {j.provenance.sourceRecord.original_transform} (original SHA-256{' '}
+                  <span className="break-all font-mono text-xs">
+                    {j.provenance.sourceRecord.original_sha256}
+                  </span>
+                  )
+                </dd>
+              </>
+            )}
+            {j.provenance?.sourceRecord.file_sha256 && (
+              <>
+                <dt className="text-brand-500">File SHA-256</dt>
+                <dd className="break-all font-mono text-xs text-brand-800">
+                  {j.provenance.sourceRecord.file_sha256}
+                </dd>
+              </>
+            )}
             <dt className="text-brand-500">Imported</dt>
             <dd className="text-brand-800">
               {formatDate(j.importedAt.slice(0, 10))} · text read by {j.extractor}

@@ -1,0 +1,14 @@
+{
+ "name": "sci-tm-known-item",
+ "version": 1,
+ "label_origin": "model-generated",
+ "guide_version": "ANNOTATION_GUIDE draft, grades 0-3",
+ "reviewers": [
+  "claude-code"
+ ],
+ "corpus": {
+  "source_key": "sci-judgments",
+  "manifest_sha256": "4b3134b7b9de3d0740153c93463ef9cb7e4fae32b30a9eb8d9b24e48ac4cb3f3"
+ },
+ "notes": "Known-item queries written by Claude Code (AI assistant): each paraphrases the central issue of one judgment, as found in its text, without party or mark names; a few secondary grade-2 labels where another judgment's text discusses the same issue. Unlabelled judgments count as not relevant. Not expert relevance."
+}

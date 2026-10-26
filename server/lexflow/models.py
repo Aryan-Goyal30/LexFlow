@@ -786,6 +786,69 @@ class JudgmentChunkEmbedding(Base):
     created_at: Mapped[datetime] = _created_at()
 
 
+class JudgmentProvenance(Base):
+    """Where one judgment came from, beyond its source's terms record (Batch 2).
+
+    Written by the importer from a ``lexflow-judgments/2`` manifest: the
+    source's own record identifiers (``source_record``: for example a CNR, a
+    case id or the record path in a dataset), the neutral citation, the
+    dataset snapshot it was taken from (``dataset``) and the attribution that
+    must be shown with it. Values the source did not supply are absent, never
+    guessed. One row per judgment; removed with the judgment. Only used when
+    migration 0014 is applied.
+    """
+
+    __tablename__ = "judgment_provenance"
+    __table_args__ = (
+        CheckConstraint(
+            "neutral_citation IS NULL OR char_length(neutral_citation) BETWEEN 1 AND 100",
+            name="neutral_citation_length",
+        ),
+        CheckConstraint(
+            "attribution IS NULL OR char_length(attribution) BETWEEN 1 AND 1000",
+            name="attribution_length",
+        ),
+    )
+
+    judgment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("judgments.id", ondelete="CASCADE"), primary_key=True
+    )
+    neutral_citation: Mapped[str | None] = mapped_column(Text)
+    source_record: Mapped[dict[str, Any]] = mapped_column(JSONB(none_as_null=True), nullable=False)
+    dataset: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
+    attribution: Mapped[str | None] = mapped_column(Text)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class JudgmentImportRun(Base):
+    """One run of the judgment importer, kept as a record (Batch 2).
+
+    What the preview found (counts by status), what was imported or updated,
+    and every item that was not imported with its reason (invalid, duplicate,
+    rejected during extraction): ids and reasons only, never text. Lets a
+    failed or partial import be seen and retried safely (imports are
+    idempotent by judgment id). Only used when migration 0014 is applied.
+    """
+
+    __tablename__ = "judgment_import_runs"
+    __table_args__ = (
+        CheckConstraint("manifest_sha256 ~ '^[0-9a-f]{64}$'", name="manifest_sha256_format"),
+        CheckConstraint("char_length(source_key) BETWEEN 1 AND 63", name="source_key_length"),
+        CheckConstraint("char_length(operator) BETWEEN 1 AND 200", name="operator_length"),
+        Index("ix_judgment_import_runs_source_key_started_at", "source_key", "started_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    source_key: Mapped[str] = mapped_column(Text, nullable=False)
+    manifest_format: Mapped[str] = mapped_column(Text, nullable=False)
+    manifest_sha256: Mapped[str] = mapped_column(Text, nullable=False)
+    operator: Mapped[str] = mapped_column(Text, nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    finished_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    counts: Mapped[dict[str, Any]] = mapped_column(JSONB(none_as_null=True), nullable=False)
+    items: Mapped[list[dict[str, Any]]] = mapped_column(JSONB(none_as_null=True), nullable=False)
+
+
 class AnalysisRun(Base):
     """One AI case analysis (Phase 5): what was asked, what was sent, what survived.
 

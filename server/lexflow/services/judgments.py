@@ -4,7 +4,12 @@ Search ranks **judgments** by their best passage:
 
 - keyword: PostgreSQL full-text search over chunks (``english``,
   ``websearch_to_tsquery``, the stored ``search_vector`` with its GIN index),
-  scored by ``ts_rank_cd``;
+  scored by ``ts_rank_cd``. A passage must contain every word; only when no
+  passage does, keyword mode falls back to passages containing **any** of
+  the words (ranked by how well they cover them), and says so (``Match``).
+  On the genuine corpus, 14 of 17 described-issue queries found nothing
+  with every word required (docs/verification/batch2/evaluation). Hybrid
+  mode uses every-word matches only (see ``hybrid_with_match``);
 - semantic: exact cosine similarity of the query (embedded by the Phase 3
   model with its query instruction) to chunk vectors of the current model and
   current text;
@@ -23,10 +28,22 @@ import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
-from sqlalchemy import ColumnElement, Select, and_, delete, func, literal_column, select, true
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import (
+    ColumnElement,
+    Select,
+    Text,
+    and_,
+    cast,
+    delete,
+    func,
+    literal_column,
+    select,
+    text,
+    true,
+)
+from sqlalchemy.dialects.postgresql import TSQUERY, insert
 from sqlalchemy.orm import Session
 
 from lexflow.embeddings import EmbeddingProvider
@@ -35,11 +52,14 @@ from lexflow.models import (
     Judgment,
     JudgmentChunk,
     JudgmentChunkEmbedding,
+    JudgmentProvenance,
     JudgmentSection,
     JudgmentSource,
 )
 
 Mode = Literal["keyword", "semantic", "hybrid"]
+Match = Literal["all", "any"]  # keyword words required: every one, or any
+Origin = Literal["genuine", "synthetic"]
 MAX_RESULTS = 100
 RRF_K = 60
 QUERY_MAX = 300
@@ -51,6 +71,8 @@ class Filters:
     court: str | None = None
     year_from: int | None = None
     year_to: int | None = None
+    # "genuine": from a real source; "synthetic": invented test data (Batch 2).
+    origin: Origin | None = None
 
     def condition(self) -> ColumnElement[bool]:
         parts: list[ColumnElement[bool]] = [true()]
@@ -60,6 +82,11 @@ class Filters:
             parts.append(Judgment.year >= self.year_from)
         if self.year_to is not None:
             parts.append(Judgment.year <= self.year_to)
+        if self.origin is not None:
+            sources = select(JudgmentSource.id).where(
+                JudgmentSource.is_synthetic.is_(self.origin == "synthetic")
+            )
+            parts.append(Judgment.source_id.in_(sources))
         return and_(*parts)
 
 
@@ -116,10 +143,25 @@ def _best_per_judgment(rows: Sequence[tuple[JudgmentChunk, float]], limit: int) 
     return ranked
 
 
+def _tsquery(query: str, match: Match) -> ColumnElement[Any]:
+    english: ColumnElement[Any] = literal_column("'english'::regconfig")
+    if match == "all":
+        return func.websearch_to_tsquery(english, query)
+    # The same words (stemmed, stop words dropped), any of them: the
+    # plainto_tsquery terms joined by OR instead of AND.
+    anded = cast(func.plainto_tsquery(english, query), Text)
+    return cast(func.replace(anded, "&", "|"), TSQUERY)
+
+
 def keyword(
-    session: Session, query: str, filters: Filters, limit: int = MAX_RESULTS
+    session: Session,
+    query: str,
+    filters: Filters,
+    limit: int = MAX_RESULTS,
+    *,
+    match: Match = "all",
 ) -> list[Ranked]:
-    tsquery = func.websearch_to_tsquery(literal_column("'english'::regconfig"), query)
+    tsquery = _tsquery(query, match)
     rank = func.ts_rank_cd(JudgmentChunk.search_vector, tsquery)
     # The best chunk of each judgment first (DISTINCT ON), then judgments by score.
     best = (
@@ -186,9 +228,33 @@ def hybrid(
     filters: Filters,
     limit: int = MAX_RESULTS,
 ) -> list[Ranked]:
+    return hybrid_with_match(session, provider, query, filters, limit)[0]
+
+
+def keyword_with_fallback(
+    session: Session, query: str, filters: Filters, limit: int = MAX_RESULTS
+) -> tuple[list[Ranked], Match]:
+    """Every word required; if nothing matches, any word (and which was used)."""
+    strict = keyword(session, query, filters, limit, match="all")
+    if strict:
+        return strict, "all"
+    return keyword(session, query, filters, limit, match="any"), "any"
+
+
+def hybrid_with_match(
+    session: Session,
+    provider: EmbeddingProvider,
+    query: str,
+    filters: Filters,
+    limit: int = MAX_RESULTS,
+) -> tuple[list[Ranked], Match]:
+    # Strict keyword matches only: fusing the any-word fallback with semantic
+    # ranking lowered hybrid MRR on both Batch 2 evaluation sets (0.971 -> 0.683
+    # and 0.505 -> 0.474), so hybrid keeps every-word keyword matches.
     fused: dict[uuid.UUID, tuple[float, Ranked]] = {}
+    match: Match = "all"
     lists = (
-        keyword(session, query, filters, limit),
+        keyword(session, query, filters, limit, match=match),
         semantic(session, provider, query, filters, limit),
     )
     for results in lists:
@@ -196,7 +262,7 @@ def hybrid(
             score, first = fused.get(hit.judgment_id, (0.0, hit))
             fused[hit.judgment_id] = (score + 1 / (RRF_K + rank), first)
     ordered = sorted(fused.values(), key=lambda pair: (-pair[0], str(pair[1].judgment_id)))
-    return [Ranked(hit.judgment_id, score, hit.passage) for score, hit in ordered[:limit]]
+    return [Ranked(hit.judgment_id, score, hit.passage) for score, hit in ordered[:limit]], match
 
 
 def search(
@@ -206,13 +272,24 @@ def search(
     filters: Filters,
     provider: EmbeddingProvider | None,
 ) -> list[Ranked]:
+    return search_with_match(session, mode, query, filters, provider)[0]
+
+
+def search_with_match(
+    session: Session,
+    mode: Mode,
+    query: str,
+    filters: Filters,
+    provider: EmbeddingProvider | None,
+) -> tuple[list[Ranked], Match | None]:
+    """The ranking, and for keyword and hybrid whether every word or any was required."""
     if mode == "keyword":
-        return keyword(session, query, filters)
+        return keyword_with_fallback(session, query, filters)
     if provider is None:  # the caller checks availability first
         raise ValueError("semantic search needs an embedding provider")
     if mode == "semantic":
-        return semantic(session, provider, query, filters)
-    return hybrid(session, provider, query, filters)
+        return semantic(session, provider, query, filters), None
+    return hybrid_with_match(session, provider, query, filters)
 
 
 def judgments_by_id(
@@ -254,6 +331,13 @@ def get(session: Session, raw_id: str) -> tuple[Judgment, JudgmentSource]:
     if not found:
         raise ProblemError(404, "judgment-not-found", JUDGMENT_NOT_FOUND)
     return next(iter(found.values()))
+
+
+def provenance(session: Session, judgment_id: uuid.UUID) -> JudgmentProvenance | None:
+    """The judgment's provenance record, if it has one (format-2 imports, migration 0014)."""
+    if session.scalar(text("SELECT to_regclass('judgment_provenance')")) is None:
+        return None
+    return session.get(JudgmentProvenance, judgment_id)
 
 
 def section(session: Session, judgment: Judgment, number: int) -> JudgmentSection:

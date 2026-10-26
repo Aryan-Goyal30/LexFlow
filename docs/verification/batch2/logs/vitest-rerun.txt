@@ -1,0 +1,24 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mC:/Projects/Claude/Legal Case Management System[39m
+
+[90mstderr[2m | src/pages/documentText.test.tsx[2m > [22m[2mthe extracted text[2m > [22m[2mopens from the Documents tab and moves page by page
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/demo.test.tsx[2m > [22m[2mThe demo environment[2m > [22m[2mshows nothing about demos while demo mode is off
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/pages/demo.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 5754[2mms[22m[39m
+   [33m[2m✓[22m[39m The demo environment[2m > [22mcreates a fictional client and a fictional case in the verified demo database [33m 3230[2mms[22m[39m
+   [33m[2m✓[22m[39m The demo environment[2m > [22mrefuses a fictional case for a client that is not fictional [33m 2232[2mms[22m[39m
+ [32m✓[39m src/pages/documentText.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 7755[2mms[22m[39m
+   [33m[2m✓[22m[39m the extracted text[2m > [22mopens from the Documents tab and moves page by page [33m 3531[2mms[22m[39m
+   [33m[2m✓[22m[39m retrying a failed extraction[2m > [22mqueues the document again [33m 3221[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m11 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 19:45:31
+[2m   Duration [22m 10.79s[2m (transform 587ms, setup 1.12s, collect 1.88s, tests 13.51s, environment 1.20s, prepare 172ms)[22m
+
+exit=0

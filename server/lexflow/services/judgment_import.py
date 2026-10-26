@@ -23,7 +23,17 @@ folder with a ``manifest.json``::
     }
 
 ``citation``, ``decision_date``, ``year``, ``bench`` and ``practice_areas``
-are optional; nothing is guessed when they are missing. Every judgment needs
+are optional; nothing is guessed when they are missing.
+
+Format ``lexflow-judgments/2`` (Batch 2) adds provenance for genuine
+judgments: on the source, a ``licence`` statement and the ``attribution`` to
+show (required for a real source); a ``dataset`` block (name, publisher,
+https URL, version or snapshot, date retrieved); and per judgment a
+``neutral_citation`` and a ``provenance`` map of the source's own record
+fields (for example ``cnr``, ``case_id``, ``record_path``, ``scraped_at``,
+``original_sha256``). They are stored in ``judgment_provenance`` (migration
+0014), separate from the judgment text; each run is recorded in
+``judgment_import_runs`` with every item that was not imported and why. Every judgment needs
 its source and a source URL; every source needs a terms-of-use record (who
 read which terms, when, and what they permit). Synthetic (invented) sources
 must use reserved ``.invalid`` web addresses and are refused outside test
@@ -39,27 +49,38 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from lexflow.extraction import DOCX, PDF, TXT, Extracted, ExtractionError, Limits
 from lexflow.extraction.chunking import chunk_sections
-from lexflow.models import Judgment, JudgmentChunk, JudgmentSection, JudgmentSource
+from lexflow.models import (
+    Judgment,
+    JudgmentChunk,
+    JudgmentImportRun,
+    JudgmentProvenance,
+    JudgmentSection,
+    JudgmentSource,
+)
 
 # Fixed namespace: a judgment's id is uuid5(source key / source's own id), so
 # importing it again (or into another database) gives the same id.
 JUDGMENT_NAMESPACE = uuid.UUID("6f0b2d3e-9a8c-5b1e-8f4a-3c2d1e0f9a7b")
 FORMAT = "lexflow-judgments/1"
+FORMAT_V2 = "lexflow-judgments/2"
+PROVENANCE_KEY = re.compile(r"[a-z][a-z0-9_]{0,39}")
+PROVENANCE_MAX = 30
 CONTENT_TYPES = {".pdf": PDF, ".docx": DOCX, ".txt": TXT}
 RESERVED_SUFFIXES = (".invalid", ".test", ".example", ".localhost")
 MAX_JUDGMENTS = 5000
@@ -107,11 +128,24 @@ class SourceIn(_Strict):
     terms_checked_by: str = Field(min_length=1, max_length=200)
     permitted_use: str = Field(min_length=1, max_length=2000)
     synthetic: bool = False
+    # Format 2 only: the licence as stated by the source, and what must be shown.
+    licence: str | None = Field(default=None, min_length=1, max_length=500)
+    attribution: str | None = Field(default=None, min_length=1, max_length=1000)
 
     @model_validator(mode="after")
     def _urls(self) -> SourceIn:
         self.terms_url = _https_url(self.terms_url, synthetic=self.synthetic)
         return self
+
+
+class DatasetIn(_Strict):
+    """The dataset or snapshot the files were taken from (format 2)."""
+
+    name: str = Field(min_length=1, max_length=200)
+    publisher: str = Field(min_length=1, max_length=200)
+    url: str
+    version: str | None = Field(default=None, min_length=1, max_length=100)
+    retrieved_on: date
 
 
 class JudgmentIn(_Strict):
@@ -125,6 +159,22 @@ class JudgmentIn(_Strict):
     year: int | None = Field(default=None, ge=1800, le=2100)
     bench: str | None = Field(default=None, min_length=1, max_length=300)
     practice_areas: list[str] = Field(default_factory=list, max_length=20)
+    # Format 2 only.
+    neutral_citation: str | None = Field(default=None, min_length=1, max_length=100)
+    provenance: dict[str, str | int | None] = Field(default_factory=dict)
+
+    @field_validator("provenance")
+    @classmethod
+    def _provenance(cls, value: dict[str, str | int | None]) -> dict[str, str | int | None]:
+        if len(value) > PROVENANCE_MAX:
+            raise ValueError(f"at most {PROVENANCE_MAX} provenance fields")
+        for key, item in value.items():
+            if not PROVENANCE_KEY.fullmatch(key):
+                raise ValueError(f"provenance key {key!r} must be lower_snake_case")
+            if isinstance(item, str) and not 1 <= len(item) <= 500:
+                raise ValueError(f"provenance value of {key!r} needs 1 to 500 characters")
+        # Unknown values are left out, never stored as guesses.
+        return {k: v for k, v in value.items() if v is not None}
 
     @field_validator("practice_areas")
     @classmethod
@@ -144,12 +194,29 @@ class JudgmentIn(_Strict):
 
 
 class Manifest(_Strict):
-    format: Literal["lexflow-judgments/1"]
+    format: Literal["lexflow-judgments/1", "lexflow-judgments/2"]
     source: SourceIn
+    dataset: DatasetIn | None = None
     judgments: list[JudgmentIn] = Field(min_length=1, max_length=MAX_JUDGMENTS)
 
     @model_validator(mode="after")
     def _entries(self) -> Manifest:
+        if self.format == FORMAT:
+            v2_fields = (
+                self.source.licence is not None
+                or self.source.attribution is not None
+                or self.dataset is not None
+                or any(e.neutral_citation or e.provenance for e in self.judgments)
+            )
+            if v2_fields:
+                raise ValueError(
+                    "licence, attribution, dataset, neutral_citation and provenance need "
+                    f"format {FORMAT_V2!r}"
+                )
+        elif not self.source.synthetic and self.source.attribution is None:
+            raise ValueError("a real source needs the attribution to show with its judgments")
+        if self.dataset is not None:
+            self.dataset.url = _https_url(self.dataset.url, synthetic=self.source.synthetic)
         seen: set[str] = set()
         for entry in self.judgments:
             if entry.id in seen:
@@ -290,6 +357,12 @@ class Outcome:
     imported: list[uuid.UUID]
     updated: list[uuid.UUID]
     rejected: list[tuple[str, str]]  # (manifest id, reason)
+    run_id: uuid.UUID | None = None  # the judgment_import_runs row, from migration 0014
+
+
+def provenance_tables(session: Session) -> bool:
+    """False before migration 0014: provenance and run records are then skipped."""
+    return session.scalar(text("SELECT to_regclass('judgment_import_runs')")) is not None
 
 
 def _source(session: Session, incoming: SourceIn) -> JudgmentSource:
@@ -318,6 +391,8 @@ def apply_import(
     now: datetime,
 ) -> Outcome:
     """Import the plan's new judgments (and changed ones with ``update``)."""
+    started = now
+    with_provenance = provenance_tables(session)
     source = _source(session, plan.manifest.source)
     source_id = source.id
     session.commit()
@@ -383,6 +458,8 @@ def apply_import(
                 for n, s in enumerate(sections, start=1)
             )
             session.flush()
+            if with_provenance:
+                _provenance(session, plan.manifest, entry, item, now)
             session.add_all(
                 JudgmentChunk(
                     judgment_id=item.id,
@@ -402,4 +479,63 @@ def apply_import(
             rejected.append((entry.id, "it conflicts with a judgment already stored"))
             continue
         (updated if item.status == "changed" else imported).append(item.id)
-    return Outcome(imported, updated, rejected)
+    run_id = (
+        _record_run(session, plan, imported, updated, rejected, operator, started, now)
+        if with_provenance
+        else None
+    )
+    return Outcome(imported, updated, rejected, run_id)
+
+
+def _provenance(
+    session: Session, manifest: Manifest, entry: JudgmentIn, item: PlanItem, now: datetime
+) -> None:
+    record: dict[str, str | int | None] = dict(entry.provenance)
+    record.setdefault("file_sha256", item.sha256)
+    row = session.get(JudgmentProvenance, item.id)
+    if row is None:
+        row = JudgmentProvenance(judgment_id=item.id)
+        session.add(row)
+    row.neutral_citation = entry.neutral_citation
+    row.source_record = record
+    row.dataset = manifest.dataset.model_dump(mode="json") if manifest.dataset else None
+    row.attribution = manifest.source.attribution
+    row.recorded_at = now
+
+
+def _record_run(
+    session: Session,
+    plan: Plan,
+    imported: list[uuid.UUID],
+    updated: list[uuid.UUID],
+    rejected: list[tuple[str, str]],
+    operator: str,
+    started: datetime,
+    finished: datetime,
+) -> uuid.UUID:
+    """The run's record: counts, and every item not imported with its reason."""
+    statuses: list[Status] = ["new", "unchanged", "changed", "duplicate", "invalid"]
+    items: list[dict[str, Any]] = [
+        {"id": i.entry.id, "status": i.status, "reason": i.reason}
+        for i in plan.items
+        if i.status in ("duplicate", "invalid")
+    ]
+    items += [{"id": rid, "status": "rejected", "reason": reason} for rid, reason in rejected]
+    run = JudgmentImportRun(
+        source_key=plan.manifest.source.key,
+        manifest_format=plan.manifest.format,
+        manifest_sha256=plan.manifest_sha256,
+        operator=operator,
+        started_at=started,
+        finished_at=finished,
+        counts={
+            "planned": {s: plan.count(s) for s in statuses},
+            "imported": len(imported),
+            "updated": len(updated),
+            "rejected": len(rejected),
+        },
+        items=items,
+    )
+    session.add(run)
+    session.commit()
+    return run.id

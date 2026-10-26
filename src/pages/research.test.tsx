@@ -216,3 +216,21 @@ describe('A judgment', () => {
     expect(await screen.findByText('Not found')).toBeVisible();
   });
 });
+
+describe('Keyword search with no passage containing every word', () => {
+  it('shows passages with some of the words and says so', async () => {
+    mockSetJudgments([tenancy, notice]);
+    renderApp(`${LIBRARY}?q=${encodeURIComponent('notice zebra')}&mode=keyword`, {
+      as: ARYAN_EMAIL,
+    });
+    expect(await screen.findByRole('article', { name: notice.detail.title })).toBeVisible();
+    expect(screen.getByText(/No passage contains every word of your search/)).toBeVisible();
+  });
+
+  it('adds no note when every word matched', async () => {
+    mockSetJudgments([tenancy, notice]);
+    renderApp(`${LIBRARY}?q=notice&mode=keyword`, { as: ARYAN_EMAIL });
+    expect(await screen.findByRole('article', { name: notice.detail.title })).toBeVisible();
+    expect(screen.queryByText(/No passage contains every word/)).toBeNull();
+  });
+});

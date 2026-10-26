@@ -1,0 +1,33 @@
+  fa31a7b9-f766-5d36-be35-ff0f4efc7892  Ajanta LLP v. Casio Keisanki Kabushiki Kaisha d/b/a Casio Computer Co. Ltd.
+  32dd9384-4b55-57c7-9136-94c8a30ea122  Amritdhara Pharmacy v. Satyadeo Gupta
+  7dbbe993-e9fa-5389-bf95-c3fd39fa2333  Arjun Nair v. Coastal Logistics Ltd. (SYNTHETIC)
+  14651aa9-aaad-5730-aa9f-05d1bebcd07d  Asha Rao v. Bharat Traders (SYNTHETIC)
+  74e35b6a-22b6-5082-9af5-da648ad23cc6  Asian Paints Limited v. Ram Babu & Another
+  694448e7-a9a1-5478-9706-0c273a8f0447  Canara Bank v. N.G. Subbaraya Setty & Anr.
+  0618b5ff-056c-5154-a8bd-b70d34ed60c1  Divya Sharma v. Anil Sharma (SYNTHETIC)
+  02637280-9387-54fe-804f-5ab3226ec43b  Farah Khan v. State (SYNTHETIC)
+  940b3b24-4eeb-5471-ba3a-1b89f257f67a  Golden Grain Foods v. Sunrise Bakers (SYNTHETIC)
+  c85ac6c4-55d5-57bc-8fd5-b0807a7b3fd2  Indian Performing Rights Society Ltd. v. Sanjay Dalia & Anr.
+  aa32a325-404b-5336-96e8-c083c4b190d0  Kiran Mehta v. Sunil Gowda (SYNTHETIC)
+  0c18b303-b6cb-55f5-b219-e8dd9aeef4e4  K. Mangayarkarasi & Anr. v. N.J. Sundaresan & Anr.
+  c606284d-2c9b-5e30-91eb-7ad29e5aba39  Leela Thomas v. Vinod Pillai (SYNTHETIC)
+  2dbbc529-8e27-5029-8238-17b37e064def  Lifestyle Equities C.V. & Anr. v. Amazon Technologies Inc.
+  5b339377-8ccc-599a-8ef9-0a84ec2c4f76  Meena Joshi v. Highway Transport Co. (SYNTHETIC)
+  559fd745-93c5-5aab-96f4-15e7ef7fb3bb  Milmet Oftho Industries & Ors. v. Allergan Inc.
+  7b61040b-a0cb-5a9d-81bc-c91de2f0289c  M/s Gujarat Bottling Co. Ltd. & Ors. v. The Coca Cola Co. & Ors.
+  3c77e09d-4f04-57f9-aeae-427f7e551687  M/s. Nandhini Deluxe v. M/s. Karnataka Co-operative Milk Producers Federation Ltd.
+  e805a57b-fbd3-52d4-b770-6651b7ab3f56  Parle Products (P) Ltd. v. J. P. & Co., Mysore
+  b4b313b6-fe78-5141-b860-897ab35bd2fb  Pernod Ricard India Private Limited & Another v. Karanveer Singh Chhabra
+  ba4c1a43-4dcf-5efd-a1dd-dd89d96e9285  Prakash Steels v. Nanda Enterprises (SYNTHETIC)
+  1eb5326f-0ded-515b-9a95-cd28b7f0c778  Ramesh Iyer v. QuickMart Online (SYNTHETIC)
+  e962bf28-1979-50fc-a13b-56e7e8f4bd64  Renaissance Hotel Holdings Inc. v. B. Vijaya Sai and Others
+  48dc1e42-b9db-5a70-ad31-58b07f52086f  Royal Orchid Hotels Ltd. v. Kamat Hotels (India) Ltd. & Ors.
+  43ce41f2-6cc2-58a4-8519-9317a71869c6  Sanjay Patil v. The Daily Courier (SYNTHETIC)
+  4d3844cf-2a98-510e-b695-b6579fac6eaf  Shyam Sel and Power Limited and Another v. Shyam Steel Industries Limited
+  a7f7d564-9e71-53f0-83b0-b0df94f6aa21  State v. Ravi Kumar (SYNTHETIC)
+  686f1d9c-0a31-5bf6-b702-9f95af865504  Undated order (SYNTHETIC)
+  3ad6e519-81a9-5072-88d5-2b2809d87dd0  Whirlpool Corporation v. Registrar of Trade Marks, Mumbai & Ors.
+  e344ed0e-77be-5b1a-9916-77f21725717e  Wockhardt Limited v. Torrent Pharmaceuticals Ltd. and Anr.
+Indexed 30 judgment(s): 1280 chunk(s) embedded.
+Checks passed: database 'lexflow_e2e' is marked; local embeddings only.
+exit=0

@@ -291,7 +291,7 @@ def committed_engine(engine: Engine) -> Iterator[Engine]:
             text(
                 "TRUNCATE audit_events, sessions, case_members, documents, timeline_events, "
                 "hearings, cases, clients, users, case_number_counters, judgments, "
-                "judgment_sources RESTART IDENTITY CASCADE"
+                "judgment_sources, judgment_import_runs RESTART IDENTITY CASCADE"
             )
         )
 
