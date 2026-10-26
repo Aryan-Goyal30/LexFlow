@@ -1,8 +1,12 @@
 """Prepare and run an isolated API for the Playwright end-to-end tests.
 
-    python scripts/e2e.py prepare   recreate the e2e database, migrate it, load sample data,
-                                    create the e2e sign-in accounts and import the
-                                    SYNTHETIC judgment fixtures
+    python scripts/e2e.py prepare   recreate the e2e database (marked as the isolated demo
+                                    database, identity verified before any write), migrate
+                                    it, load sample data, create the e2e sign-in accounts
+                                    and import the SYNTHETIC judgment fixtures
+    python scripts/e2e.py accounts  give the existing demo accounts the password in
+                                    LEXFLOW_E2E_PASSWORD (no reset; for a database that
+                                    holds genuine judgments, which prepare refuses to drop)
     python scripts/e2e.py serve     run the API against that database on 127.0.0.1:8001
                                     (the harness adds --run-id HEX32 to mark its process)
     python scripts/e2e.py work --run-id HEX32
@@ -12,7 +16,10 @@
 
 The e2e database is the server named by ``DATABASE_URL`` with the database name
 replaced by ``lexflow_e2e`` (override with ``LEXFLOW_E2E_DATABASE``; "e2e" must be a
-whole part of the name, because ``prepare`` drops it). Uploads go to
+whole part of the name, because ``prepare`` drops it). Playwright sets
+``lexflow_e2e_playwright``, so the persistent demo database ``lexflow_e2e`` keeps
+its imported genuine judgments; ``prepare`` refuses to drop any database that
+holds genuine (non-synthetic) judgments. Uploads go to
 ``server/var/e2e-uploads``, which ``prepare`` empties. The development database
 and upload folder are never touched, and the database URL is never printed.
 
@@ -32,7 +39,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from sqlalchemy import URL, create_engine, make_url, text
+from sqlalchemy import URL, Engine, create_engine, make_url, text
 from sqlalchemy.orm import Session
 
 SERVER_ROOT = Path(__file__).resolve().parent.parent
@@ -61,6 +68,7 @@ E2E_MEMBERS: list[tuple[str, str, str]] = [
 sys.path.insert(0, str(SERVER_ROOT))
 
 from lexflow.config import Settings, get_settings  # noqa: E402 - needs the path above
+from lexflow.demo import DEMO_MARKER, mark_statement  # noqa: E402
 
 
 def e2e_database_url() -> URL:
@@ -74,7 +82,57 @@ def e2e_database_url() -> URL:
     if {"dbname", "service"} & set(base.query):
         # Either would make psycopg connect to another database than the name set here.
         raise SystemExit("Refusing a DATABASE_URL with a dbname or service parameter.")
+    if name == base.database:
+        # Never the database the app itself uses (the live one), whatever its name.
+        raise SystemExit(f"Refusing to use database {name!r}: it is the DATABASE_URL database.")
     return base.set(database=name)
+
+
+def holds_genuine_judgments(url: URL) -> bool:
+    """True if the database exists and has a judgment source not marked synthetic.
+
+    Checked before ``prepare`` drops anything: a database holding imported
+    genuine judgments is never reset by the test or demo setup.
+    """
+    admin = create_engine(url.set(database="postgres"))
+    try:
+        with admin.connect() as connection:
+            exists = connection.scalar(
+                text("SELECT 1 FROM pg_database WHERE datname = :name"), {"name": url.database}
+            )
+    finally:
+        admin.dispose()
+    if not exists:
+        return False
+    probe = create_engine(url)
+    try:
+        with probe.connect() as connection:
+            if connection.scalar(text("SELECT to_regclass('judgment_sources')")) is None:
+                return False
+            return bool(
+                connection.scalar(
+                    text("SELECT count(*) FROM judgment_sources WHERE NOT is_synthetic")
+                )
+            )
+    finally:
+        probe.dispose()
+
+
+def verify_identity(engine: Engine, expected: str) -> None:
+    """Ask the connection itself which database it reached, and require the demo
+    marker written at creation, before anything is migrated or loaded."""
+    with engine.connect() as connection:
+        connected, marker = connection.execute(
+            text(
+                "SELECT current_database(), shobj_description(oid, 'pg_database') "
+                "FROM pg_database WHERE datname = current_database()"
+            )
+        ).one()
+    if connected != expected or marker != DEMO_MARKER:
+        raise SystemExit(
+            "Refusing to continue: the connected database is not the freshly created, "
+            "marked demo database."
+        )
 
 
 def prepare() -> int:
@@ -85,11 +143,24 @@ def prepare() -> int:
     from lexflow.seed.loader import load_sample_data
 
     url = e2e_database_url()
+    if holds_genuine_judgments(url):
+        raise SystemExit(
+            f"Refusing to recreate {url.database!r}: it holds genuine (non-synthetic) judgments, "
+            "which a reset would delete. Use another LEXFLOW_E2E_DATABASE (Playwright uses "
+            "lexflow_e2e_playwright), or remove them first with lexflow.cli.judgments remove."
+        )
     admin = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
     with admin.connect() as connection:
         connection.execute(text(f'DROP DATABASE IF EXISTS "{url.database}" WITH (FORCE)'))
         connection.execute(text(f'CREATE DATABASE "{url.database}"'))
+        # The identity marker that demo mode checks on every request (lexflow/demo.py).
+        connection.execute(text(mark_statement(url.database or "")))
     admin.dispose()
+    probe = create_engine(url)
+    try:
+        verify_identity(probe, url.database or "")
+    finally:
+        probe.dispose()
 
     config = Config(str(SERVER_ROOT / "alembic.ini"))
     config.attributes["database_url"] = url.render_as_string(hide_password=False)
@@ -110,6 +181,44 @@ def prepare() -> int:
         f"e2e database {url.database!r} ready: {result.total} sample rows, "
         f"{accounts} sign-in accounts, {judgments} SYNTHETIC judgments."
     )
+    return 0
+
+
+def accounts() -> int:
+    """Give the existing demo accounts the password in LEXFLOW_E2E_PASSWORD.
+
+    For a database that ``prepare`` must not reset (it holds genuine
+    judgments): nothing is dropped or loaded, and the identity and marker are
+    checked first. The password is never printed.
+    """
+    from datetime import UTC, datetime
+
+    from sqlalchemy import func, select
+
+    from lexflow.auth.service import set_password
+    from lexflow.db import engine_for
+    from lexflow.models import User
+
+    password = os.environ.get("LEXFLOW_E2E_PASSWORD") or ""
+    if len(password) < 12:
+        raise SystemExit("Set LEXFLOW_E2E_PASSWORD (at least 12 characters) first.")
+    url = e2e_database_url()
+    probe = create_engine(url)
+    try:
+        verify_identity(probe, url.database or "")
+    finally:
+        probe.dispose()
+    engine = engine_for(url.render_as_string(hide_password=False))
+    settings = Settings()
+    now = datetime.now(UTC)
+    with Session(engine) as session, session.begin():
+        for email, _name, _role in E2E_ACCOUNTS:
+            user = session.scalar(select(User).where(func.lower(User.email) == email))
+            if user is None:
+                raise SystemExit(f"{email} does not exist in {url.database!r}; nothing changed.")
+            set_password(session, user, password, now=now, settings=settings, temporary=False)
+    engine.dispose()
+    print(f"{len(E2E_ACCOUNTS)} demo accounts in {url.database!r} now use the new password.")
     return 0
 
 
@@ -187,6 +296,9 @@ def _scripted_analysis() -> None:
     # the e2e database, SYNTHETIC judgments and the scripted provider. The settings
     # refuse it with any other database. LEXFLOW_OUTCOME_ASSESSMENT=false turns it off.
     os.environ.setdefault("LEXFLOW_OUTCOME_ASSESSMENT", "true")
+    # Demo mode (fictional clients and cases on new matters) is on in this app too;
+    # every request still verifies the marked demo database (lexflow/demo.py).
+    os.environ.setdefault("LEXFLOW_DEMO_MODE", "true")
 
 
 def serve() -> int:
@@ -228,6 +340,8 @@ def main() -> int:
     args = sys.argv[1:]
     if args == ["prepare"]:
         return prepare()
+    if args == ["accounts"]:
+        return accounts()
     if len(args) == 3 and args[:2] == ["work", "--run-id"] and RUN_ID.fullmatch(args[2]):
         return work()
     # The optional run id only marks the process: the test harness checks that a
@@ -237,7 +351,8 @@ def main() -> int:
     ):
         return serve()
     print(
-        "usage: python scripts/e2e.py prepare | serve [--run-id HEX32] | work --run-id HEX32",
+        "usage: python scripts/e2e.py prepare | accounts | serve [--run-id HEX32] | "
+        "work --run-id HEX32",
         file=sys.stderr,
     )
     return 2

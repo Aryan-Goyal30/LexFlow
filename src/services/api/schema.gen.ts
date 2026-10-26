@@ -124,7 +124,8 @@ export interface paths {
         put?: never;
         /**
          * Create Client
-         * @description Add a client (Administrators and Advocates).
+         * @description Add a client (Administrators and Advocates). ``fictional`` is accepted
+         *     only in the verified isolated demo database (409 elsewhere).
          */
         post: operations["create_client_api_clients_post"];
         delete?: never;
@@ -221,6 +222,23 @@ export interface paths {
         patch: operations["update_client_api_clients__client_id__patch"];
         trace?: never;
     };
+    "/api/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Demo Status */
+        get: operations["demo_status_api_demo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases": {
         parameters: {
             query?: never;
@@ -239,7 +257,9 @@ export interface paths {
          * @description Open a new case. The server assigns the case number and opening date.
          *
          *     Administrators and Advocates only; an Advocate must be the lead (403
-         *     ``field-not-permitted`` otherwise).
+         *     ``field-not-permitted`` otherwise). ``fictional`` (a demo case for a
+         *     fictional client) is accepted only in the verified isolated demo database
+         *     (409 elsewhere).
          */
         post: operations["create_case_api_cases_post"];
         delete?: never;
@@ -911,7 +931,7 @@ export interface paths {
         };
         /**
          * Get Judgment
-         * @description One judgment with its source and the terms-of-use record of that source.
+         * @description One judgment with its source, the source's terms record and its provenance.
          */
         get: operations["get_judgment_api_judgments__judgment_id__get"];
         put?: never;
@@ -1411,6 +1431,25 @@ export interface components {
             statement: string;
             source: components["schemas"]["AnalysisSourceOut"];
         };
+        /**
+         * AnalysisFlaggedPassageOut
+         * @description A passage with text that reads like instructions to an AI system.
+         */
+        AnalysisFlaggedPassageOut: {
+            /** Evidenceid */
+            evidenceId: string;
+            /**
+             * Documentid
+             * Format: uuid
+             */
+            documentId: string;
+            /** Documentname */
+            documentName: string;
+            /** Sectionnumber */
+            sectionNumber: number;
+            /** Pagenumber */
+            pageNumber: number | null;
+        };
         /** AnalysisIssueOut */
         AnalysisIssueOut: {
             /** Id */
@@ -1534,6 +1573,11 @@ export interface components {
              */
             precedentsAvailable: boolean;
             removed: components["schemas"]["AnalysisRemovedOut"];
+            /**
+             * Instructionlikepassages
+             * @description Passages containing text that reads like instructions to an AI system (possible prompt injection). That text is never used as evidence; check the document. Empty for runs validated before grounding-5.
+             */
+            instructionLikePassages?: components["schemas"]["AnalysisFlaggedPassageOut"][];
         };
         /** AnalysisReviewHistoryEntryOut */
         AnalysisReviewHistoryEntryOut: {
@@ -2219,6 +2263,12 @@ export interface components {
              * @description Creates the first hearing. Cannot be in the past.
              */
             nextHearing?: string | null;
+            /**
+             * Fictional
+             * @description A fictional demo case for a fictional client (stored as a sample case, which AI analysis accepts). Only in the verified isolated demo database; refused (409) everywhere else.
+             * @default false
+             */
+            fictional: boolean;
         };
         /** CaseDetail */
         CaseDetail: {
@@ -2549,6 +2599,12 @@ export interface components {
             phone: string;
             /** Company */
             company?: string | null;
+            /**
+             * Fictional
+             * @description A fictional demo client (stored as a sample record). Accepted only in the verified isolated demo database; refused (409) everywhere else.
+             * @default false
+             */
+            fictional: boolean;
         };
         /**
          * ClientOption
@@ -2653,6 +2709,27 @@ export interface components {
             deletedAt: string;
             /** @description Who deleted it, if still known. */
             deletedBy: components["schemas"]["ActorOut"] | null;
+        };
+        /**
+         * DemoStatusOut
+         * @description Whether this server runs the isolated demo (all records fictional).
+         */
+        DemoStatusOut: {
+            /**
+             * Enabled
+             * @description Demo mode is switched on for this server.
+             */
+            enabled: boolean;
+            /**
+             * Verified
+             * @description The connected database is the marked, isolated demo database.
+             */
+            verified: boolean;
+            /**
+             * Reason
+             * @description Why fictional demo records cannot be created.
+             */
+            reason: string | null;
         };
         /** DocumentOut */
         DocumentOut: {
@@ -2903,6 +2980,22 @@ export interface components {
             /** Purpose */
             purpose?: string | null;
         };
+        /** JudgmentDatasetOut */
+        JudgmentDatasetOut: {
+            /** Name */
+            name: string;
+            /** Publisher */
+            publisher: string;
+            /** Url */
+            url: string;
+            /** Version */
+            version: string | null;
+            /**
+             * Retrievedon
+             * Format: date
+             */
+            retrievedOn: string;
+        };
         /** JudgmentDetailOut */
         JudgmentDetailOut: {
             /**
@@ -2940,6 +3033,8 @@ export interface components {
             /** Bench */
             bench: string | null;
             source: components["schemas"]["JudgmentSourceOut"];
+            /** @description Null for judgments imported before migration 0014. A format-1 import records only the file's SHA-256. */
+            provenance: components["schemas"]["JudgmentProvenanceOut"] | null;
             /**
              * Pagecount
              * @description PDFs only.
@@ -3030,6 +3125,32 @@ export interface components {
              */
             text: string;
         };
+        /**
+         * JudgmentProvenanceOut
+         * @description Where this copy came from, as recorded at import (format-2 manifests).
+         */
+        JudgmentProvenanceOut: {
+            /** Neutralcitation */
+            neutralCitation: string | null;
+            /**
+             * Attribution
+             * @description The acknowledgement the source requires; show it with the judgment.
+             */
+            attribution: string | null;
+            dataset: components["schemas"]["JudgmentDatasetOut"] | null;
+            /**
+             * Sourcerecord
+             * @description The source's own record fields (for example the file's SHA-256).
+             */
+            sourceRecord: {
+                [key: string]: string | number;
+            };
+            /**
+             * Recordedat
+             * Format: date-time
+             */
+            recordedAt: string;
+        };
         /** JudgmentSearchModesOut */
         JudgmentSearchModesOut: {
             /** Keyword */
@@ -3061,6 +3182,11 @@ export interface components {
              * @description The embedding model (semantic and hybrid modes).
              */
             model: string | null;
+            /**
+             * Keywordmatch
+             * @description Keyword and hybrid modes: 'all' when passages contain every word of the query; 'any' when none did and passages containing some of the words are shown instead. Null for semantic search.
+             */
+            keywordMatch: ("all" | "any") | null;
             /**
              * Total
              * @description Judgments ranked (at most maxResults).
@@ -3897,6 +4023,26 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    demo_status_api_demo_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoStatusOut"];
                 };
             };
         };
@@ -5508,6 +5654,8 @@ export interface operations {
                 court?: string | null;
                 yearFrom?: number | null;
                 yearTo?: number | null;
+                /** @description genuine: from real sources only; synthetic: invented test data only. */
+                origin?: ("genuine" | "synthetic") | null;
                 page?: number;
                 pageSize?: number;
             };
@@ -5547,6 +5695,8 @@ export interface operations {
                 court?: string | null;
                 yearFrom?: number | null;
                 yearTo?: number | null;
+                /** @description genuine: from real sources only; synthetic: invented test data only. */
+                origin?: ("genuine" | "synthetic") | null;
                 page?: number;
                 pageSize?: number;
             };

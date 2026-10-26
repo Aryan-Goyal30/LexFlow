@@ -220,7 +220,7 @@
           "clients"
         ],
         "summary": "Create Client",
-        "description": "Add a client (Administrators and Advocates).",
+        "description": "Add a client (Administrators and Advocates). ``fictional`` is accepted\nonly in the verified isolated demo database (409 elsewhere).",
         "operationId": "create_client_api_clients_post",
         "requestBody": {
           "content": {
@@ -458,6 +458,27 @@
         }
       }
     },
+    "/api/demo": {
+      "get": {
+        "tags": [
+          "demo"
+        ],
+        "summary": "Demo Status",
+        "operationId": "demo_status_api_demo_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoStatusOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases": {
       "get": {
         "tags": [
@@ -517,7 +538,7 @@
           "cases"
         ],
         "summary": "Create Case",
-        "description": "Open a new case. The server assigns the case number and opening date.\n\nAdministrators and Advocates only; an Advocate must be the lead (403\n``field-not-permitted`` otherwise).",
+        "description": "Open a new case. The server assigns the case number and opening date.\n\nAdministrators and Advocates only; an Advocate must be the lead (403\n``field-not-permitted`` otherwise). ``fictional`` (a demo case for a\nfictional client) is accepted only in the verified isolated demo database\n(409 elsewhere).",
         "operationId": "create_case_api_cases_post",
         "requestBody": {
           "required": true,
@@ -2789,6 +2810,28 @@
             }
           },
           {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "genuine",
+                    "synthetic"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "genuine: from real sources only; synthetic: invented test data only.",
+              "title": "Origin"
+            },
+            "description": "genuine: from real sources only; synthetic: invented test data only."
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -2930,6 +2973,28 @@
             }
           },
           {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "genuine",
+                    "synthetic"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "genuine: from real sources only; synthetic: invented test data only.",
+              "title": "Origin"
+            },
+            "description": "genuine: from real sources only; synthetic: invented test data only."
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -2994,7 +3059,7 @@
           "judgments"
         ],
         "summary": "Get Judgment",
-        "description": "One judgment with its source and the terms-of-use record of that source.",
+        "description": "One judgment with its source, the source's terms record and its provenance.",
         "operationId": "get_judgment_api_judgments__judgment_id__get",
         "parameters": [
           {
@@ -4453,6 +4518,48 @@
         ],
         "title": "AnalysisFactOut"
       },
+      "AnalysisFlaggedPassageOut": {
+        "properties": {
+          "evidenceId": {
+            "type": "string",
+            "title": "Evidenceid"
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Documentid"
+          },
+          "documentName": {
+            "type": "string",
+            "title": "Documentname"
+          },
+          "sectionNumber": {
+            "type": "integer",
+            "title": "Sectionnumber"
+          },
+          "pageNumber": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pagenumber"
+          }
+        },
+        "type": "object",
+        "required": [
+          "evidenceId",
+          "documentId",
+          "documentName",
+          "sectionNumber",
+          "pageNumber"
+        ],
+        "title": "AnalysisFlaggedPassageOut",
+        "description": "A passage with text that reads like instructions to an AI system."
+      },
       "AnalysisIssueOut": {
         "properties": {
           "id": {
@@ -4735,6 +4842,14 @@
           },
           "removed": {
             "$ref": "#/components/schemas/AnalysisRemovedOut"
+          },
+          "instructionLikePassages": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisFlaggedPassageOut"
+            },
+            "type": "array",
+            "title": "Instructionlikepassages",
+            "description": "Passages containing text that reads like instructions to an AI system (possible prompt injection). That text is never used as evidence; check the document. Empty for runs validated before grounding-5."
           }
         },
         "type": "object",
@@ -6378,6 +6493,12 @@
             ],
             "title": "Nexthearing",
             "description": "Creates the first hearing. Cannot be in the past."
+          },
+          "fictional": {
+            "type": "boolean",
+            "title": "Fictional",
+            "description": "A fictional demo case for a fictional client (stored as a sample case, which AI analysis accepts). Only in the verified isolated demo database; refused (409) everywhere else.",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -7161,6 +7282,12 @@
               }
             ],
             "title": "Company"
+          },
+          "fictional": {
+            "type": "boolean",
+            "title": "Fictional",
+            "description": "A fictional demo client (stored as a sample record). Accepted only in the verified isolated demo database; refused (409) everywhere else.",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -7436,6 +7563,40 @@
         ],
         "title": "DeletedDocumentOut",
         "description": "A deleted document, kept until restored or purged by an operator."
+      },
+      "DemoStatusOut": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Demo mode is switched on for this server."
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified",
+            "description": "The connected database is the marked, isolated demo database."
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Why fictional demo records cannot be created."
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "verified",
+          "reason"
+        ],
+        "title": "DemoStatusOut",
+        "description": "Whether this server runs the isolated demo (all records fictional)."
       },
       "DocumentOut": {
         "properties": {
@@ -8021,6 +8182,47 @@
         "title": "HearingUpdate",
         "description": "Change a scheduled hearing. Only the fields present change; ``time`` may be null."
       },
+      "JudgmentDatasetOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "publisher": {
+            "type": "string",
+            "title": "Publisher"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "retrievedOn": {
+            "type": "string",
+            "format": "date",
+            "title": "Retrievedon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "publisher",
+          "url",
+          "version",
+          "retrievedOn"
+        ],
+        "title": "JudgmentDatasetOut"
+      },
       "JudgmentDetailOut": {
         "properties": {
           "id": {
@@ -8106,6 +8308,17 @@
           "source": {
             "$ref": "#/components/schemas/JudgmentSourceOut"
           },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JudgmentProvenanceOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null for judgments imported before migration 0014. A format-1 import records only the file's SHA-256."
+          },
           "pageCount": {
             "anyOf": [
               {
@@ -8150,6 +8363,7 @@
           "synthetic",
           "bench",
           "source",
+          "provenance",
           "pageCount",
           "sectionCount",
           "charCount",
@@ -8322,6 +8536,73 @@
         ],
         "title": "JudgmentPassageOut"
       },
+      "JudgmentProvenanceOut": {
+        "properties": {
+          "neutralCitation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neutralcitation"
+          },
+          "attribution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attribution",
+            "description": "The acknowledgement the source requires; show it with the judgment."
+          },
+          "dataset": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JudgmentDatasetOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sourceRecord": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Sourcerecord",
+            "description": "The source's own record fields (for example the file's SHA-256)."
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recordedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "neutralCitation",
+          "attribution",
+          "dataset",
+          "sourceRecord",
+          "recordedAt"
+        ],
+        "title": "JudgmentProvenanceOut",
+        "description": "Where this copy came from, as recorded at import (format-2 manifests)."
+      },
       "JudgmentSearchModesOut": {
         "properties": {
           "keyword": {
@@ -8393,6 +8674,22 @@
             "title": "Model",
             "description": "The embedding model (semantic and hybrid modes)."
           },
+          "keywordMatch": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "all",
+                  "any"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keywordmatch",
+            "description": "Keyword and hybrid modes: 'all' when passages contain every word of the query; 'any' when none did and passages containing some of the words are shown instead. Null for semantic search."
+          },
           "total": {
             "type": "integer",
             "title": "Total",
@@ -8422,6 +8719,7 @@
         "required": [
           "mode",
           "model",
+          "keywordMatch",
           "total",
           "maxResults",
           "page",

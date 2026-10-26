@@ -8,11 +8,12 @@ from datetime import date, datetime
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 
-from lexflow import authz
+from lexflow import authz, demo
 from lexflow.audit import AuditLog, get_audit_log
 from lexflow.auth.deps import require_roles, require_user
 from lexflow.authz import Action
 from lexflow.clock import get_now, get_today
+from lexflow.config import Settings, get_settings
 from lexflow.db import get_session
 from lexflow.domain import ADMINISTRATOR, ADVOCATE
 from lexflow.errors import problem_responses
@@ -77,13 +78,17 @@ def create_case(
     session: Session = Depends(get_session),
     audit: AuditLog = Depends(get_audit_log),
     today: date = Depends(get_today),
+    settings: Settings = Depends(get_settings),
 ) -> CaseDetail:
     """Open a new case. The server assigns the case number and opening date.
 
     Administrators and Advocates only; an Advocate must be the lead (403
-    ``field-not-permitted`` otherwise).
+    ``field-not-permitted`` otherwise). ``fictional`` (a demo case for a
+    fictional client) is accepted only in the verified isolated demo database
+    (409 elsewhere).
     """
-    case_id = service.create_case(session, data, today, user, audit)
+    allowed = data.fictional and demo.status(session, settings).verified
+    case_id = service.create_case(session, data, today, user, audit, fictional_allowed=allowed)
     response.headers["Location"] = f"/api/cases/{case_id}"
     case, rel = authz.load_case(session, user, case_id, Action.VIEW, audit)
     return service.get_case_detail(session, case.id, today, rel)

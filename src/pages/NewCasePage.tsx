@@ -20,6 +20,7 @@ import type {
 import { validateNewCase, type NewCaseErrors, type NewCaseForm } from '../lib/validateNewCase';
 import { todayIsoDate } from '../lib/format';
 import { PRACTICE_AREAS, PRIORITIES, STATUSES } from '../lib/caseOptions';
+import { useDemoStatus } from '../hooks/useDemo';
 
 /** Order in which fields appear, used to focus the first invalid one. */
 const FIELD_ORDER: (keyof NewCaseForm)[] = [
@@ -146,6 +147,11 @@ function NewCaseFormView({
   }));
   const [errors, setErrors] = useState<NewCaseErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Demo only: a fictional case (for a fictional client), offered only when the
+  // server reports the verified isolated demo database. The server checks again.
+  const demo = useDemoStatus();
+  const demoVerified = demo.data?.verified === true;
+  const [fictional, setFictional] = useState(false);
 
   const idFor = (key: keyof NewCaseForm) => `${uid}-${key}`;
   const errorIdFor = (key: keyof NewCaseForm) => `${uid}-${key}-error`;
@@ -191,6 +197,7 @@ function NewCaseFormView({
       opposingParty: form.opposingParty || null,
       description: form.description,
       nextHearing: form.nextHearing || null,
+      fictional: demoVerified && fictional,
     };
 
     createCase.mutate(input, {
@@ -261,6 +268,21 @@ function NewCaseFormView({
                     required
                   />
                 </Field>
+
+                {demoVerified && (
+                  <label className="flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-inset ring-amber-600/30">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={fictional}
+                      onChange={(e) => setFictional(e.target.checked)}
+                    />
+                    <span>
+                      <strong>Fictional demo case.</strong> Stored as a sample case, so the
+                      demonstration can analyse it. Choose a fictional (sample) client.
+                    </span>
+                  </label>
+                )}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { DemoBanner } from './DemoBanner';
 import { useAuth } from '../../context/AuthContext';
 import { ErrorState, LoadingState } from '../ui/QueryState';
 import { CHANGE_PASSWORD_PATH, PORTAL_PATH } from '../../lib/paths';
@@ -49,6 +50,7 @@ export function AppLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onMenuClick={() => setSidebarOpen(true)} />
+        <DemoBanner />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-6xl">
             <Outlet />

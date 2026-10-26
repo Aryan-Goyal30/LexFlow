@@ -18,7 +18,7 @@ from datetime import date
 from sqlalchemy import Select, exists, select
 from sqlalchemy.orm import Session
 
-from lexflow import authz
+from lexflow import authz, demo
 from lexflow.audit import AuditLog
 from lexflow.authz import Relation
 from lexflow.domain import ADMINISTRATOR
@@ -76,11 +76,35 @@ def get_detail(session: Session, user: User, client_id: uuid.UUID, today: date) 
     )
 
 
-def create(session: Session, data: ClientIn, *, user: User, audit: AuditLog) -> Client:
-    client = Client(name=data.name, email=data.email, phone=data.phone, company=data.company)
+def create(
+    session: Session,
+    data: ClientIn,
+    *,
+    user: User,
+    audit: AuditLog,
+    fictional_allowed: bool = False,
+) -> Client:
+    """Add a client. A fictional demo client (``data.fictional``) is stored as a
+    sample record, and only when the caller verified the isolated demo database
+    (``fictional_allowed``, see ``lexflow/demo.py``)."""
+    if data.fictional and not fictional_allowed:
+        raise ProblemError(409, "demo-environment-unverified", demo.UNVERIFIED)
+    client = Client(
+        name=data.name,
+        email=data.email,
+        phone=data.phone,
+        company=data.company,
+        is_sample=data.fictional,
+    )
     session.add(client)
     session.commit()
-    audit.record("client.created", actor=user, target_type="client", target_id=client.id)
+    audit.record(
+        "client.created",
+        actor=user,
+        target_type="client",
+        target_id=client.id,
+        details={"fictional": True} if data.fictional else None,
+    )
     return client
 
 

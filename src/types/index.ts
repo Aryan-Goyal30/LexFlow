@@ -85,3 +85,5 @@ export type PracticeArea = CaseSummary['practiceArea'];
 export type CurrentUser = Schemas['MeOut'];
 export type User = CurrentUser;
 export type UserRole = CurrentUser['role'];
+/** `GET /api/demo`: whether this server runs the isolated demo (all records fictional). */
+export type DemoStatus = Schemas['DemoStatusOut'];

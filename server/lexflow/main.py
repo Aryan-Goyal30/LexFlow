@@ -20,6 +20,7 @@ from lexflow.api import (
     auth,
     cases,
     clients,
+    demo,
     documents,
     health,
     hearings,
@@ -103,6 +104,7 @@ def create_app() -> FastAPI:
     app.include_router(reference.router, prefix=API_PREFIX, dependencies=staff)
     # After reference: /clients/options must win over /clients/{client_id}.
     app.include_router(clients.router, prefix=API_PREFIX, dependencies=staff)
+    app.include_router(demo.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(cases.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(documents.router, prefix=API_PREFIX, dependencies=staff)
     app.include_router(search.router, prefix=API_PREFIX, dependencies=staff)

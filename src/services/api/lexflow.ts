@@ -26,6 +26,7 @@ import type {
   ClientChanges,
   ClientDetail,
   ClientInput,
+  DemoStatus,
   ClientOption,
   CurrentUser,
   NewCaseInput,
@@ -51,7 +52,11 @@ export interface JudgmentFilters {
   court?: string;
   yearFrom?: number;
   yearTo?: number;
+  /** genuine: from real sources only; synthetic: invented test data only. */
+  origin?: JudgmentOrigin;
 }
+
+export type JudgmentOrigin = 'genuine' | 'synthetic';
 
 /** One judgment search: what, how, which page, within which filters. */
 export interface JudgmentQuery extends JudgmentFilters {
@@ -66,6 +71,7 @@ function judgmentParams(filters: JudgmentFilters, extra: Record<string, string>)
   if (filters.court) params.set('court', filters.court);
   if (filters.yearFrom !== undefined) params.set('yearFrom', String(filters.yearFrom));
   if (filters.yearTo !== undefined) params.set('yearTo', String(filters.yearTo));
+  if (filters.origin) params.set('origin', filters.origin);
   return params;
 }
 
@@ -194,6 +200,9 @@ export const lexflowApi = {
   getClient: (clientId: string) => apiFetch<ClientDetail>(`/clients/${id(clientId)}`),
 
   createClient: (input: ClientInput) => apiFetch<Client>('/clients', json(input)),
+
+  /** Whether this server runs the isolated demo database (fictional records allowed). */
+  demoStatus: () => apiFetch<DemoStatus>('/demo'),
 
   updateClient: (clientId: string, changes: ClientChanges) =>
     apiFetch<Client>(`/clients/${id(clientId)}`, {

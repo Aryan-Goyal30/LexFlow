@@ -1,0 +1,152 @@
+{
+  "name": "fictional-trademark-dispute-v1",
+  "notice": "FICTIONAL: every person, firm, brand, product, place, court, registration and case number in this pack is invented for LexFlow demonstrations and tests. It is not a real legal record and must never be cited.",
+  "client": {
+    "name": "Velorindra Foods LLP (FICTIONAL)",
+    "email": "legal@velorindra-foods.example",
+    "phone": "+91 00000 14014",
+    "company": "Velorindra Foods LLP (fictional)"
+  },
+  "case": {
+    "title": "Velorindra Foods LLP v. Tamsinwick Snacks Private Limited (FICTIONAL)",
+    "practiceArea": "Intellectual Property",
+    "courtName": "Commercial Court at Ambarnagar (fictional)",
+    "opposingParty": "Tamsinwick Snacks Private Limited (fictional)",
+    "description": "FICTIONAL demonstration matter. Velorindra Foods LLP, owner of the registered trade mark KESORA for packaged millet snacks, sues Tamsinwick Snacks Private Limited for infringement and passing off over the deceptively similar mark KESORRA. Prior use, the date of first sale and honest adoption are in dispute."
+  },
+  "documents": [
+    {
+      "file": "01-plaint.pdf",
+      "title": "Plaint",
+      "date": "2026-04-15",
+      "kind": "pleading"
+    },
+    {
+      "file": "02-affidavit-head-of-sales.pdf",
+      "title": "Affidavit of the Head of Sales (Exhibit P-2)",
+      "date": "2026-04-10",
+      "kind": "evidence"
+    },
+    {
+      "file": "03-exhibit-p3-sales-ledger.txt",
+      "title": "Sales ledger extract (Exhibit P-3)",
+      "date": "2026-04-08",
+      "kind": "evidence"
+    },
+    {
+      "file": "04-cease-and-desist-notice.txt",
+      "title": "Cease-and-desist notice",
+      "date": "2025-02-10",
+      "kind": "correspondence"
+    },
+    {
+      "file": "05-reply-to-notice.docx",
+      "title": "Defendant's reply to the notice",
+      "date": "2025-02-28",
+      "kind": "correspondence"
+    },
+    {
+      "file": "06-written-statement.docx",
+      "title": "Written statement of the defendant",
+      "date": "2026-05-20",
+      "kind": "pleading"
+    }
+  ],
+  "timeline": [
+    {
+      "date": "2016-03-14",
+      "event": "First sale of KESORA claimed by the plaintiff (plaint, affidavit)"
+    },
+    {
+      "date": "2017-08-02",
+      "event": "Earliest invoice in the plaintiff's own sales ledger (Exhibit P-3)"
+    },
+    {
+      "date": "2018-07-09",
+      "event": "KESORA registered in Class 30 (fictional registration)"
+    },
+    {
+      "date": "2023-06-01",
+      "event": "KESORRA adopted, according to the defendant (month only: June 2023)"
+    },
+    {
+      "date": "2025-02-03",
+      "event": "KESORRA packs found in the Ambarnagar market"
+    },
+    {
+      "date": "2025-02-10",
+      "event": "Cease-and-desist notice"
+    },
+    {
+      "date": "2025-02-28",
+      "event": "Defendant's reply refusing to stop"
+    },
+    {
+      "date": "2026-04-15",
+      "event": "Plaint filed"
+    },
+    {
+      "date": "2026-05-20",
+      "event": "Written statement filed"
+    }
+  ],
+  "contradiction": {
+    "fact": "date of the first commercial sale of KESORA products (invoice VF/INV/0001)",
+    "statements": [
+      {
+        "file": "02-affidavit-head-of-sales.pdf",
+        "page": 1,
+        "text": "The first commercial sale of KESORA millet snacks was made on 14 March 2016,"
+      },
+      {
+        "file": "03-exhibit-p3-sales-ledger.txt",
+        "page": null,
+        "text": "VF/INV/0001  | 2 August 2017"
+      }
+    ],
+    "also_pleaded": [
+      {
+        "file": "01-plaint.pdf",
+        "page": 1,
+        "text": "first sold KESORA millet snacks on 14 March"
+      },
+      {
+        "file": "06-written-statement.docx",
+        "page": null,
+        "text": "records its first sale on 2"
+      }
+    ]
+  },
+  "keyFacts": [
+    {
+      "file": "01-plaint.pdf",
+      "page": 1,
+      "text": "registered on 9 July 2018 (fictional registration)."
+    },
+    {
+      "file": "01-plaint.pdf",
+      "page": 2,
+      "text": "On 3 February 2025 a field officer of the plaintiff found millet snack"
+    },
+    {
+      "file": "01-plaint.pdf",
+      "page": 3,
+      "text": "(b) a permanent injunction restraining passing off;"
+    },
+    {
+      "file": "02-affidavit-head-of-sales.pdf",
+      "page": 2,
+      "text": "Annual sales of KESORA snacks were Rs. 38 lakh"
+    },
+    {
+      "file": "04-cease-and-desist-notice.txt",
+      "page": null,
+      "text": "stop all use of KESORRA within 15 days"
+    },
+    {
+      "file": "05-reply-to-notice.docx",
+      "page": null,
+      "text": "adopted the mark KESORRA honestly in June 2023"
+    }
+  ]
+}

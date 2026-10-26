@@ -10,9 +10,11 @@ from datetime import date
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
+from lexflow import demo
 from lexflow.audit import AuditLog, get_audit_log
 from lexflow.auth.deps import require_roles, require_user
 from lexflow.clock import get_today
+from lexflow.config import Settings, get_settings
 from lexflow.db import get_session
 from lexflow.domain import ADMINISTRATOR, ADVOCATE
 from lexflow.errors import problem_responses
@@ -49,9 +51,12 @@ def create_client(
     user: User = Depends(require_roles(ADMINISTRATOR, ADVOCATE)),
     session: Session = Depends(get_session),
     audit: AuditLog = Depends(get_audit_log),
+    settings: Settings = Depends(get_settings),
 ) -> Client:
-    """Add a client (Administrators and Advocates)."""
-    client = service.create(session, data, user=user, audit=audit)
+    """Add a client (Administrators and Advocates). ``fictional`` is accepted
+    only in the verified isolated demo database (409 elsewhere)."""
+    allowed = data.fictional and demo.status(session, settings).verified
+    client = service.create(session, data, user=user, audit=audit, fictional_allowed=allowed)
     response.headers["Location"] = f"/api/clients/{client.id}"
     return client
 

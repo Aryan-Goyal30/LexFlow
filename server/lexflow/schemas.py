@@ -173,6 +173,13 @@ class ClientIn(InputModel):
     email: str
     phone: str
     company: str | None = None
+    fictional: bool = Field(
+        default=False,
+        description=(
+            "A fictional demo client (stored as a sample record). Accepted only in the "
+            "verified isolated demo database; refused (409) everywhere else."
+        ),
+    )
 
     _name = field_validator("name")(_check_client_name)
     _email = field_validator("email")(_check_client_email)
@@ -511,9 +518,35 @@ class JudgmentSourceOut(ApiModel):
     synthetic: bool
 
 
+class JudgmentDatasetOut(ApiModel):
+    name: str
+    publisher: str
+    url: str
+    version: str | None
+    retrieved_on: date
+
+
+class JudgmentProvenanceOut(ApiModel):
+    """Where this copy came from, as recorded at import (format-2 manifests)."""
+
+    neutral_citation: str | None
+    attribution: str | None = Field(
+        description="The acknowledgement the source requires; show it with the judgment."
+    )
+    dataset: JudgmentDatasetOut | None
+    source_record: dict[str, str | int] = Field(
+        description="The source's own record fields (for example the file's SHA-256)."
+    )
+    recorded_at: datetime
+
+
 class JudgmentDetailOut(JudgmentSummaryOut):
     bench: str | None
     source: JudgmentSourceOut
+    provenance: JudgmentProvenanceOut | None = Field(
+        description="Null for judgments imported before migration 0014. A format-1 import "
+        "records only the file's SHA-256."
+    )
     page_count: int | None = Field(description="PDFs only.")
     section_count: int
     char_count: int
@@ -551,6 +584,11 @@ class JudgmentSearchOut(ApiModel):
 
     mode: Literal["keyword", "semantic", "hybrid"]
     model: str | None = Field(description="The embedding model (semantic and hybrid modes).")
+    keyword_match: Literal["all", "any"] | None = Field(
+        description="Keyword and hybrid modes: 'all' when passages contain every word of the "
+        "query; 'any' when none did and passages containing some of the words are shown "
+        "instead. Null for semantic search."
+    )
     total: int = Field(description="Judgments ranked (at most maxResults).")
     max_results: int
     page: int
@@ -858,6 +896,14 @@ class CaseCreate(InputModel):
     next_hearing: date | None = Field(
         default=None, description="Creates the first hearing. Cannot be in the past."
     )
+    fictional: bool = Field(
+        default=False,
+        description=(
+            "A fictional demo case for a fictional client (stored as a sample case, which "
+            "AI analysis accepts). Only in the verified isolated demo database; refused (409) "
+            "everywhere else."
+        ),
+    )
 
     _title = field_validator("title")(_check_title)
     _description = field_validator("description")(_check_description)
@@ -1002,6 +1048,16 @@ class AnalysisRemovedOut(ApiModel):
     reasons: list[AnalysisRemovedReasonOut]
 
 
+class AnalysisFlaggedPassageOut(ApiModel):
+    """A passage with text that reads like instructions to an AI system."""
+
+    evidence_id: str
+    document_id: uuid.UUID
+    document_name: str
+    section_number: int
+    page_number: int | None
+
+
 class AnalysisResultOut(ApiModel):
     facts: list[AnalysisFactOut]
     issues: list[AnalysisIssueOut]
@@ -1015,6 +1071,12 @@ class AnalysisResultOut(ApiModel):
         description="False when no judgment passage was available to compare with."
     )
     removed: AnalysisRemovedOut
+    instruction_like_passages: list[AnalysisFlaggedPassageOut] = Field(
+        default_factory=list,
+        description="Passages containing text that reads like instructions to an AI system "
+        "(possible prompt injection). That text is never used as evidence; check the "
+        "document. Empty for runs validated before grounding-5.",
+    )
 
 
 class AnalysisEvidenceSummaryOut(ApiModel):
@@ -1293,3 +1355,13 @@ class AssessmentReviewIn(InputModel):
 class AssessmentReviewHistoryOut(ApiModel):
     assessment_id: uuid.UUID
     items: list[AnalysisReviewHistoryEntryOut] = Field(description="Oldest first.")
+
+
+class DemoStatusOut(ApiModel):
+    """Whether this server runs the isolated demo (all records fictional)."""
+
+    enabled: bool = Field(description="Demo mode is switched on for this server.")
+    verified: bool = Field(
+        description="The connected database is the marked, isolated demo database."
+    )
+    reason: str | None = Field(description="Why fictional demo records cannot be created.")

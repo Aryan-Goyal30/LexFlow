@@ -60,6 +60,7 @@ def test_contract_uses_camel_case(client: TestClient) -> None:
         "opposingParty",
         "description",
         "nextHearing",
+        "fictional",  # demo only: refused (409) outside the verified demo database
     }
     assert {"nextHearing", "documentCount", "leadAttorney", "isSample"} <= set(
         schemas["CaseSummary"]["required"]

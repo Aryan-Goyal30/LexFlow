@@ -178,6 +178,13 @@ class Settings(BaseSettings):
     # a real model needs the owner's approval (docs/PHASE7_PLAN.md, D7-1, D7-2).
     outcome_assessment: bool = Field(default=False, alias="LEXFLOW_OUTCOME_ASSESSMENT")
 
+    # --- Isolated demo database (Milestone 1) ---------------------------------------------
+    # Off by default. When on, staff may mark a new client or case as fictional
+    # (stored as a sample record), so a complete demo can be run on a new case
+    # without relaxing D1. Allowed only with a test or e2e database, and every
+    # request re-checks the connected database's identity (lexflow/demo.py).
+    demo_mode: bool = Field(default=False, alias="LEXFLOW_DEMO_MODE")
+
     @field_validator("gemini_model")
     @classmethod
     def _plain_model_name(cls, value: str | None) -> str | None:
@@ -243,6 +250,13 @@ class Settings(BaseSettings):
             raise ValueError(
                 "LEXFLOW_OUTCOME_ASSESSMENT=true is a synthetic-only demo: it is only allowed "
                 "with a test or e2e database (a name part 'test' or 'e2e', e.g. lexflow_e2e)"
+            )
+        if self.demo_mode and not (
+            self.env in ("test", "development") and _is_test_database(self.database_url)
+        ):
+            raise ValueError(
+                "LEXFLOW_DEMO_MODE=true is for the isolated demo database only: it is only "
+                "allowed with a test or e2e database (a name part 'test' or 'e2e')"
             )
         return self
 

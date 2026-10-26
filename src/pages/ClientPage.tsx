@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, FolderPlus, Pencil } from 'lucide-react';
 import { useClient, useCreateClient, useUpdateClient } from '../hooks/useCases';
+import { useDemoStatus } from '../hooks/useDemo';
 import { useAuth } from '../context/AuthContext';
 import { canOpenCases } from '../lib/roles';
 import { ApiError } from '../services/api/client';
@@ -33,6 +34,10 @@ export function NewClientPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const create = useCreateClient();
+  // Demo only: a fictional client, offered only in the verified demo database.
+  const demo = useDemoStatus();
+  const demoVerified = demo.data?.verified === true;
+  const [fictional, setFictional] = useState(false);
 
   let body: ReactNode;
   if (!canOpenCases(user)) {
@@ -47,6 +52,20 @@ export function NewClientPage() {
     body = (
       <Card>
         <CardBody>
+          {demoVerified && (
+            <label className="mb-4 flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-inset ring-amber-600/30">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={fictional}
+                onChange={(e) => setFictional(e.target.checked)}
+              />
+              <span>
+                <strong>Fictional demo client.</strong> Stored as a sample record; only invented
+                names and contact details.
+              </span>
+            </label>
+          )}
           <ClientForm
             initial={EMPTY_CLIENT}
             label="New client"
@@ -59,6 +78,7 @@ export function NewClientPage() {
                 company: values.company || null,
                 email: values.email,
                 phone: values.phone,
+                fictional: demoVerified && fictional,
               });
               // An Administrator sees every client; anyone else sees a client
               // through their cases, so they go on to open the first one.

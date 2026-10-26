@@ -181,7 +181,13 @@ interface State {
   audit: AuditEvent[];
   /** Extracted text by document id, set by tests (`mockSetText`). */
   texts: Map<string, { pageNumbers: boolean; sections: string[] }>;
+  /** `GET /api/demo` (Milestone 1): off unless a test calls `mockDemo`. */
+  demo: { enabled: boolean; verified: boolean; reason: string | null };
 }
+
+const DEMO_OFF = 'Demo mode is off on this server.';
+const DEMO_UNVERIFIED =
+  'This server is in demo mode, but the database it is connected to could not be verified as the isolated demo database, so fictional demo records cannot be created.';
 
 const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
@@ -308,6 +314,7 @@ function initialState(): State {
     sessionUserId: null,
     audit: [],
     texts: new Map(),
+    demo: { enabled: false, verified: false, reason: DEMO_OFF },
   };
 }
 
@@ -603,6 +610,11 @@ export function resetMockApi(): void {
   state = initialState();
   resetMockJudgments();
   resetMockAnalysis();
+}
+
+/** The server in demo mode: verified (the marked demo database) or not. */
+export function mockDemo(verified: boolean): void {
+  state.demo = { enabled: true, verified, reason: verified ? null : DEMO_UNVERIFIED };
 }
 
 /** Read the fake server's current data in a test. */
@@ -1097,6 +1109,8 @@ export const handlers = [
       const message = 'You can only open cases with yourself as the lead advocate.';
       return problem(403, 'field-not-permitted', message, [{ field: 'leadAdvocateId', message }]);
     }
+    if (input.fictional && !state.demo.verified)
+      return problem(409, 'demo-environment-unverified', state.demo.reason ?? DEMO_UNVERIFIED);
     const today = todayIsoDate();
     const errors: Problem['errors'] = [];
     if (input.title.trim().length < 4) {
@@ -1113,6 +1127,11 @@ export const handlers = [
     }
     const client = state.clients.find((c) => c.id === input.clientId);
     if (!client) errors.push({ field: 'clientId', message: 'Select a client from the list.' });
+    else if (input.fictional && !client.isSample)
+      errors.push({
+        field: 'clientId',
+        message: 'A fictional demo case needs a fictional (sample) client.',
+      });
     const advocate = state.advocates.find((a) => a.id === input.leadAdvocateId);
     if (!advocate)
       errors.push({ field: 'leadAdvocateId', message: 'Select a lead advocate from the list.' });
@@ -1158,7 +1177,7 @@ export const handlers = [
       nextHearing: input.nextHearing ?? null,
       documentCount: 0,
       archivedAt: null,
-      isSample: false,
+      isSample: Boolean(input.fictional),
       description: input.description.trim(),
       documents: [],
       hearings: input.nextHearing
@@ -1217,10 +1236,17 @@ export const handlers = [
     return HttpResponse.json({ ...client, cases: cases.map(summary), canEdit });
   }),
 
+  http.get('*/api/demo', () => {
+    if (!currentMockUser()) return problem(401, 'not-authenticated', 'Sign in to continue.');
+    return HttpResponse.json(state.demo);
+  }),
+
   http.post('*/api/clients', async ({ request }) => {
     const user = currentMockUser();
     if (user?.role !== 'Administrator' && user?.role !== 'Advocate') return forbidden();
     const input = (await request.json()) as ClientInput;
+    if (input.fictional && !state.demo.verified)
+      return problem(409, 'demo-environment-unverified', state.demo.reason ?? DEMO_UNVERIFIED);
     const errors = clientErrors(input);
     if (errors.length > 0) return invalid(errors);
     const client: Client = {
@@ -1229,7 +1255,7 @@ export const handlers = [
       email: input.email.trim(),
       phone: input.phone.trim(),
       company: input.company?.trim() || null,
-      isSample: false,
+      isSample: Boolean(input.fictional),
     };
     state.clients.push(client);
     return HttpResponse.json(client, { status: 201 });

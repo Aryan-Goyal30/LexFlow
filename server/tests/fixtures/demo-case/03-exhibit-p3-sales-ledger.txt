@@ -1,0 +1,14 @@
+EXHIBIT P-3: SALES LEDGER EXTRACT, KESORA MILLET SNACKS (FICTIONAL)
+Prepared from the plaintiff's accounting system on 8 April 2026.
+
+Invoice      | Date             | Buyer (fictional)                 | Amount
+VF/INV/0001  | 2 August 2017    | Sundaram Provision Stores         | Rs. 18,400
+VF/INV/0002  | 19 August 2017   | Meghvani Traders                  | Rs. 22,150
+VF/INV/0003  | 4 September 2017 | Sundaram Provision Stores         | Rs. 16,900
+VF/INV/0145  | 30 June 2018     | Ambarnagar Retail Cooperative     | Rs. 41,700
+
+Note: the ledger records no sale of KESORA products before 2 August 2017.
+Extract certified for demonstration purposes only.
+
+FICTIONAL DOCUMENT - created for LexFlow demonstrations. Not a real legal record.
+Case ref: FICT-TM-014/2026 (fictional)

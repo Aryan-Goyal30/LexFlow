@@ -15,7 +15,7 @@ from typing import Any, Literal
 from sqlalchemy import ColumnElement, Select, func, select
 from sqlalchemy.orm import Session, aliased, selectinload
 
-from lexflow import authz
+from lexflow import authz, demo
 from lexflow.audit import AuditLog
 from lexflow.authz import Action, Relation
 from lexflow.config import get_settings
@@ -423,13 +423,25 @@ def _invalid(errors: Sequence[FieldError]) -> ProblemError:
 
 
 def create_case(
-    session: Session, data: CaseCreate, today: date, user: User, audit: AuditLog
+    session: Session,
+    data: CaseCreate,
+    today: date,
+    user: User,
+    audit: AuditLog,
+    *,
+    fictional_allowed: bool = False,
 ) -> uuid.UUID:
     """Create a case with its first hearing and an opening timeline entry.
 
     Administrators choose any active advocate as lead; an Advocate opens cases
     only with themselves as lead. Commits. Returns the new case's id.
+
+    A fictional demo case (``data.fictional``) is stored as a sample case,
+    only when the caller verified the isolated demo database
+    (``fictional_allowed``) and only for a fictional (sample) client.
     """
+    if data.fictional and not fictional_allowed:
+        raise ProblemError(409, "demo-environment-unverified", demo.UNVERIFIED)
     if user.role != ADMINISTRATOR and data.lead_advocate_id != user.id:
         audit.record(
             "access.denied",
@@ -450,6 +462,15 @@ def create_case(
             ],
         )
     errors = _check_references(session, data.client_id, data.lead_advocate_id)
+    if data.fictional and not errors:
+        client = session.get(Client, data.client_id)
+        if client is None or not client.is_sample:
+            errors.append(
+                FieldError(
+                    field="clientId",
+                    message="A fictional demo case needs a fictional (sample) client.",
+                )
+            )
     if data.next_hearing is not None and data.next_hearing < today:
         errors.append(FieldError(field="nextHearing", message=PAST_HEARING_MESSAGE))
     if errors:
@@ -467,6 +488,7 @@ def create_case(
         opposing_party=data.opposing_party,
         description=data.description,
         opened_on=today,
+        is_sample=data.fictional,
     )
     session.add(case)
     session.flush()
@@ -499,7 +521,7 @@ def create_case(
         target_type="case",
         target_id=case.id,
         case_id=case.id,
-        details={"caseNumber": case.case_number},
+        details={"caseNumber": case.case_number, **({"fictional": True} if data.fictional else {})},
     )
     return case.id
 
