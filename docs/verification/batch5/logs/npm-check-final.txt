@@ -1,0 +1,256 @@
+
+> lexflow@0.2.0 check
+> npm run lint && npm run format:check && npm run typecheck && npm run api:check && npm run sample-data:check && npm run test && npm run build
+
+
+> lexflow@0.2.0 lint
+> eslint . --max-warnings=0
+
+
+> lexflow@0.2.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> lexflow@0.2.0 typecheck
+> tsc --noEmit
+
+
+> lexflow@0.2.0 api:check
+> node scripts/api-types.mjs --check
+
+schema.gen.ts matches server/openapi.json
+
+> lexflow@0.2.0 sample-data:check
+> node scripts/export-sample-data.mjs --check
+
+sample_data.json matches src/data/mockData.ts
+
+> lexflow@0.2.0 test
+> vitest run
+
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mC:/Projects/Claude/Legal Case Management System[39m
+
+ [32m✓[39m src/lib/lib.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+[90mstderr[2m | src/pages/portal/portal.test.tsx[2m > [22m[2mthe client portal[2m > [22m[2mlists only the client's own cases
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/demo.test.tsx[2m > [22m[2mThe demo environment[2m > [22m[2mshows nothing about demos while demo mode is off
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/analysis.test.tsx[2m > [22m[2mStarting an analysis[2m > [22m[2msays what is sent where, and needs explicit confirmation
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/review.test.tsx[2m > [22m[2mReviewing AI findings[2m > [22m[2mmarks every finding as unreviewed until a lawyer decides
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/clients.test.tsx[2m > [22m[2mclients[2m > [22m[2mlets an Administrator find a client and change one detail
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/research.test.tsx[2m > [22m[2mResearch tab[2m > [22m[2msays so when the collection is empty
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/roles.test.tsx[2m > [22m[2ma Paralegal on the Sattvik case team[2m > [22m[2msees only that case, and no way to open new ones
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/provenance.test.tsx[2m > [22m[2mGenuine and synthetic judgments[2m > [22m[2mlabels each kind and filters the library by origin
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/documentText.test.tsx[2m > [22m[2mthe extracted text[2m > [22m[2mopens from the Documents tab and moves page by page
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/documentProcessing.test.tsx[2m > [22m[2mtext extraction status[2m > [22m[2mshows a new upload waiting, then follows it to ready without a reload
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/router.test.tsx[2m > [22m[2mroute guard and sign-in[2m > [22m[2msends a signed-out visitor to sign-in, then to the case list
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/assessment.test.tsx[2m > [22m[2mThe outcome assessment (Phase 7 demo)[2m > [22m[2mshows nothing and asks nothing while the flag is off
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/admin/admin.test.tsx[2m > [22m[2maccount administration[2m > [22m[2mis not offered to other roles
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/hearings.test.tsx[2m > [22m[2mhearings[2m > [22m[2mlets a paralegal on the team schedule one, which becomes the next hearing
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/CaseWorkspacePage.test.tsx[2m > [22m[2mLoading the case[2m > [22m[2mshows a loading state, then the case from the API
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/documentLifecycle.test.tsx[2m > [22m[2mdeleted documents[2m > [22m[2mlets the lead restore a removed document
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/CasesPage.test.tsx[2m > [22m[2mCase list[2m > [22m[2mshows a loading state, then the cases from the API
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/NewCasePage.test.tsx[2m > [22m[2mNew case form[2m > [22m[2mloads clients and advocates from the API
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/caseChanges.test.tsx[2m > [22m[2mediting a case[2m > [22m[2mlets the lead change the status and title, sending only what changed
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/hearingsPage.test.tsx[2m > [22m[2mthe Hearings page[2m > [22m[2mlists the coming hearings by day, with the case and its lead
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/pages/provenance.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 909[2mms[22m[39m
+   [33m[2m✓[22m[39m Genuine and synthetic judgments[2m > [22mlabels each kind and filters the library by origin [33m 546[2mms[22m[39m
+ [32m✓[39m src/pages/roles.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1651[2mms[22m[39m
+   [33m[2m✓[22m[39m a Paralegal on the Sattvik case team[2m > [22msees only that case, and no way to open new ones [33m 338[2mms[22m[39m
+   [33m[2m✓[22m[39m an Administrator[2m > [22msees every case, removes documents and picks any lead [33m 447[2mms[22m[39m
+ [32m✓[39m src/pages/portal/portal.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1686[2mms[22m[39m
+   [33m[2m✓[22m[39m sharing documents with the client[2m > [22mlets the lead share an uploaded document and stop sharing it [33m 788[2mms[22m[39m
+ [32m✓[39m src/pages/hearingsPage.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1803[2mms[22m[39m
+   [33m[2m✓[22m[39m the Hearings page[2m > [22mlists the coming hearings by day, with the case and its lead [33m 470[2mms[22m[39m
+   [33m[2m✓[22m[39m the Hearings page[2m > [22mlooks back with the "Past 30 days" period [33m 407[2mms[22m[39m
+   [33m[2m✓[22m[39m the Hearings page[2m > [22msays when the end date is before the start, and asks the server nothing [33m 384[2mms[22m[39m
+ [32m✓[39m src/pages/documentLifecycle.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 2214[2mms[22m[39m
+   [33m[2m✓[22m[39m deleted documents[2m > [22mlets the lead restore a removed document [33m 1014[2mms[22m[39m
+   [33m[2m✓[22m[39m deleted documents[2m > [22mexplains why a document cannot be restored while its name is taken [33m 831[2mms[22m[39m
+ [32m✓[39m src/pages/CasesPage.test.tsx [2m([22m[2m13 tests[22m[2m)[22m[33m 2380[2mms[22m[39m
+   [33m[2m✓[22m[39m Case list[2m > [22mshows a loading state, then the cases from the API [33m 324[2mms[22m[39m
+   [33m[2m✓[22m[39m Case list[2m > [22msearches and filters the loaded cases [33m 689[2mms[22m[39m
+ [32m✓[39m src/pages/clients.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 3911[2mms[22m[39m
+   [33m[2m✓[22m[39m clients[2m > [22mlets an Administrator find a client and change one detail [33m 1361[2mms[22m[39m
+   [33m[2m✓[22m[39m clients[2m > [22mlets an Advocate add a client and open a case for them [33m 1413[2mms[22m[39m
+   [33m[2m✓[22m[39m clients[2m > [22mchecks the details before sending them [33m 991[2mms[22m[39m
+ [32m✓[39m src/pages/hearings.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 4194[2mms[22m[39m
+   [33m[2m✓[22m[39m hearings[2m > [22mlets a paralegal on the team schedule one, which becomes the next hearing [33m 1796[2mms[22m[39m
+   [33m[2m✓[22m[39m hearings[2m > [22mchecks the form before sending it and focuses the first problem [33m 578[2mms[22m[39m
+   [33m[2m✓[22m[39m hearings[2m > [22mshows the server reason beside the field [33m 621[2mms[22m[39m
+   [33m[2m✓[22m[39m hearings[2m > [22mchanges a hearing, sending only what changed [33m 511[2mms[22m[39m
+   [33m[2m✓[22m[39m hearings[2m > [22mcancels a hearing with a reason and keeps it listed [33m 590[2mms[22m[39m
+ [32m✓[39m src/pages/admin/admin.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 4321[2mms[22m[39m
+   [33m[2m✓[22m[39m account administration[2m > [22mcreates an account with a temporary password the person must replace [33m 1797[2mms[22m[39m
+   [33m[2m✓[22m[39m account administration[2m > [22mchecks a new account before sending it [33m 988[2mms[22m[39m
+   [33m[2m✓[22m[39m account administration[2m > [22msets a temporary password for someone else [33m 621[2mms[22m[39m
+   [33m[2m✓[22m[39m the audit log[2m > [22mfilters by outcome and loads older entries on request [33m 361[2mms[22m[39m
+ [32m✓[39m src/pages/caseChanges.test.tsx [2m([22m[2m12 tests[22m[2m)[22m[33m 4605[2mms[22m[39m
+   [33m[2m✓[22m[39m editing a case[2m > [22mlets the lead change the status and title, sending only what changed [33m 1770[2mms[22m[39m
+   [33m[2m✓[22m[39m editing a case[2m > [22moffers a Paralegal only the court and the opposing party [33m 472[2mms[22m[39m
+   [33m[2m✓[22m[39m archiving a case[2m > [22masks the Administrator to confirm, then makes the case read-only [33m 732[2mms[22m[39m
+   [33m[2m✓[22m[39m the case team[2m > [22mlets the lead add a paralegal and take them off again [33m 388[2mms[22m[39m
+ [32m✓[39m src/pages/research.test.tsx [2m([22m[2m17 tests[22m[2m)[22m[33m 5770[2mms[22m[39m
+   [33m[2m✓[22m[39m Research tab[2m > [22msays so when the collection is empty [33m 463[2mms[22m[39m
+   [33m[2m✓[22m[39m Research tab[2m > [22mfinds judgments and shows each with its passage, source and synthetic label [33m 792[2mms[22m[39m
+   [33m[2m✓[22m[39m Research tab[2m > [22mreports no matches, and refuses an empty search [33m 763[2mms[22m[39m
+   [33m[2m✓[22m[39m Research tab[2m > [22muses semantic search when available [33m 477[2mms[22m[39m
+   [33m[2m✓[22m[39m Research tab[2m > [22mshows a recoverable error when the search fails [33m 354[2mms[22m[39m
+   [33m[2m✓[22m[39m Research tab[2m > [22mnever shows the results of an earlier search as those of a new one [33m 1063[2mms[22m[39m
+   [33m[2m✓[22m[39m Research tab[2m > [22mpages through many results [33m 387[2mms[22m[39m
+   [33m[2m✓[22m[39m Research tab[2m > [22mnever links to a source address that is not https [33m 309[2mms[22m[39m
+   [33m[2m✓[22m[39m Precedent Library[2m > [22mfilters by court and searches through the address [33m 556[2mms[22m[39m
+ [32m✓[39m src/pages/demo.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 6222[2mms[22m[39m
+   [33m[2m✓[22m[39m The demo environment[2m > [22mshows nothing about demos while demo mode is off [33m 360[2mms[22m[39m
+   [33m[2m✓[22m[39m The demo environment[2m > [22mcreates a fictional client and a fictional case in the verified demo database [33m 3512[2mms[22m[39m
+   [33m[2m✓[22m[39m The demo environment[2m > [22mrefuses a fictional case for a client that is not fictional [33m 2191[2mms[22m[39m
+ [32m✓[39m src/pages/CaseWorkspacePage.test.tsx [2m([22m[2m29 tests[22m[2m)[22m[33m 6478[2mms[22m[39m
+   [33m[2m✓[22m[39m Loading the case[2m > [22mshows a loading state, then the case from the API [33m 479[2mms[22m[39m
+   [33m[2m✓[22m[39m Loading the case[2m > [22mkeeps the case on screen when a later refresh fails [33m 464[2mms[22m[39m
+   [33m[2m✓[22m[39m Workspace tabs and the URL[2m > [22mputs the selected tab in the query string [33m 311[2mms[22m[39m
+   [33m[2m✓[22m[39m Workspace tabs and the URL[2m > [22mlets Back and Forward step through tabs without duplicate entries [33m 380[2mms[22m[39m
+   [33m[2m✓[22m[39m Documents tab[2m > [22mshows progress while uploading [33m 476[2mms[22m[39m
+   [33m[2m✓[22m[39m Documents tab[2m > [22mremoves a document on the server [33m 308[2mms[22m[39m
+   [33m[2m✓[22m[39m Documents tab[2m > [22mkeeps upload progress and results when the user switches tabs [33m 386[2mms[22m[39m
+ [32m✓[39m src/pages/assessment.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 7276[2mms[22m[39m
+   [33m[2m✓[22m[39m The outcome assessment (Phase 7 demo)[2m > [22mshows nothing and asks nothing while the flag is off [33m 1336[2mms[22m[39m
+   [33m[2m✓[22m[39m The outcome assessment (Phase 7 demo)[2m > [22mcannot be generated before a lawyer accepts findings and a precedent [33m 652[2mms[22m[39m
+   [33m[2m✓[22m[39m The outcome assessment (Phase 7 demo)[2m > [22mshows a verified, labelled, synthetic assessment as unreviewed [33m 853[2mms[22m[39m
+   [33m[2m✓[22m[39m The outcome assessment (Phase 7 demo)[2m > [22msays plainly when there is no basis, and when generation failed [33m 688[2mms[22m[39m
+   [33m[2m✓[22m[39m The outcome assessment (Phase 7 demo)[2m > [22mreports a request that failed without showing anything [33m 556[2mms[22m[39m
+   [33m[2m✓[22m[39m The outcome assessment (Phase 7 demo)[2m > [22mrecords the lawyer’s decisions only after the server stores them [33m 1594[2mms[22m[39m
+   [33m[2m✓[22m[39m The outcome assessment (Phase 7 demo)[2m > [22mshows a stale decision and reloads the current one [33m 579[2mms[22m[39m
+   [33m[2m✓[22m[39m The outcome assessment (Phase 7 demo)[2m > [22mlets a paralegal read the assessment but not generate, decide or see notes [33m 1014[2mms[22m[39m
+ [32m✓[39m src/pages/review.test.tsx [2m([22m[2m13 tests[22m[2m)[22m[33m 8559[2mms[22m[39m
+   [33m[2m✓[22m[39m Reviewing AI findings[2m > [22mmarks every finding as unreviewed until a lawyer decides [33m 1267[2mms[22m[39m
+   [33m[2m✓[22m[39m Reviewing AI findings[2m > [22mrecords an acceptance only after the server has stored it [33m 654[2mms[22m[39m
+   [33m[2m✓[22m[39m Reviewing AI findings[2m > [22mkeeps a finding unreviewed and says why when saving fails [33m 575[2mms[22m[39m
+   [33m[2m✓[22m[39m Reviewing AI findings[2m > [22medits the wording, keeping the AI’s original on screen [33m 1961[2mms[22m[39m
+   [33m[2m✓[22m[39m Reviewing AI findings[2m > [22mrejects with a reason, clears after confirmation, and shows the history [33m 1515[2mms[22m[39m
+   [33m[2m✓[22m[39m Reviewing AI findings[2m > [22mshows the current decision when someone else reviewed meanwhile [33m 413[2mms[22m[39m
+   [33m[2m✓[22m[39m Reviewing AI findings[2m > [22msays plainly when review is unavailable, with a retry [33m 329[2mms[22m[39m
+   [33m[2m✓[22m[39m Exporting the case brief[2m > [22mis disabled until a finding is accepted, and says why [33m 316[2mms[22m[39m
+   [33m[2m✓[22m[39m Exporting the case brief[2m > [22mdownloads the brief made by the server, with the accepted findings only [33m 472[2mms[22m[39m
+   [33m[2m✓[22m[39m Exporting the case brief[2m > [22mshows the server’s refusal [33m 415[2mms[22m[39m
+ [32m✓[39m src/pages/documentText.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 8614[2mms[22m[39m
+   [33m[2m✓[22m[39m the extracted text[2m > [22mopens from the Documents tab and moves page by page [33m 4020[2mms[22m[39m
+   [33m[2m✓[22m[39m retrying a failed extraction[2m > [22mqueues the document again [33m 3275[2mms[22m[39m
+   [33m[2m✓[22m[39m retrying a failed extraction[2m > [22moffers to extract files stored before extraction existed [33m 304[2mms[22m[39m
+ [32m✓[39m src/pages/NewCasePage.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 8680[2mms[22m[39m
+   [33m[2m✓[22m[39m New case form[2m > [22mloads clients and advocates from the API [33m 434[2mms[22m[39m
+   [33m[2m✓[22m[39m New case form[2m > [22mshows an error with a retry when the form data cannot load [33m 365[2mms[22m[39m
+   [33m[2m✓[22m[39m New case form[2m > [22mrejects a next hearing date in the past [33m 1733[2mms[22m[39m
+   [33m[2m✓[22m[39m New case form[2m > [22mcreates the case on the server, opens its Documents tab, and lists it first [33m 1564[2mms[22m[39m
+   [33m[2m✓[22m[39m New case form[2m > [22mshows the submitting state and ignores repeat clicks [33m 1566[2mms[22m[39m
+   [33m[2m✓[22m[39m New case form[2m > [22mputs server validation errors beside their fields and keeps the input [33m 1372[2mms[22m[39m
+   [33m[2m✓[22m[39m New case form[2m > [22mkeeps the form and explains when the server cannot be reached [33m 1363[2mms[22m[39m
+ [32m✓[39m src/pages/analysis.test.tsx [2m([22m[2m21 tests[22m[2m)[22m[33m 9361[2mms[22m[39m
+   [33m[2m✓[22m[39m Starting an analysis[2m > [22msays what is sent where, and needs explicit confirmation [33m 719[2mms[22m[39m
+   [33m[2m✓[22m[39m Starting an analysis[2m > [22msends only the chosen documents with the confirmation, then follows the run [33m 792[2mms[22m[39m
+   [33m[2m✓[22m[39m Starting an analysis[2m > [22moffers a document as soon as its text becomes ready [33m 311[2mms[22m[39m
+   [33m[2m✓[22m[39m Starting an analysis[2m > [22mshows the server’s refusal and starts nothing [33m 339[2mms[22m[39m
+   [33m[2m✓[22m[39m A finished analysis[2m > [22mlinks every fact to its document page and shows the verified quote [33m 408[2mms[22m[39m
+   [33m[2m✓[22m[39m A finished analysis[2m > [22mlinks each issue to the verified facts it rests on [33m 344[2mms[22m[39m
+   [33m[2m✓[22m[39m A finished analysis[2m > [22mlinks both sources of a contradiction to their document pages [33m 406[2mms[22m[39m
+   [33m[2m✓[22m[39m A finished analysis[2m > [22mlinks each precedent to the judgment passage, labelled synthetic, with no score [33m 367[2mms[22m[39m
+   [33m[2m✓[22m[39m A finished analysis[2m > [22mcounts what was removed, with the reasons, and always shows the disclaimer [33m 404[2mms[22m[39m
+   [33m[2m✓[22m[39m A finished analysis[2m > [22msays plainly when no precedents were available [33m 329[2mms[22m[39m
+   [33m[2m✓[22m[39m A finished analysis[2m > [22mstates insufficient evidence instead of a guess [33m 314[2mms[22m[39m
+   [33m[2m✓[22m[39m A finished analysis[2m > [22mwarns about document text that reads like instructions to an AI [33m 300[2mms[22m[39m
+   [33m[2m✓[22m[39m Runs that fail or do not match[2m > [22mrejects a run that belongs to another case [33m 2231[2mms[22m[39m
+   [33m[2m✓[22m[39m Runs that fail or do not match[2m > [22mlists earlier runs and opens the one chosen [33m 496[2mms[22m[39m
+ [32m✓[39m src/pages/documentProcessing.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 10216[2mms[22m[39m
+   [33m[2m✓[22m[39m text extraction status[2m > [22mshows a new upload waiting, then follows it to ready without a reload [33m 3716[2mms[22m[39m
+   [33m[2m✓[22m[39m text extraction status[2m > [22mcounts parts, not pages, for documents without pages [33m 3185[2mms[22m[39m
+   [33m[2m✓[22m[39m text extraction status[2m > [22mshows why extraction failed [33m 3145[2mms[22m[39m
+ [32m✓[39m src/router.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[33m 11795[2mms[22m[39m
+   [33m[2m✓[22m[39m route guard and sign-in[2m > [22msends a signed-out visitor to sign-in, then to the case list [33m 1323[2mms[22m[39m
+   [33m[2m✓[22m[39m route guard and sign-in[2m > [22mreturns to the originally requested page after sign-in [33m 1158[2mms[22m[39m
+   [33m[2m✓[22m[39m route guard and sign-in[2m > [22mgives the same answer for a wrong password and an unknown account [33m 1706[2mms[22m[39m
+   [33m[2m✓[22m[39m route guard and sign-in[2m > [22msends a Client to the portal, never into the staff app [33m 959[2mms[22m[39m
+   [33m[2m✓[22m[39m signing out and switching accounts[2m > [22mnever shows the previous person's cases to the next person on the same browser [33m 1340[2mms[22m[39m
+   [33m[2m✓[22m[39m signing out and switching accounts[2m > [22mgoes back to sign-in, and then to the same page, when the session ends [33m 1084[2mms[22m[39m
+   [33m[2m✓[22m[39m temporary passwords[2m > [22msends the user to change it first, then on to the app [33m 1302[2mms[22m[39m
+   [33m[2m✓[22m[39m temporary passwords[2m > [22mshows the server reason beside the field when the current password is wrong [33m 1112[2mms[22m[39m
+   [33m[2m✓[22m[39m temporary passwords[2m > [22mchecks that the two new passwords match before sending them [33m 1348[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m21 passed[39m[22m[90m (21)[39m
+[2m      Tests [22m [1m[32m212 passed[39m[22m[90m (212)[39m
+[2m   Start at [22m 02:00:31
+[2m   Duration [22m 34.90s[2m (transform 2.79s, setup 143.71s, collect 73.65s, tests 110.66s, environment 237.54s, prepare 15.16s)[22m
+
+
+> lexflow@0.2.0 build
+> tsc && vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 1688 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.57 kB[22m[1m[22m[2m │ gzip:   0.35 kB[22m
+[2mdist/[22m[35massets/index--l9Qqu3L.css  [39m[1m[2m 29.18 kB[22m[1m[22m[2m │ gzip:   5.82 kB[22m
+[2mdist/[22m[36massets/index-BBSSvdg1.js   [39m[1m[2m472.24 kB[22m[1m[22m[2m │ gzip: 132.56 kB[22m
+[32m✓ built in 6.38s[39m
+exit=0

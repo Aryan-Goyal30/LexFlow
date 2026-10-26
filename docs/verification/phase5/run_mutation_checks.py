@@ -222,8 +222,9 @@ MUTATIONS = [
         "C-1",
         "the scripted double is refused outside test/e2e databases",
         "server/lexflow/config.py",
+        '        if self.ai_provider == "scripted" and not (\n'
         '            self.env in ("test", "development") and _is_test_database(self.database_url)',
-        "            True",
+        '        if self.ai_provider == "scripted" and not (\n            True',
         C_TESTS,
     ),
     Mutation(

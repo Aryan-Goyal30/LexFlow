@@ -1,0 +1,69 @@
+start 2026-10-26T22:00:23Z
+V-1 CAUGHT (exit 1, 2s): a quote must occur in the passage it cites
+V-2 CAUGHT (exit 1, 2s): a fact citing an unknown passage is removed (not re-pointed)
+V-3 CAUGHT (exit 1, 2s): an output citing an unknown judgment is rejected
+V-4 CAUGHT (exit 1, 2s): very short quotes cannot support a fact
+V-5 CAUGHT (exit 1, 2s): issues keep only references to surviving facts
+V-6 CAUGHT (exit 1, 2s): a contradiction needs two verified sources
+V-7 CAUGHT (exit 1, 2s): invented law-report citations are removed
+V-8 CAUGHT (exit 1, 2s): a returned outcome assessment is counted as removed
+V-9 CAUGHT (exit 1, 2s): precedent titles come from the collection, not the model
+V-10 CAUGHT (exit 1, 2s): nothing verifiable means insufficient evidence
+O-1 CAUGHT (exit 1, 2s): the answer must be a JSON object
+O-2 CAUGHT (exit 1, 2s): outcome keys are noticed
+P-1 CAUGHT (exit 1, 2s): provider error text is never passed on
+P-2 CAUGHT (exit 1, 2s): the SDK makes no retries of its own
+P-3 CAUGHT (exit 1, 2s): the timeout is given in milliseconds
+P-4 CAUGHT (exit 1, 2s): blocked answers fail
+P-5 CAUGHT (exit 1, 2s): a cut-off answer is marked truncated
+C-1 CAUGHT (exit 1, 2s): the scripted double is refused outside test/e2e databases
+C-2 CAUGHT (exit 1, 2s): a blank key counts as missing
+C-3 CAUGHT (exit 1, 2s): a missing key is reported (the setting named to administrators only)
+E-1 CAUGHT (exit 1, 4s): evidence comes only from the case's own documents
+E-2 CAUGHT (exit 1, 4s): deleted documents are never evidence
+R-1 CAUGHT (exit 1, 12s): only advocates on the case and administrators start runs
+R-2 CAUGHT (exit 1, 12s): the user must confirm the transmission
+R-3 CAUGHT (exit 1, 12s): only sample cases are accepted unless client data is allowed (API)
+R-4 CAUGHT (exit 1, 12s): the worker re-checks the sample-case gate before sending
+R-5 CAUGHT (exit 1, 12s): only ready documents of this case may be selected
+R-6 CAUGHT (exit 1, 12s): the hourly limit per person
+R-7 CAUGHT (exit 1, 12s): a result is stored only by the worker holding the run
+R-8 CAUGHT (exit 1, 12s): starting a run is audited
+R-9 CAUGHT (exit 1, 12s): a run is read only through its own case
+R-10 CAUGHT (exit 1, 12s): a busy provider is retried only after a pause
+R-11 CAUGHT (exit 1, 12s): no provider call when there is no text
+R-12 CAUGHT (exit 1, 12s): the worker skips analysis without migration 0011
+U-1 CAUGHT (exit 1, 20s): nothing is sent without explicit confirmation
+U-2 CAUGHT (exit 1, 13s): a run of another case is never shown
+U-3 CAUGHT (exit 1, 10s): fact links open the cited page
+U-4 CAUGHT (exit 1, 10s): the disclaimer is shown with every result
+U-5 CAUGHT (exit 1, 10s): documents without text cannot be chosen
+U-6 CAUGHT (exit 1, 11s): no precedents available is said plainly
+M9-1 CAUGHT (exit 1, 2s): an unknown provider fails closed
+M9-2 CAUGHT (exit 1, 12s): a run confirmed for another provider sends nothing
+M9-3 CAUGHT (exit 1, 2s): a used-up daily quota is not retried
+M9-4 CAUGHT (exit 1, 2s): provider messages do not name settings
+M9-5 CAUGHT (exit 1, 12s): only administrators see which setting is missing
+M9-6 CAUGHT (exit 1, 12s): an unexpected provider error fails the run, not the worker
+M9-7 CAUGHT (exit 1, 12s): an answer that could not be checked is never stored
+M9-8 CAUGHT (exit 1, 12s): an interrupted run fails after its last attempt
+M9-9 CAUGHT (exit 1, 12s): sources changed since the run are reported
+M9-10 CAUGHT (exit 1, 12s): the pipeline versions are stored with a run
+M9-11 CAUGHT (exit 1, 2s): a provider-schema change needs a new schema version
+M9-12 CAUGHT (exit 1, 2s): the "outcome" key is discarded
+M9-13 CAUGHT (exit 1, 2s): contradiction sources must be distinct (overlapping spans count once)
+M9-14 CAUGHT (exit 1, 2s): invented case names are removed
+M9-15 CAUGHT (exit 1, 2s): outcome wording is removed
+M9-16 CAUGHT (exit 1, 2s): invented neutral citations are removed
+M9-17 CAUGHT (exit 1, 7s): synthetic imports check the database actually connected
+M9-18 CAUGHT (exit 1, 8s): a demo import must name the database exactly
+M9-19 CAUGHT (exit 1, 8s): a test database is named by a whole name part
+M9-20 CAUGHT (exit 1, 2s): the scripted double refuses URLs that connect elsewhere (?dbname=)
+M9-21 CAUGHT (exit 1, 11s): changed sources are shown in the result
+M10-1 CAUGHT (exit 1, 2s): the pieces of a shortened quote must occur in order
+M10-2 CAUGHT (exit 1, 2s): a shortened quote has at most three pieces
+M10-3 CAUGHT (exit 1, 4s): the prompt states the quote rules that validation enforces
+M10-4 CAUGHT (exit 1, 4s): the prompt says what is not a contradiction
+65 of 65 caught; all files restored.
+exit 0
+end 2026-10-26T22:07:18Z

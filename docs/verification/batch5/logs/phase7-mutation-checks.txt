@@ -1,0 +1,27 @@
+P7-1 CAUGHT (exit 1, 2s): a cited precedent must be an accepted comparison of the run
+P7-2 CAUGHT (exit 1, 3s): a quote must occur in the cited judgment passage
+P7-3 CAUGHT (exit 1, 3s): a reasoning step may rest only on accepted findings
+P7-4 CAUGHT (exit 1, 3s): probability and percentage wording is rejected
+P7-5 CAUGHT (exit 1, 3s): outcome predictions and definitive claims are rejected
+P7-6 CAUGHT (exit 1, 3s): a synthetic judgment may not be called real law
+P7-7 CAUGHT (exit 1, 3s): a forbidden summary withholds the whole assessment
+P7-8 CAUGHT (exit 1, 3s): no assessment without a verified precedent
+P7-9 CAUGHT (exit 1, 3s): the uncertainty category must fit the cited stances
+P7-10 CAUGHT (exit 1, 3s): the synthetic flag comes from the collection, not the answer
+P7-11 CAUGHT (exit 1, 3s): fields outside the contract (scores, relabelling) are counted
+P7-12 CAUGHT (exit 1, 18s): rejected and unreviewed findings never reach the provider
+P7-13 CAUGHT (exit 1, 18s): a changed judgment passage cannot support an assessment
+P7-14 CAUGHT (exit 1, 17s): no accepted finding: no provider call
+P7-15 CAUGHT (exit 1, 18s): with the flag off every route answers 404
+P7-16 CAUGHT (exit 1, 18s): only a ready assessment can be reviewed
+P7-17 CAUGHT (exit 1, 18s): a stale review version is refused
+P7-18 CAUGHT (exit 1, 18s): reviewers' notes are hidden from paralegals
+P7-19 CAUGHT (exit 1, 18s): only an accepted assessment reaches the brief
+P7-20 CAUGHT (exit 1, 18s): with the flag off the brief has no assessment
+P7-21 CAUGHT (exit 1, 18s): the flag is refused outside a test or e2e database
+P7-22 CAUGHT (exit 1, 18s): only advocates on the case and administrators generate
+U7-1 CAUGHT (exit 1, 23s): the card appears only when the server enables the feature
+U7-2 CAUGHT (exit 1, 9s): synthetic or scripted output carries the demonstration banner
+U7-3 CAUGHT (exit 1, 9s): review controls only for those who may review
+25 of 25 caught; all files restored.
+exit=0

@@ -1,0 +1,176 @@
+$ ruff check .
+All checks passed!
+exit=0
+$ ruff format --check .
+205 files already formatted
+exit=0
+$ mypy
+Success: no issues found in 186 source files
+exit=0
+$ python scripts/export_openapi.py --check
+server/openapi.json is up to date
+exit=0
+$ ruff check ../docs/verification/phase5/run_mutation_checks.py
+E501 Line too long (111 > 100)
+   --> C:\Projects\Claude\Legal Case Management System\docs\verification\phase5\run_mutation_checks.py:102:101
+    |
+100 |         "an output citing an unknown judgment is rejected",
+101 |         VALIDATION,
+102 |         "        passage = evidence.judgment(item.evidence) if EVIDENCE_ID.fullmatch(item.evidence) else None",
+    |                                                                                                     ^^^^^^^^^^^
+103 |         "        passage = evidence.judgment(item.evidence) or (evidence.judgments or [None])[0]",
+104 |         V_TESTS,
+    |
+
+E501 Line too long (101 > 100)
+   --> C:\Projects\Claude\Legal Case Management System\docs\verification\phase5\run_mutation_checks.py:340:101
+    |
+338 |         "a busy provider is retried only after a pause",
+339 |         RUNS,
+340 |         "            run.available_at = now + timedelta(seconds=RETRY_PAUSE_SECONDS * run.attempts)",
+    |                                                                                                     ^
+341 |         "            run.available_at = now",
+342 |         R_TESTS,
+    |
+
+E501 Line too long (103 > 100)
+   --> C:\Projects\Claude\Legal Case Management System\docs\verification\phase5\run_mutation_checks.py:365:101
+    |
+363 |         "nothing is sent without explicit confirmation",
+364 |         TAB,
+365 |         "  else if (!blocked && !confirmed) blocked = 'Confirm what will be sent before starting.';\n",
+    |                                                                                                     ^^^
+366 |         "",
+367 |         UI_TESTS,
+    |
+
+E501 Line too long (101 > 100)
+   --> C:\Projects\Claude\Legal Case Management System\docs\verification\phase5\run_mutation_checks.py:389:101
+    |
+387 |         "the disclaimer is shown with every result",
+388 |         TAB,
+389 |         "              </ul>\n            </div>\n          )}\n          <DecisionSupportNote />\n",
+    |                                                                                                     ^
+390 |         "              </ul>\n            </div>\n          )}\n",
+391 |         UI_TESTS,
+    |
+
+E501 Line too long (105 > 100)
+   --> C:\Projects\Claude\Legal Case Management System\docs\verification\phase5\run_mutation_checks.py:518:101
+    |
+516 |         "invented case names are removed",
+517 |         VALIDATION,
+518 |         "                if self._unknown_party(match.group(1)) or self._unknown_party(match.group(2)):",
+    |                                                                                                     ^^^^^
+519 |         "                if False:",
+520 |         V_TESTS,
+    |
+
+S603 `subprocess` call: check for execution of untrusted input
+   --> C:\Projects\Claude\Legal Case Management System\docs\verification\phase5\run_mutation_checks.py:615:12
+    |
+614 | def git_status(paths: list[str]) -> str:
+615 |     return subprocess.run(
+    |            ^^^^^^^^^^^^^^
+616 |         ["git", "status", "--porcelain", "--", *paths],
+617 |         cwd=ROOT,
+    |
+
+S607 Starting a process with a partial executable path
+   --> C:\Projects\Claude\Legal Case Management System\docs\verification\phase5\run_mutation_checks.py:616:9
+    |
+614 | def git_status(paths: list[str]) -> str:
+615 |     return subprocess.run(
+616 |         ["git", "status", "--porcelain", "--", *paths],
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+617 |         cwd=ROOT,
+618 |         capture_output=True,
+    |
+
+RUF001 String contains ambiguous `×` (MULTIPLICATION SIGN). Did you mean `x` (LATIN SMALL LETTER X)?
+   --> C:\Projects\Claude\Legal Case Management System\docs\verification\phase5\run_mutation_checks.py:648:36
+    |
+647 | def failures(output: str) -> list[str]:
+648 |     marks = ("FAILED ", " FAIL ", "×")
+    |                                    ^
+649 |     return [
+650 |         line.strip() for line in output.splitlines() if any(m in line for m in marks)
+    |
+
+S607 Starting a process with a partial executable path
+   --> C:\Projects\Claude\Legal Case Management System\docs\verification\phase5\run_mutation_checks.py:693:9
+    |
+691 |         return 2
+692 |     head = subprocess.run(
+693 |         ["git", "rev-parse", "--short", "HEAD"],
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+694 |         cwd=ROOT,
+695 |         capture_output=True,
+    |
+
+S602 `subprocess` call with `shell=True` identified, security issue
+   --> C:\Projects\Claude\Legal Case Management System\docs\verification\phase5\run_mutation_checks.py:723:22
+    |
+721 |         begun = time.monotonic()
+722 |         try:
+723 |             result = subprocess.run(
+    |                      ^^^^^^^^^^^^^^
+724 |                 command,
+725 |                 check=False,  # a failing run is the expected outcome
+    |
+
+E501 Line too long (118 > 100)
+   --> C:\Projects\Claude\Legal Case Management System\docs\verification\phase5\run_mutation_checks.py:747:101
+    |
+745 |             f"=== {m.id} {verdict}: {m.label}",
+746 |             f"file: {m.path}",
+747 |             f"command (cwd {cwd.relative_to(ROOT) or '.'}): {command.replace(PY, 'server/.venv/Scripts/python.exe')}",
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^
+748 |             f"exit code: {result.returncode}",
+749 |             *tail,
+    |
+
+Found 11 errors.
+exit=1
+$ ruff format --check ../docs/verification/phase5/run_mutation_checks.py
+unformatted: File would be reformatted
+   --> C:\Projects\Claude\Legal Case Management System\docs\verification\phase5\run_mutation_checks.py:649:13
+    |
+648 |     marks = ("FAILED ", " FAIL ", "×")
+    -     return [
+    -         line.strip() for line in output.splitlines() if any(m in line for m in marks)
+    -     ][:8]
+649 +     return [line.strip() for line in output.splitlines() if any(m in line for m in marks)][:8]
+650 |
+--------------------------------------------------------------------------------
+712 |         if text.count(old) != 1:
+    -             print(
+    -                 f"{m.id}: snippet found {text.count(old)} times in {m.path}; stopping."
+    -             )
+713 +             print(f"{m.id}: snippet found {text.count(old)} times in {m.path}; stopping.")
+714 |             return 3
+--------------------------------------------------------------------------------
+753 |     elif git_status(targets):
+    -         print(
+    -             "Target files differ from the commit after the run:\n" + git_status(targets)
+    -         )
+754 +         print("Target files differ from the commit after the run:\n" + git_status(targets))
+755 |         return 5
+--------------------------------------------------------------------------------
+790 |     for m, code, _, _ in rows:
+    -         tests = " ".join(
+    -             part for part in m.run[0].split() if part.startswith(("tests/", "src/"))
+    -         )
+791 +         tests = " ".join(part for part in m.run[0].split() if part.startswith(("tests/", "src/")))
+792 |         report.append(
+--------------------------------------------------------------------------------
+800 |     for m, _, _, failed in rows:
+    -         report.append(
+    -             f"- **{m.id}**: " + ("; ".join(f"`{f}`" for f in failed) or "(none listed)")
+    -         )
+801 +         report.append(f"- **{m.id}**: " + ("; ".join(f"`{f}`" for f in failed) or "(none listed)"))
+802 |     (HERE / report_name).write_text("\n".join(report) + "\n", encoding="utf-8")
+    |
+
+1 file would be reformatted
+exit=1

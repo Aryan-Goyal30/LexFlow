@@ -1,0 +1,19 @@
+V-1 CAUGHT (exit 1, 3s): a quote must occur in the passage it cites
+V-2 CAUGHT (exit 1, 2s): a fact citing an unknown passage is removed (not re-pointed)
+V-3 CAUGHT (exit 1, 2s): an output citing an unknown judgment is rejected
+V-4 CAUGHT (exit 1, 2s): very short quotes cannot support a fact
+V-5 CAUGHT (exit 1, 2s): issues keep only references to surviving facts
+V-6 CAUGHT (exit 1, 2s): a contradiction needs two verified sources
+V-7 CAUGHT (exit 1, 2s): invented law-report citations are removed
+V-8 CAUGHT (exit 1, 2s): a returned outcome assessment is counted as removed
+V-9 CAUGHT (exit 1, 2s): precedent titles come from the collection, not the model
+V-10 CAUGHT (exit 1, 2s): nothing verifiable means insufficient evidence
+O-1 CAUGHT (exit 1, 2s): the answer must be a JSON object
+O-2 CAUGHT (exit 1, 2s): outcome keys are noticed
+P-1 CAUGHT (exit 1, 2s): provider error text is never passed on
+P-2 CAUGHT (exit 1, 2s): the SDK makes no retries of its own
+P-3 CAUGHT (exit 1, 2s): the timeout is given in milliseconds
+P-4 CAUGHT (exit 1, 2s): blocked answers fail
+P-5 CAUGHT (exit 1, 2s): a cut-off answer is marked truncated
+C-1: snippet found 3 times in server/lexflow/config.py; stopping.
+exit=3

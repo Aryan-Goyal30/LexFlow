@@ -39,6 +39,11 @@ GATE_REASONS: dict[str, str] = {
         "No precedent comparison of this analysis has been accepted by a lawyer. An assessment "
         "is never made without a supporting precedent."
     ),
+    "genuine-precedents": (
+        "An accepted precedent comparison uses a genuine judgment. The outcome assessment is "
+        "a synthetic-only demonstration until its Phase 7 gates are met (an approved judgment "
+        "source and lawyer-labelled evaluation), so it is not made against genuine judgments."
+    ),
     "precedent-passages-changed": (
         "The judgment passages behind the accepted precedent comparisons changed or were removed "
         "after the analysis, so they cannot support an assessment."
@@ -125,6 +130,8 @@ class Inputs:
             if self.excluded.get("passage-changed"):
                 return "precedent-passages-changed"
             return "no-accepted-precedents"
+        if any(not p.synthetic for p in self.precedents):
+            return "genuine-precedents"
         return None
 
 

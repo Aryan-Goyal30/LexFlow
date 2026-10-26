@@ -9,10 +9,12 @@ validation outcomes, access, audit, review and the brief.
 
 from __future__ import annotations
 
+import copy
 import io
 import json
 import uuid
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -32,7 +34,9 @@ from lexflow.models import (
     AnalysisRun,
     AuditEvent,
     Case,
+    Judgment,
     JudgmentChunk,
+    JudgmentSource,
     OutcomeAssessment,
     OutcomeAssessmentReviewEvent,
     User,
@@ -619,3 +623,40 @@ def test_only_an_accepted_assessment_reaches_the_brief_in_its_own_labelled_secti
     exports = events(db, "analysis.brief_exported")
     included = sorted(e.details["assessmentIncluded"] for e in exports)
     assert included == [False, False, True]
+
+
+def test_a_genuine_judgment_never_supports_the_synthetic_demo_assessment(
+    as_: As, db: Session, run: AnalysisRun
+) -> None:
+    """Phase 7 stays synthetic-only: an accepted precedent from a real source blocks it."""
+    lead = as_("lead")
+    accept(lead, run, "F1", "P1")
+    precedent = run.result["precedents"][0]  # type: ignore[index]
+    judgment = db.get(Judgment, uuid.UUID(precedent["judgmentId"]))
+    assert judgment is not None
+    db.execute(
+        update(JudgmentSource)
+        .where(JudgmentSource.id == judgment.source_id)
+        .values(is_synthetic=False)  # TEST ONLY: as if the source were real
+    )
+    result = copy.deepcopy(run.result)
+    result["precedents"][0]["synthetic"] = False  # type: ignore[index]
+    run.result = result
+    db.commit()
+    body = generate(lead, run)
+    assert (body["status"], body["reasonCode"]) == ("insufficient", "genuine-precedents")
+
+
+def test_the_gate_names_genuine_precedents_only_when_findings_exist() -> None:
+    from lexflow.assessment.inputs import InputFinding, InputPrecedent, Inputs
+
+    real = InputPrecedent(
+        id="P1", summary="s", edited=False, review_version=1, judgment_id=uuid.uuid4(),
+        title="TEST ONLY", court="c", citation=None, year=None, synthetic=False,
+        chunk_id=uuid.uuid4(), section_number=1, page_number=1, text="t", content_sha256="0" * 64,
+    )  # fmt: skip
+    finding = InputFinding("fact", "F1", "t", False, 1)
+    assert Inputs(findings=[finding], precedents=[real]).gate() == "genuine-precedents"
+    fake = replace(real, synthetic=True)
+    assert Inputs(findings=[finding], precedents=[fake]).gate() is None
+    assert Inputs(findings=[], precedents=[real]).gate() == "no-accepted-findings"

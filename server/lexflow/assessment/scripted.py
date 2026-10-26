@@ -91,8 +91,8 @@ class ScriptedAssessmentProvider:
             "precedents": precedents,
             "reasoning": reasoning,
             "missing_evidence": [
-                "[Scripted] Judgments from an approved source: the collection holds synthetic "
-                "test judgments only."
+                "[Scripted] Judgments from an approved source: this demonstration uses "
+                "synthetic test judgments only."
             ],
             "limitations": [
                 "[Scripted] Stances were assigned by position to demonstrate the workflow."

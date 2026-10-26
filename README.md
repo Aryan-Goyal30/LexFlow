@@ -22,8 +22,10 @@ analyse the case → research precedents → review the analysis**
 
 All steps work and are **saved** in PostgreSQL (files on the local disk) behind
 a FastAPI server, with real sign-in and role-based access. Two inputs are
-external and not provided: **no real judgment source is approved** (only
-labelled SYNTHETIC judgments exist), and analysing **real client material**
+external and not provided: the **licensing basis for wider use of real
+judgments is unsettled** (17 genuine Supreme Court judgments, imported with the
+owner's approval, exist only in the isolated demo database `lexflow_e2e`;
+everything else is labelled SYNTHETIC), and analysing **real client material**
 needs a privacy review first (only sample cases may be analysed).
 
 The sample data is set in an **Indian legal context** (Supreme Court of India,
@@ -430,11 +432,20 @@ scripts/                         # api-types.mjs, export-sample-data.mjs
   is approved, lawyer-labelled evaluation sets with agreed thresholds exist,
   the privacy review is signed off and real-model checks are approved
   (`docs/PHASE7_PLAN.md`, `docs/verification/post-phase6/README.md`).
-- **No real judgments** until a source whose terms of use allow it is
-  approved and imported. Judgment search quality was measured
-  only on synthetic data (`docs/verification/phase4/judgment-eval.md`); real
-  legal research quality is **unevaluated** (needs a licensed corpus and a
-  lawyer's relevance labels).
+- **Real judgments are limited to the isolated demo database.**
+  - **Corpus:** 17 genuine Supreme Court judgments, imported into
+    `lexflow_e2e` with the owner's approval, with provenance, attribution
+    and an integrity lock (`docs/verification/batch2/`).
+  - **Licensing:** it is not settled for wider use. Storage and indexing
+    rights, the editorial headnotes and section 52 await a lawyer's
+    opinion. The live database holds no genuine judgments.
+  - **Evaluation:** a first retrieval evaluation was run on these judgments,
+    with model-generated and citation-proxy labels only
+    (`docs/verification/batch2/EVALUATION_REPORT.md`). Earlier
+    measurements used synthetic data
+    (`docs/verification/phase4/judgment-eval.md`).
+  - **Legal research quality is unevaluated:** that needs a lawyer's
+    relevance labels.
 - **Embeddings are off by default** and English-only. Semantic search was
   measured only on a small fictional corpus; its quality on real legal
   documents is unmeasured. Case search covers one case at a time and has no
@@ -453,3 +464,21 @@ lawyer-labelled evaluation sets and agree thresholds, complete the privacy
 review, and decide on real-model checks (`docs/PHASE7_PROPOSAL.md`,
 `docs/phase7-prerequisites/`). Requirements, architecture/UML and
 traceability: `docs/SRS.md`, `docs/ARCHITECTURE.md`, `docs/TRACEABILITY.md`.
+
+**Engineering and validation plan, Batches 1–5** (from 2026-10-25; log in
+`docs/verification/engineering-plan/progress-log.md`):
+- **Corpus:** an isolated demo environment holds 17 genuine Supreme Court
+  judgments, with provenance and attribution. The corpus itself is outside
+  Git (`server/var/judgments/`). Its inventory and SHA-256 hashes are in
+  `docs/verification/batch2/`.
+- **Evaluation:** a first retrieval evaluation, with model-generated and
+  citation-proxy labels, not lawyer labels.
+- **Fixes:**
+  - a prompt-injection defence (validator `grounding-5`);
+  - refusal of duplicate content;
+  - Playwright isolated in `lexflow_e2e_playwright`.
+- **Reviews:** a focused security and privacy review
+  (`docs/verification/batch4/`).
+- **Pending:** the real-model evaluation is prepared but needs the owner's
+  approval (`docs/verification/batch3/REAL_MODEL_APPROVAL_REQUEST.md`).
+- **Nothing here claims legal accuracy or release readiness.**
