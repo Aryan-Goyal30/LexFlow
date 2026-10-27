@@ -118,11 +118,13 @@ class Assessed:
     called: bool  # whether the provider was asked at all
 
 
-def assess(provider: AssessmentProvider, gathered: inputs_mod.Inputs) -> Assessed:
+def assess(
+    provider: AssessmentProvider, gathered: inputs_mod.Inputs, *, allow_genuine: bool = False
+) -> Assessed:
     """Gate, ask and validate. No database access: the API calls it for a run,
     and the offline evaluation (``scripts/evaluate_assessment.py``) for its
     SYNTHETIC scenarios, so both exercise the same code."""
-    gate = gathered.gate()
+    gate = gathered.gate(allow_genuine)
     if gate is not None:
         return Assessed("insufficient", gate, inputs_mod.GATE_REASONS[gate], None, None, {}, False)
     request = AssessmentRequest(
@@ -177,12 +179,13 @@ def generate(
     *,
     requested_by: uuid.UUID,
     now: datetime,
+    allow_genuine: bool = False,
 ) -> Generated:
     """Assess a ready run and store the outcome (flushes; the caller commits)."""
     gathered = inputs_mod.gather(session, run)
     record = {**gathered.record(), "pipeline": pipeline_record()}
     row = _row(run, provider, requested_by=requested_by, record=record, now=now)
-    outcome = assess(provider, gathered)
+    outcome = assess(provider, gathered, allow_genuine=allow_genuine)
     row.status, row.reason_code, row.reason = outcome.status, outcome.reason_code, outcome.reason
     row.result, row.removed, row.usage = outcome.result, outcome.removed, outcome.usage
     session.add(row)

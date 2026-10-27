@@ -17,8 +17,8 @@ export function Card({ children, className = '', ...props }: CardProps) {
 
 export function CardHeader({ title, action }: { title: string; action?: ReactNode }) {
   return (
-    <div className="flex items-center justify-between border-b border-brand-100 px-5 py-3.5">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-brand-600 font-sans">
+    <div className="flex min-h-[52px] items-center justify-between gap-3 border-b border-brand-100 px-5 py-3">
+      <h3 className="font-sans text-[15px] font-semibold tracking-[-0.01em] text-brand-900">
         {title}
       </h3>
       {action}

@@ -18,3 +18,9 @@ server/var
 e2e/.state
 playwright-report
 test-results
+
+# Installed agent skills (third-party assets), not application code.
+.agents
+.claude/skills
+.github/skills
+.impeccable

@@ -45,14 +45,14 @@ export function AppLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-brand-50">
+    <div className="flex min-h-screen bg-canvas">
       <Sidebar open={sidebarOpen} onNavigate={() => setSidebarOpen(false)} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onMenuClick={() => setSidebarOpen(true)} />
         <DemoBanner />
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-6xl">
+        <main className="flex-1 px-4 py-8 sm:px-6 lg:px-10">
+          <div className="mx-auto max-w-[76rem]">
             <Outlet />
           </div>
         </main>

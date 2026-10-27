@@ -1,0 +1,236 @@
+{
+  "about": "Prepared demonstration analysis for a FICTIONAL academic matter. Written in advance, not AI, not legal advice. Facts quote the uploaded demonstration documents; precedents rest on passages of genuine Supreme Court of India judgments, checked against the stored judgment text.",
+  "case_titles": [
+    "Aarav Foods Pvt. Ltd. v. Sunrise Retail Pvt. Ltd. (Fictional)",
+    "Aarav Foods Pvt. Ltd. v. Sunrise Retail Pvt. Ltd."
+  ],
+  "facts": [
+    {
+      "key": "mark",
+      "document": "02-statement-of-facts.pdf",
+      "statement": "Documented (client's account): Aarav Foods has sold baked millet snacks under the mark MILLETTA since 1 August 2019.",
+      "quote": "Aarav Foods has sold baked millet snacks under the mark MILLETTA since 1 August 2019."
+    },
+    {
+      "key": "registration",
+      "document": "02-statement-of-facts.pdf",
+      "statement": "Unverified: the client says MILLETTA is a registered word mark in Class 30, but the registration particulars have not been checked and no certificate is in the file.",
+      "quote": "the registration particulars have not yet been verified"
+    },
+    {
+      "key": "pack_a",
+      "document": "02-statement-of-facts.pdf",
+      "statement": "Documented: MILLETTA packs are bright yellow with a green band across the lower third.",
+      "quote": "MILLETTA packs are bright yellow with a green band across the lower third"
+    },
+    {
+      "key": "pack_b",
+      "document": "02-statement-of-facts.pdf",
+      "statement": "Alleged by Aarav Foods: the MILLETO pack is mustard-yellow with a green lower band.",
+      "quote": "Its 70 g pack is mustard-yellow with a green lower band"
+    },
+    {
+      "key": "launch",
+      "document": "05-reply-from-sunrise-retail.docx",
+      "statement": "Admitted by Sunrise Retail: it launched MILLETO in its own stores on 20 January 2026.",
+      "quote": "Our client launched MILLETO in its stores on 20 January 2026."
+    },
+    {
+      "key": "house_mark",
+      "document": "05-reply-from-sunrise-retail.docx",
+      "statement": "Asserted by Sunrise Retail: its SUNRISE house mark appears on the top left of every MILLETO pack.",
+      "quote": "Our client's SUNRISE house mark appears prominently on the top left of every MILLETO pack."
+    },
+    {
+      "key": "descriptive",
+      "document": "05-reply-from-sunrise-retail.docx",
+      "statement": "Asserted by Sunrise Retail: MILLETO is coined from 'millet', the grain the product is made from, which it says no trader can own.",
+      "quote": "The word is coined from 'millet', the grain from which the product is made"
+    },
+    {
+      "key": "complaints",
+      "document": "02-statement-of-facts.pdf",
+      "statement": "Unverified: two customer e-mails complain about 'MILLETTA' bought at Sunrise Fresh, but the senders have not been contacted and there are no receipts.",
+      "quote": "The senders have not been contacted and no receipts are available, so the complaints are unverified."
+    },
+    {
+      "key": "knew_feb",
+      "document": "02-statement-of-facts.pdf",
+      "statement": "Aarav Foods' account (disputed): its sales manager first saw MILLETO on 3 February 2026 in Saket, New Delhi.",
+      "quote": "first saw MILLETO on 3 February 2026 at the Sunrise Fresh store in Saket, New Delhi"
+    },
+    {
+      "key": "knew_nov",
+      "document": "05-reply-from-sunrise-retail.docx",
+      "statement": "Sunrise Retail's account (disputed): Aarav Foods has known of MILLETO since a food expo in Mumbai in November 2025.",
+      "quote": "Your client has known of MILLETO since the Annapoorna Food Expo in Mumbai on 18-20 November 2025"
+    },
+    {
+      "key": "channels_a",
+      "document": "02-statement-of-facts.pdf",
+      "statement": "Aarav Foods' account (disputed): MILLETO is sold in Sunrise Fresh stores and through quick-commerce apps.",
+      "quote": "MILLETO is sold in Sunrise Fresh stores and through quick-commerce apps."
+    },
+    {
+      "key": "channels_b",
+      "document": "05-reply-from-sunrise-retail.docx",
+      "statement": "Sunrise Retail's account (disputed): MILLETO is sold only in Sunrise Fresh stores and on the Sunrise Fresh app.",
+      "quote": "MILLETO is sold only in Sunrise Fresh stores and on the Sunrise Fresh app"
+    },
+    {
+      "key": "delhi",
+      "document": "02-statement-of-facts.pdf",
+      "statement": "Documented (client's account): Aarav Foods has had a sales office in New Delhi since 2022.",
+      "quote": "It has had a sales office in New Delhi since 2022."
+    },
+    {
+      "key": "notice",
+      "document": "04-cease-and-desist-notice.pdf",
+      "statement": "Documented: the notice of 2 March 2026 asked Sunrise Retail to stop using MILLETO or any mark similar to MILLETTA.",
+      "quote": "to stop making, selling and advertising any goods under the mark MILLETO or any mark similar to MILLETTA"
+    },
+    {
+      "key": "offer",
+      "document": "05-reply-from-sunrise-retail.docx",
+      "statement": "Documented: Sunrise Retail offers, without prejudice, to discuss enlarging its house mark but refuses to withdraw MILLETO.",
+      "quote": "our client is willing to discuss enlarging the SUNRISE house mark on future print runs"
+    },
+    {
+      "key": "missing_affidavits",
+      "document": "06-evidence-index-and-packaging-comparison.docx",
+      "statement": "Missing evidence: affidavits or verified statements from the two complaining customers, with receipts.",
+      "quote": "Affidavits or verified statements from the two complaining customers, with receipts."
+    },
+    {
+      "key": "missing_register",
+      "document": "06-evidence-index-and-packaging-comparison.docx",
+      "statement": "Missing evidence: an extract from the Trade Marks Registry e-register for MILLETTA.",
+      "quote": "An extract from the Trade Marks Registry e-register for MILLETTA."
+    }
+  ],
+  "issues": [
+    {
+      "question": "Issue 1 - Marks: would an average shopper with imperfect recollection take MILLETO for MILLETTA? For Aarav: identical goods and a near-identical word. Against: both words are built on the descriptive word 'millet'.",
+      "facts": ["mark", "launch", "descriptive"]
+    },
+    {
+      "question": "Issue 2 - Get-up: do the shared yellow pack and green lower band add to the risk of confusion, or does the SUNRISE house mark on every pack dispel it?",
+      "facts": ["pack_a", "pack_b", "house_mark"]
+    },
+    {
+      "question": "Issue 3 - Trade channels: is MILLETO sold on quick-commerce apps, as Aarav says, or only in Sunrise's own stores and app, as Sunrise says? The answer affects whether the same shoppers meet both products.",
+      "facts": ["channels_a", "channels_b"]
+    },
+    {
+      "question": "Issue 4 - Actual confusion: what weight can two unverified customer e-mails carry until the senders give evidence?",
+      "facts": ["complaints", "missing_affidavits"]
+    },
+    {
+      "question": "Issue 5 - Delay: did Aarav Foods learn of MILLETO in February 2026 or in November 2025, and would three months matter?",
+      "facts": ["knew_feb", "knew_nov"]
+    },
+    {
+      "question": "Issue 6 - Interim relief: on the present file, what is still needed to show a prima facie case, the balance of convenience and irreparable harm?",
+      "facts": ["registration", "missing_register", "notice"]
+    },
+    {
+      "question": "Issue 7 - Forum: can the suit be brought in Delhi, given Aarav's Delhi sales office and Sunrise's Delhi stores?",
+      "facts": ["delhi", "channels_a"]
+    },
+    {
+      "question": "For the lawyer's judgement: should the client explore Sunrise's offer to enlarge its house mark before starting proceedings?",
+      "facts": ["offer", "house_mark"]
+    }
+  ],
+  "precedents": [
+    {
+      "judgment": "Amritdhara Pharmacy",
+      "quote": "approached from the point of view of a man of average intelligence and imperfect recollection",
+      "summary": "Genuine authority on deceptive similarity: the question is approached from the point of view of a purchaser of average intelligence and imperfect recollection, looking at the overall structural and phonetic similarity of the two names. Interpretation for this fictional matter: this is the test for Issue 1.",
+      "similarities": [
+        "MILLETTA and MILLETO share their first six letters and most of their sound, as the two names in that judgment shared much of their structure.",
+        "Both products are inexpensive everyday goods bought quickly, where imperfect recollection matters."
+      ],
+      "differences": [
+        "The shared part of MILLETTA and MILLETO is 'millet', a word describing the grain; the judgment did not concern a descriptive element.",
+        "That judgment concerned medicinal preparations, not snack foods."
+      ]
+    },
+    {
+      "judgment": "Parle Products",
+      "quote": "They should not be placed side by side to find out if there are any differences in the design and if so",
+      "summary": "Genuine authority on get-up: the broad and essential features of two marks are considered, and they are not placed side by side to look for differences in detail. Interpretation for this fictional matter: relevant to Issue 2, the yellow pack and green lower band.",
+      "similarities": [
+        "Both disputes concern the packaging of everyday food products.",
+        "Aarav's case rests on the broad features a shopper remembers: the yellow pack and green band."
+      ],
+      "differences": [
+        "The MILLETO pack carries a prominent SUNRISE house mark and a different illustration, which Sunrise will say a shopper notices.",
+        "The facts about the MILLETO pack are so far alleged, not proved by dated photographs."
+      ]
+    },
+    {
+      "judgment": "M/s. Nandhini Deluxe",
+      "quote": "cannot enjoy monopoly over the entire class of goods",
+      "summary": "Genuine authority that the proprietor of a mark cannot enjoy a monopoly over the entire class of goods, especially goods for which it does not use the mark. Interpretation: Sunrise may use it against an over-broad claim; it is weak on these facts.",
+      "similarities": [
+        "It concerns how far a registered mark can be stretched, which Sunrise will raise with the 'millet' argument."
+      ],
+      "differences": [
+        "There the goods and services differed; here both parties sell baked millet snacks, so the judgment is distinguishable on the goods."
+      ]
+    },
+    {
+      "judgment": "Pernod Ricard",
+      "quote": "along with considerations of balance of convenience and potential irreparable injury. The focus is not to adjudicate the ultimate rights of the parties.",
+      "summary": "Genuine 2025 authority on the interim stage: the court asks whether there is a prima facie case, with the balance of convenience and potential irreparable injury, without deciding the parties' final rights. Interpretation: this frames Issue 6.",
+      "similarities": [
+        "It is a trade mark dispute about deceptive similarity decided at the interim-injunction stage.",
+        "It also discusses descriptive and common terms and the average consumer, which bear on Issues 1 and 2."
+      ],
+      "differences": [
+        "It concerned whisky brands sold to a different class of buyers.",
+        "The judgment states that it is confined to the interim application before it, on the material then available."
+      ]
+    },
+    {
+      "judgment": "Indian Performing Rights",
+      "quote": "be the relevant place for the filing of a suit and not the principal place of business",
+      "summary": "Genuine authority on where a suit may be filed: read with the deeming explanation for corporations, the place of a subordinate office where the cause of action arises is the relevant place, not the principal place of business. Interpretation: relevant only to Issue 7, the Delhi forum.",
+      "similarities": [
+        "Aarav Foods' principal office is in Pune but it has a Delhi sales office, and the sales complained of include Sunrise Fresh stores in Delhi."
+      ],
+      "differences": [
+        "The judgment concerned copyright and trade mark suits filed far from where the defendants operated; it does not decide any question of similarity."
+      ]
+    }
+  ],
+  "contradictions": [
+    {
+      "description": "The documents disagree on when Aarav Foods learned of MILLETO: February 2026 in Aarav's statement of facts, November 2025 in Sunrise Retail's reply. This matters for delay.",
+      "sources": [
+        {
+          "document": "02-statement-of-facts.pdf",
+          "quote": "first saw MILLETO on 3 February 2026 at the Sunrise Fresh store in Saket, New Delhi"
+        },
+        {
+          "document": "05-reply-from-sunrise-retail.docx",
+          "quote": "Your client has known of MILLETO since the Annapoorna Food Expo in Mumbai on 18-20 November 2025"
+        }
+      ]
+    },
+    {
+      "description": "The documents disagree on where MILLETO is sold: on quick-commerce apps according to Aarav Foods, only in Sunrise's own stores and app according to Sunrise Retail.",
+      "sources": [
+        {
+          "document": "02-statement-of-facts.pdf",
+          "quote": "MILLETO is sold in Sunrise Fresh stores and through quick-commerce apps."
+        },
+        {
+          "document": "05-reply-from-sunrise-retail.docx",
+          "quote": "MILLETO is sold only in Sunrise Fresh stores and on the Sunrise Fresh app"
+        }
+      ]
+    }
+  ]
+}

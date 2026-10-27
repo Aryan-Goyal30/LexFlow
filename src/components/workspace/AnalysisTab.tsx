@@ -1,5 +1,6 @@
 import { Fragment, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import { CheckCircle2, Circle, FileText, Loader2, Sparkles } from 'lucide-react';
 import type { Case } from '../../types';
 import type { AnalysisRun, AnalysisSetup, AnalysisSource } from '../../types/ai';
@@ -26,6 +27,8 @@ import { AssessmentPanel } from './OutcomeAssessment';
 import { useFindingReviews } from '../../hooks/useFindingReviews';
 import { errorMessage } from '../../services/api/client';
 
+type SectionId = 'overview' | 'facts' | 'issues' | 'precedents' | 'contradictions' | 'assessment';
+
 const alertClass =
   'rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-600/20';
 
@@ -35,6 +38,12 @@ const eligibleIds = (setup: AnalysisSetup) =>
     .map((d) => d.id)
     .join(',');
 const when = (iso: string) => `${formatDate(iso.slice(0, 10))}, ${formatTime(iso)}`;
+/** Who wrote a run's findings: only Gemini is AI; the others are named as not AI. */
+const PROVIDER_NAMES: Record<string, string> = {
+  gemini: 'Google Gemini API (AI)',
+  prepared: 'Prepared demonstration (not AI)',
+  scripted: 'Scripted test provider (not AI)',
+};
 const place = (page: number | null, section: number) =>
   page !== null ? `page ${page}` : `part ${section}`;
 
@@ -181,6 +190,13 @@ function StartForm({
             This server uses a scripted test provider: results are canned test output, not AI.
           </p>
         )}
+        {setup.provider === 'prepared' && (
+          <p className="mt-1 font-medium">
+            This server uses a prepared demonstration analysis, not AI: it was written in advance
+            for one fictional academic matter, runs on this computer and sends nothing to any
+            external service. Every quotation is checked against the documents and judgments.
+          </p>
+        )}
       </div>
 
       <fieldset>
@@ -302,10 +318,11 @@ function RunView({
     );
   }
   return (
-    <>
-      <AnalysisResults caseId={caseId} run={run} />
-      {assessmentEnabled && <AssessmentPanel caseId={caseId} runId={run.id} />}
-    </>
+    <AnalysisResults
+      caseId={caseId}
+      run={run}
+      assessment={assessmentEnabled ? <AssessmentPanel caseId={caseId} runId={run.id} /> : null}
+    />
   );
 }
 
@@ -319,15 +336,12 @@ function SourceLine({
   changed: boolean;
 }) {
   return (
-    <div className="mt-1.5 border-l-2 border-brand-200 pl-3">
-      <blockquote className="text-sm italic text-brand-600">
-        &ldquo;{source.quote}&rdquo;
-      </blockquote>
+    <div className="mt-2 rounded-md bg-canvas px-3 py-2">
       <Link
         to={documentTextPath(caseId, source.documentId, source.sectionNumber)}
-        className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-brand-700 underline-offset-2 hover:underline"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-800 underline-offset-2 hover:underline"
       >
-        <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+        <FileText className="h-3.5 w-3.5 text-accent-600" aria-hidden="true" />
         {source.documentName}, {place(source.pageNumber, source.sectionNumber)}
       </Link>
       {changed && (
@@ -335,6 +349,9 @@ function SourceLine({
           (changed since this analysis)
         </span>
       )}
+      <blockquote className="mt-1 font-serif text-[13px] leading-relaxed text-brand-700">
+        &ldquo;{source.quote}&rdquo;
+      </blockquote>
     </div>
   );
 }
@@ -349,7 +366,15 @@ function SourceLine({
  * Phase 6: every finding carries its lawyer-review state ("Unreviewed" until
  * a lawyer decides); reviewers accept, edit, reject or clear it in place.
  */
-function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) {
+function AnalysisResults({
+  caseId,
+  run,
+  assessment,
+}: {
+  caseId: string;
+  run: AnalysisRun;
+  assessment: ReactNode;
+}) {
   const result = run.result!;
   const evidence = run.evidence;
   const changed = new Set(evidence?.changed ?? []);
@@ -369,227 +394,345 @@ function AnalysisResults({ caseId, run }: { caseId: string; run: AnalysisRun }) 
       />
     ) : null;
   };
+  const isAi = run.provider === 'gemini';
+  const [section, setSection] = useState<SectionId>('facts');
+  const sections: { id: SectionId; label: string; n: number | null }[] = [
+    { id: 'overview', label: 'Overview', n: null },
+    { id: 'facts', label: 'Key facts', n: result.facts.length },
+    { id: 'issues', label: 'Legal issues', n: result.issues.length },
+    { id: 'precedents', label: 'Precedents', n: result.precedents.length },
+    ...(result.contradictions.length > 0
+      ? [
+          {
+            id: 'contradictions' as const,
+            label: 'Contradictions',
+            n: result.contradictions.length,
+          },
+        ]
+      : []),
+    ...(assessment ? [{ id: 'assessment' as const, label: 'Outcome assessment', n: null }] : []),
+  ];
   return (
-    <>
-      <Card>
-        <CardHeader title="Analysis result" />
-        <CardBody className="space-y-3 text-sm text-brand-700">
-          {run.provider === 'scripted' && (
-            <p className="rounded-md bg-amber-50 px-3 py-2 font-medium text-amber-900 ring-1 ring-inset ring-amber-600/30">
-              Scripted test output — not AI. Produced by the test provider for checking LexFlow.
-            </p>
-          )}
+    <div className="space-y-5">
+      <header className="rounded-lg border border-brand-100 bg-white shadow-card">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-5 py-3">
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${
+              isAi
+                ? 'bg-emerald-50 text-emerald-800 ring-emerald-600/30'
+                : 'bg-amber-50 text-amber-900 ring-amber-600/30'
+            }`}
+          >
+            {PROVIDER_NAMES[run.provider] ?? run.provider}
+          </span>
           <p className="text-xs text-brand-500">
-            {run.provider === 'gemini' ? 'Google Gemini API' : run.provider} · model {run.model} ·
-            prompt {run.promptVersion}
+            Model {run.model} · prompt {run.promptVersion}
             {run.finishedAt && ` · ${when(run.finishedAt)}`}
             {run.requestedBy && ` · started by ${run.requestedBy.name}`}
           </p>
           {evidence && (
-            <p className="text-xs text-brand-500">
-              Sent: {evidence.passages} passages from {evidence.documents} documents and{' '}
+            <p className="text-xs text-brand-500 lg:ml-auto">
+              Sent {evidence.passages} passages from {evidence.documents} documents and{' '}
               {evidence.judgmentPassages} judgment passages (
               {evidence.characters.toLocaleString('en-IN')} characters).
               {evidence.truncated && ' Limits left some passages out.'}
             </p>
           )}
-          {changed.size > 0 && (
-            <p
-              role="status"
-              className="rounded-md bg-amber-50 px-3 py-2 text-amber-900 ring-1 ring-inset ring-amber-600/30"
-            >
-              <strong>Some sources changed after this analysis ran</strong> (
-              {[...changed].join(', ')}): a document was re-extracted or deleted, or a judgment was
-              removed. Quotes are shown as they were verified at the time; their links may open
-              different text, or none.
-            </p>
-          )}
-          {(result.instructionLikePassages ?? []).length > 0 && (
-            <div
-              role="alert"
-              className="rounded-md bg-amber-50 px-3 py-2 text-amber-900 ring-1 ring-inset ring-amber-600/30"
-            >
-              <p>
-                <strong>Possible prompt injection.</strong> Some document text reads like
-                instructions to an AI system. It was not used as evidence; check these passages:
-              </p>
-              <ul className="mt-1 list-disc pl-5 text-xs">
-                {(result.instructionLikePassages ?? []).map((p) => (
-                  <li key={p.evidenceId}>
-                    <Link
-                      to={documentTextPath(caseId, p.documentId, p.sectionNumber)}
-                      className="font-medium underline-offset-2 hover:underline"
-                    >
-                      {p.documentName}, {place(p.pageNumber, p.sectionNumber)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {result.insufficientEvidence && (
-            <p className="rounded-md bg-brand-50 px-3 py-2 text-brand-800 ring-1 ring-inset ring-brand-200">
-              <strong>Not enough evidence for a useful analysis.</strong>{' '}
-              {result.insufficientReason}
-            </p>
-          )}
-          {result.removed.count > 0 && (
-            <div className="rounded-md bg-brand-50 px-3 py-2 ring-1 ring-inset ring-brand-200">
-              <p className="font-medium text-brand-800">
-                {result.removed.count} {result.removed.count === 1 ? 'item was' : 'items were'}{' '}
-                removed because {result.removed.count === 1 ? 'it' : 'they'} could not be verified
-                against the sources:
-              </p>
-              <ul className="mt-1 list-disc pl-5 text-xs text-brand-600">
-                {result.removed.reasons.map((r) => (
-                  <li key={r.code}>
-                    {r.message} ({r.count})
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <DecisionSupportNote />
-          {reviews.isPending && (
-            <p className="text-xs text-brand-500">Loading the lawyer review…</p>
-          )}
-          {reviews.isError && (
-            <div role="alert" className={alertClass}>
-              The lawyer review could not be loaded: {errorMessage(reviews.error)}{' '}
-              <button
-                type="button"
-                className="font-medium underline underline-offset-2"
-                onClick={() => void reviews.refetch()}
-              >
-                Try again
-              </button>
-            </div>
-          )}
-          {reviews.data && (
-            <>
-              <ReviewProgress summary={reviews.data.summary} />
-              <ExportBrief caseId={caseId} runId={run.id} summary={reviews.data.summary} />
-            </>
-          )}
-        </CardBody>
-      </Card>
+        </div>
+        {reviews.data && (
+          <div className="grid gap-3 border-t border-brand-100 bg-brand-50/50 px-5 py-3 lg:grid-cols-2">
+            <ReviewProgress summary={reviews.data.summary} />
+            <ExportBrief caseId={caseId} runId={run.id} summary={reviews.data.summary} />
+          </div>
+        )}
+      </header>
 
-      <Card>
-        <CardHeader title={`Key Facts (${result.facts.length})`} />
-        <CardBody>
-          {result.facts.length === 0 ? (
-            <p className="text-sm text-brand-500">No verified facts.</p>
-          ) : (
-            <ul className="space-y-4 text-sm text-brand-800">
-              {result.facts.map((fact) => (
-                <li key={fact.id} id={`analysis-fact-${fact.id}`}>
+      <div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start">
+        <nav
+          aria-label="Sections of this analysis"
+          className="flex gap-1 overflow-x-auto border-b border-brand-100 pb-2 lg:sticky lg:top-24 lg:flex-col lg:overflow-visible lg:border-b-0 lg:pb-0"
+        >
+          {sections.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              aria-current={section === s.id ? 'true' : undefined}
+              onClick={() => setSection(s.id)}
+              className={`flex shrink-0 items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors ${
+                section === s.id
+                  ? 'bg-brand-900 text-white'
+                  : 'text-brand-600 hover:bg-brand-100 hover:text-brand-900'
+              }`}
+            >
+              {s.label}
+              {s.n !== null && (
+                <span
+                  className={`text-xs tabular-nums ${section === s.id ? 'text-brand-300' : 'text-brand-400'}`}
+                >
+                  {s.n}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        <div className="min-w-0 space-y-6">
+          <Card className={section !== 'overview' ? 'hidden' : ''}>
+            <CardHeader title="Analysis result" />
+            <CardBody className="space-y-3 text-sm text-brand-700">
+              {run.provider === 'scripted' && (
+                <p className="rounded-md bg-amber-50 px-3 py-2 font-medium text-amber-900 ring-1 ring-inset ring-amber-600/30">
+                  Scripted test output — not AI. Produced by the test provider for checking LexFlow.
+                </p>
+              )}
+              {run.provider === 'prepared' && (
+                <p className="rounded-md bg-amber-50 px-3 py-2 font-medium text-amber-900 ring-1 ring-inset ring-amber-600/30">
+                  Prepared demonstration analysis — not AI and not legal advice. Written in advance
+                  for this fictional academic matter; each quotation was checked against its source.
+                  Statements are marked documented, alleged, disputed or missing.
+                </p>
+              )}
+              {changed.size > 0 && (
+                <p
+                  role="status"
+                  className="rounded-md bg-amber-50 px-3 py-2 text-amber-900 ring-1 ring-inset ring-amber-600/30"
+                >
+                  <strong>Some sources changed after this analysis ran</strong> (
+                  {[...changed].join(', ')}): a document was re-extracted or deleted, or a judgment
+                  was removed. Quotes are shown as they were verified at the time; their links may
+                  open different text, or none.
+                </p>
+              )}
+              {(result.instructionLikePassages ?? []).length > 0 && (
+                <div
+                  role="alert"
+                  className="rounded-md bg-amber-50 px-3 py-2 text-amber-900 ring-1 ring-inset ring-amber-600/30"
+                >
                   <p>
-                    <span className="mr-1.5 text-xs font-semibold text-brand-400">{fact.id}</span>
-                    {fact.statement}
+                    <strong>Possible prompt injection.</strong> Some document text reads like
+                    instructions to an AI system. It was not used as evidence; check these passages:
                   </p>
-                  <SourceLine
-                    caseId={caseId}
-                    source={fact.source}
-                    changed={changed.has(fact.source.evidenceId)}
-                  />
-                  {review(
-                    fact.id,
-                    `Fact ${fact.id}`,
-                    fact.statement,
-                    changed.has(fact.source.evidenceId),
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader title={`Legal Issues (${result.issues.length})`} />
-        <CardBody>
-          {result.issues.length === 0 ? (
-            <p className="text-sm text-brand-500">No issues tied to verified facts.</p>
-          ) : (
-            <ol className="list-decimal space-y-2 pl-4 text-sm text-brand-800">
-              {result.issues.map((issue) => (
-                <li key={issue.id}>
-                  {issue.question}{' '}
-                  <span className="text-xs text-brand-500">
-                    (rests on{' '}
-                    {issue.factIds.map((factId, i) => (
-                      <Fragment key={factId}>
-                        {i > 0 && ', '}
-                        <a
-                          href={`#analysis-fact-${factId}`}
-                          className="font-medium text-brand-700 underline-offset-2 hover:underline"
+                  <ul className="mt-1 list-disc pl-5 text-xs">
+                    {(result.instructionLikePassages ?? []).map((p) => (
+                      <li key={p.evidenceId}>
+                        <Link
+                          to={documentTextPath(caseId, p.documentId, p.sectionNumber)}
+                          className="font-medium underline-offset-2 hover:underline"
                         >
-                          {factId}
-                        </a>
-                      </Fragment>
+                          {p.documentName}, {place(p.pageNumber, p.sectionNumber)}
+                        </Link>
+                      </li>
                     ))}
-                    )
-                  </span>
-                  {review(issue.id, `Issue ${issue.id}`, issue.question)}
-                </li>
-              ))}
-            </ol>
-          )}
-        </CardBody>
-      </Card>
+                  </ul>
+                </div>
+              )}
+              {result.insufficientEvidence && (
+                <p className="rounded-md bg-brand-50 px-3 py-2 text-brand-800 ring-1 ring-inset ring-brand-200">
+                  <strong>Not enough evidence for a useful analysis.</strong>{' '}
+                  {result.insufficientReason}
+                </p>
+              )}
+              {result.removed.count > 0 && (
+                <div className="rounded-md bg-brand-50 px-3 py-2 ring-1 ring-inset ring-brand-200">
+                  <p className="font-medium text-brand-800">
+                    {result.removed.count} {result.removed.count === 1 ? 'item was' : 'items were'}{' '}
+                    removed because {result.removed.count === 1 ? 'it' : 'they'} could not be
+                    verified against the sources:
+                  </p>
+                  <ul className="mt-1 list-disc pl-5 text-xs text-brand-600">
+                    {result.removed.reasons.map((r) => (
+                      <li key={r.code}>
+                        {r.message} ({r.count})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <DecisionSupportNote />
+              {reviews.isPending && (
+                <p className="text-xs text-brand-500">Loading the lawyer review…</p>
+              )}
+              {reviews.isError && (
+                <div role="alert" className={alertClass}>
+                  The lawyer review could not be loaded: {errorMessage(reviews.error)}{' '}
+                  <button
+                    type="button"
+                    className="font-medium underline underline-offset-2"
+                    onClick={() => void reviews.refetch()}
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
+            </CardBody>
+          </Card>
 
-      <Card>
-        <CardHeader title={`Precedent Comparisons (${result.precedents.length})`} />
-        <CardBody className="space-y-3">
-          {!result.precedentsAvailable ? (
-            <p className="text-sm text-brand-600">
-              No precedents were available for comparison: no judgment in the collection matched
-              this case, so none was sent and none is shown.
-            </p>
-          ) : result.precedents.length === 0 ? (
-            <p className="text-sm text-brand-500">
-              None of the retrieved judgments was compared with this case.
-            </p>
-          ) : (
-            result.precedents.map((p) => (
-              <div key={p.id}>
-                <PrecedentCard precedent={p} />
-                {review(p.id, `Precedent comparison ${p.id}`, p.summary, changed.has(p.evidenceId))}
-              </div>
-            ))
-          )}
-        </CardBody>
-      </Card>
-
-      {result.contradictions.length > 0 && (
-        <Card>
-          <CardHeader title={`Contradictions (${result.contradictions.length})`} />
-          <CardBody>
-            <ul className="space-y-4 text-sm text-brand-800">
-              {result.contradictions.map((item) => (
-                <li key={item.id}>
-                  <p>{item.description}</p>
-                  {item.sources.map((source) => (
-                    <SourceLine
-                      key={`${source.evidenceId}-${source.quote}`}
-                      caseId={caseId}
-                      source={source}
-                      changed={changed.has(source.evidenceId)}
-                    />
+          <Card
+            id="analysis-facts"
+            className={`scroll-mt-24 ${section !== 'facts' ? 'hidden' : ''}`}
+          >
+            <CardHeader title={`Key Facts (${result.facts.length})`} />
+            <CardBody>
+              {result.facts.length === 0 ? (
+                <p className="text-sm text-brand-500">No verified facts.</p>
+              ) : (
+                <ul className="divide-y divide-brand-100 text-sm text-brand-800">
+                  {result.facts.map((fact) => (
+                    <li
+                      key={fact.id}
+                      id={`analysis-fact-${fact.id}`}
+                      className="scroll-mt-28 py-4 first:pt-0 last:pb-0"
+                    >
+                      <p>
+                        <span className="mr-2 inline-block rounded bg-brand-900 px-1.5 py-px align-[1px] text-[11px] font-semibold tabular-nums text-white">
+                          {fact.id}
+                        </span>
+                        {fact.statement}
+                      </p>
+                      <SourceLine
+                        caseId={caseId}
+                        source={fact.source}
+                        changed={changed.has(fact.source.evidenceId)}
+                      />
+                      {review(
+                        fact.id,
+                        `Fact ${fact.id}`,
+                        fact.statement,
+                        changed.has(fact.source.evidenceId),
+                      )}
+                    </li>
                   ))}
-                  {review(
-                    item.id,
-                    `Contradiction ${item.id}`,
-                    item.description,
-                    item.sources.some((s) => changed.has(s.evidenceId)),
-                  )}
-                </li>
-              ))}
-            </ul>
-          </CardBody>
-        </Card>
-      )}
-    </>
+                </ul>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card
+            id="analysis-issues"
+            className={`scroll-mt-24 ${section !== 'issues' ? 'hidden' : ''}`}
+          >
+            <CardHeader title={`Legal Issues (${result.issues.length})`} />
+            <CardBody>
+              {result.issues.length === 0 ? (
+                <p className="text-sm text-brand-500">No issues tied to verified facts.</p>
+              ) : (
+                <ol className="space-y-3 text-sm text-brand-800">
+                  {result.issues.map((issue, index) => (
+                    <li
+                      key={issue.id}
+                      className="rounded-md border border-brand-100 bg-brand-50/40 p-3.5"
+                    >
+                      <span className="mr-2 font-semibold tabular-nums text-accent-600">
+                        {index + 1}.
+                      </span>
+                      {issue.question}{' '}
+                      <span className="text-xs text-brand-500">
+                        (rests on{' '}
+                        {issue.factIds.map((factId, i) => (
+                          <Fragment key={factId}>
+                            {i > 0 && ', '}
+                            <a
+                              href={`#analysis-fact-${factId}`}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                setSection('facts');
+                                requestAnimationFrame(() =>
+                                  document
+                                    .getElementById(`analysis-fact-${factId}`)
+                                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+                                );
+                              }}
+                              className="font-medium text-brand-700 underline-offset-2 hover:underline"
+                            >
+                              {factId}
+                            </a>
+                          </Fragment>
+                        ))}
+                        )
+                      </span>
+                      {review(issue.id, `Issue ${issue.id}`, issue.question)}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card
+            id="analysis-precedents"
+            className={`scroll-mt-24 ${section !== 'precedents' ? 'hidden' : ''}`}
+          >
+            <CardHeader title={`Precedent Comparisons (${result.precedents.length})`} />
+            <CardBody className="space-y-3">
+              {!result.precedentsAvailable ? (
+                <p className="text-sm text-brand-600">
+                  No precedents were available for comparison: no judgment in the collection matched
+                  this case, so none was sent and none is shown.
+                </p>
+              ) : result.precedents.length === 0 ? (
+                <p className="text-sm text-brand-500">
+                  None of the retrieved judgments was compared with this case.
+                </p>
+              ) : (
+                result.precedents.map((p) => (
+                  <div key={p.id}>
+                    <PrecedentCard precedent={p} />
+                    {review(
+                      p.id,
+                      `Precedent comparison ${p.id}`,
+                      p.summary,
+                      changed.has(p.evidenceId),
+                    )}
+                  </div>
+                ))
+              )}
+            </CardBody>
+          </Card>
+
+          {result.contradictions.length > 0 && (
+            <Card
+              id="analysis-contradictions"
+              className={`scroll-mt-24 ${section !== 'contradictions' ? 'hidden' : ''}`}
+            >
+              <CardHeader title={`Contradictions (${result.contradictions.length})`} />
+              <CardBody>
+                <ul className="divide-y divide-brand-100 text-sm text-brand-800">
+                  {result.contradictions.map((item) => (
+                    <li key={item.id} className="py-4 first:pt-0 last:pb-0">
+                      <p>{item.description}</p>
+                      <div className="mt-2 grid gap-3 md:grid-cols-2">
+                        {item.sources.map((source) => (
+                          <SourceLine
+                            key={`${source.evidenceId}-${source.quote}`}
+                            caseId={caseId}
+                            source={source}
+                            changed={changed.has(source.evidenceId)}
+                          />
+                        ))}
+                      </div>
+                      {review(
+                        item.id,
+                        `Contradiction ${item.id}`,
+                        item.description,
+                        item.sources.some((s) => changed.has(s.evidenceId)),
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </CardBody>
+            </Card>
+          )}
+          {assessment && (
+            <div
+              id="analysis-assessment"
+              className={`scroll-mt-24 ${section !== 'assessment' ? 'hidden' : ''}`}
+            >
+              {assessment}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

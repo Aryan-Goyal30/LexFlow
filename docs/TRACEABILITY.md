@@ -8,6 +8,7 @@ them. Paths are relative to the repository root.
 | FR-1 | `server/lexflow/auth/`, `api/auth.py`, `cli/users.py` | `server/tests/test_auth*.py`, `test_cli_users.py`, `e2e/auth.spec.ts` |
 | FR-2 | `server/lexflow/authz.py`, `main.py` (routers) | `test_access_required.py`, `test_case_access.py`, `test_portal.py`, `e2e/roles.spec.ts` |
 | FR-3 | `api/cases.py`, `services/cases.py` | `test_cases.py`, `test_case_workflows.py`, `src/pages/*.test.tsx` |
+| FR-3a | `api/search.py` (`GET /api/search`), `services/global_search.py`, `src/components/layout/GlobalSearch.tsx`, `src/hooks/useGlobalSearch.ts` | `test_global_search.py`, `src/pages/globalSearch.test.tsx` |
 | FR-4 | `services/cases.py` (timeline) | `test_case_workflows.py` |
 | FR-5 | `services/teams.py` | `test_case_access.py` |
 | FR-6 | `api/hearings.py` | `test_hearings.py`, `test_hearing_schedule.py`, `src/pages/hearings*.test.tsx` |
@@ -17,7 +18,7 @@ them. Paths are relative to the repository root.
 | FR-10 | `worker.py`, `extraction/`, `services/extraction_queue.py` | `test_worker.py`, `test_extractors.py`, `test_extraction_queue.py` |
 | FR-11 | `extraction/chunking.py`, `services/document_text.py`, `src/pages/DocumentTextPage.tsx` | `test_chunking.py`, `test_document_text.py`, `e2e/document-text.spec.ts` |
 | FR-12 | `embeddings.py`, `services/indexing.py`, `services/retrieval.py`, `api/search.py`, `cli/models.py` | `test_embeddings.py`, `test_indexing.py`, `test_search.py`, `docs/verification/embeddings/` |
-| FR-13 | `services/judgment_import.py`, `cli/judgments.py`, migration 0010 | `test_judgment_import.py`, `test_migrations.py` |
+| FR-13 | `services/judgment_import.py`, `cli/judgments.py`, migration 0010; provenance and import runs: migration 0014, `services/judgment_selection.py`, `scripts/verify_corpus_integrity.py` | `test_judgment_import.py`, `test_migrations.py`, `test_judgment_provenance.py`, `test_judgment_selection.py`, `test_import_preview.py`, `test_corpus_integrity.py` |
 | FR-14 | `services/judgments.py`, `api/judgments.py` | `test_judgments_api.py` |
 | FR-15 | `src/components/workspace/ResearchTab.tsx`, `src/components/research/Judgments.tsx` | `src/pages/research.test.tsx`, `e2e/research.spec.ts` |
 | FR-16 | `src/pages/PrecedentLibraryPage.tsx`, `src/pages/JudgmentPage.tsx` | `src/pages/research.test.tsx`, `e2e/research.spec.ts` |
@@ -31,7 +32,7 @@ them. Paths are relative to the repository root.
 | NFR-3 | `audit.py` | `test_audit_view.py`, audit assertions across API tests |
 | NFR-4 | soft delete, archive; execution logs | `test_document_lifecycle.py`, `test_migrations.py` |
 | NFR-5 | `config.py`, API validation | `test_extractors.py`, `test_judgments_api.py` (limits) |
-| NFR-6 | validation before display, scripted-provider gate and label, synthetic gates and badges | `test_analysis_validation.py`, `test_analysis_config.py`, `src/pages/analysis.test.tsx`, `test_judgment_import.py` (synthetic gates, connected-database check), `test_database_name_guards.py`, `test_evaluation_scripts.py` |
+| NFR-6 | validation before display, scripted-provider gate and label, synthetic gates and badges | `test_analysis_validation.py`, `test_analysis_config.py`, `src/pages/analysis.test.tsx`, `test_judgment_import.py` (synthetic gates, connected-database check), `test_database_name_guards.py`, `test_evaluation_scripts.py`, `test_prompt_injection.py` (instruction-like text is never evidence), `test_demo_mode.py` (isolated demo database) |
 | NFR-2 | `config.py` (AI settings), `analysis/provider.py` (key handling), `api/analysis.py` (gates) | `test_analysis_config.py`, `test_analysis_provider.py`, `test_analysis_runs.py` (key never in responses, audit, OpenAPI) |
 | NFR-7 | OpenAPI export, type generation | `test_openapi.py`, `npm run api:check` |
 | NFR-8 | all suites | `docs/verification/` |

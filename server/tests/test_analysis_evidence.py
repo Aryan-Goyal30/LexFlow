@@ -4,18 +4,22 @@ from __future__ import annotations
 
 import json
 import uuid
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import pytest
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from lexflow.analysis import prompt
 from lexflow.analysis.evidence import Limits, assemble, terms
+from lexflow.analysis.runs import limits_from
+from lexflow.config import Settings
 from lexflow.extraction import Extracted, extract
 from lexflow.extraction import Limits as ExtractionLimits
-from lexflow.models import Case, Document
+from lexflow.models import Case, Document, JudgmentSource
 from lexflow.seed import sample_uuid
 from lexflow.services import judgment_import as importer
 from tests.access_fixtures import SATTVIK
@@ -214,3 +218,25 @@ def test_terms_drop_short_and_common_words() -> None:
         "mark",
         "infringed",
     ]
+
+
+def test_with_the_assessment_demo_on_the_analysis_compares_with_synthetic_judgments_only(
+    db: Session, case: Case, collection: None
+) -> None:
+    """The outcome assessment never uses a genuine judgment (genuine-precedents gate),
+    so while its demo is on an analysis must not offer genuine judgments as precedents:
+    an analysis built on them could never be assessed."""
+    notice = make_ready(db, SATTVIK, "Notice.pdf", [NOTICE])
+    synthetic_only = replace(WIDE, judgment_origin="synthetic")
+    assert assemble(db, case, [notice], synthetic_only).judgments
+    db.execute(update(JudgmentSource).values(is_synthetic=False))  # TEST ONLY: as if real
+    db.commit()
+    assert assemble(db, case, [notice], WIDE).judgments, "with the demo off, every judgment"
+    assert assemble(db, case, [notice], synthetic_only).judgments == []
+
+
+def test_the_assessment_flag_chooses_which_judgments_an_analysis_may_use() -> None:
+    on: dict[str, Any] = {"LEXFLOW_OUTCOME_ASSESSMENT": True}
+    off: dict[str, Any] = {"LEXFLOW_OUTCOME_ASSESSMENT": False}
+    assert limits_from(Settings(**on)).judgment_origin == "synthetic"
+    assert limits_from(Settings(**off)).judgment_origin is None

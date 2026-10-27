@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, BookOpen, FlaskConical, Loader2, Scale } from 'lucide-react';
+import { AlertTriangle, BookOpen, FlaskConical, Info, Loader2, Scale } from 'lucide-react';
 import {
   useAssessmentHistory,
   useAssessments,
@@ -87,7 +87,7 @@ export function AssessmentPanel({ caseId, runId }: { caseId: string; runId: stri
     <Card role="region" aria-label="Outcome assessment (decision support)">
       <CardHeader
         title="Outcome assessment (decision support)"
-        action={<Chip label="Synthetic demo" className={UNCERTAINTY.mixed_evidence.className} />}
+        action={<Chip label="Decision support" className={UNCERTAINTY.mixed_evidence.className} />}
       />
       <CardBody className="space-y-4 text-sm text-brand-700">
         <div
@@ -123,16 +123,17 @@ export function AssessmentPanel({ caseId, runId }: { caseId: string; runId: stri
         )}
         {list.data && (
           <>
-            <p className="text-xs text-brand-500">
-              Uses {list.data.acceptedFindings} accepted{' '}
-              {list.data.acceptedFindings === 1 ? 'finding' : 'findings'} and{' '}
-              {list.data.acceptedPrecedents} accepted precedent{' '}
-              {list.data.acceptedPrecedents === 1 ? 'comparison' : 'comparisons'}. Unreviewed and
-              rejected findings and reviewers&apos; notes are never used.
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col gap-3 rounded-lg border border-brand-100 bg-brand-50/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs leading-relaxed text-brand-600">
+                Uses {list.data.acceptedFindings} accepted{' '}
+                {list.data.acceptedFindings === 1 ? 'finding' : 'findings'} and{' '}
+                {list.data.acceptedPrecedents} accepted precedent{' '}
+                {list.data.acceptedPrecedents === 1 ? 'comparison' : 'comparisons'}. Unreviewed and
+                rejected findings and reviewers&apos; notes are never used.
+              </p>
               <Button
                 size="sm"
+                className="shrink-0 self-start sm:self-auto"
                 onClick={() => generate.mutate(undefined, { onSuccess: (a) => setSelected(a.id) })}
                 disabled={!list.data.canGenerate || generate.isPending}
                 aria-describedby={list.data.canGenerate ? undefined : reasonId}
@@ -144,12 +145,20 @@ export function AssessmentPanel({ caseId, runId }: { caseId: string; runId: stri
                 )}
                 {generate.isPending ? 'Assessing…' : 'Generate assessment'}
               </Button>
-              {!list.data.canGenerate && list.data.cannotGenerateReason && (
-                <span id={reasonId} className="text-xs text-brand-500">
+            </div>
+            {!list.data.canGenerate && list.data.cannotGenerateReason && (
+              <p
+                id={reasonId}
+                role="status"
+                className="flex gap-2 rounded-md bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900 ring-1 ring-inset ring-amber-600/30"
+              >
+                <Info className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span>
+                  <span className="font-semibold">Why no assessment can be generated: </span>
                   {list.data.cannotGenerateReason}
                 </span>
-              )}
-            </div>
+              </p>
+            )}
             {generate.isError && (
               <p role="alert" className={alertClass}>
                 No assessment was generated. {errorMessage(generate.error)}
@@ -293,29 +302,82 @@ function AssessmentResultView({ result: r }: { result: AssessmentResult }) {
           would decide.
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-brand-400">
-          Uncertainty
-        </span>
-        <Chip {...UNCERTAINTY[r.uncertainty]} />
-        <span className="text-xs text-brand-500">(a category, not a probability)</span>
+      <div className="rounded-lg bg-brand-900 px-5 py-4 text-white">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-brand-300">
+            Uncertainty
+          </span>
+          <Chip {...UNCERTAINTY[r.uncertainty]} />
+          <span className="text-xs text-brand-300">(a category, not a probability)</span>
+        </div>
+        <p className="mt-2.5 max-w-[70ch] font-serif text-[15px] leading-relaxed text-white">
+          {r.summary}
+        </p>
       </div>
-      <p className="leading-relaxed text-brand-900">{r.summary}</p>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_17rem]">
+        <div>
+          <h4 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-brand-500">
+            Reasoning
+          </h4>
+          <ol className="mt-2 space-y-2.5 text-sm text-brand-800">
+            {r.reasoning.map((step, index) => (
+              <li key={step.id} className="flex gap-3">
+                <span className="mt-px font-semibold tabular-nums text-accent-600">
+                  {index + 1}.
+                </span>
+                <span>
+                  {step.text}{' '}
+                  <span className="text-xs text-brand-500">
+                    (rests on {[...step.findingIds, ...step.precedentRefs].join(', ')})
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+        <div className="space-y-4">
+          {[
+            {
+              title: 'Missing evidence',
+              points: r.missingEvidence,
+              tone: 'bg-amber-50 text-amber-950',
+            },
+            { title: 'Limitations', points: r.limitations, tone: 'bg-canvas text-brand-800' },
+          ].map(
+            ({ title, points, tone }) =>
+              points.length > 0 && (
+                <div key={title} className={`rounded-md px-4 py-3 ${tone}`}>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-brand-500">
+                    {title}
+                  </h4>
+                  <ul className="mt-1.5 list-disc space-y-1 pl-4 text-sm">
+                    {points.map((point, i) => (
+                      <li key={`${i}-${point}`}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              ),
+          )}
+        </div>
+      </div>
 
       <div>
-        <h4 className="text-xs font-medium uppercase tracking-wide text-brand-400">
+        <h4 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-brand-500">
           Precedents relied on ({r.precedents.length})
         </h4>
-        <ul className="mt-1.5 space-y-3">
+        <ul className="mt-1 divide-y divide-brand-100">
           {r.precedents.map((p) => (
-            <li key={p.ref} className="rounded-md border border-brand-100 p-3">
+            <li key={p.ref} className="py-3.5">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-medium text-brand-900">
-                    <span className="mr-1.5 text-xs font-semibold text-brand-400">{p.ref}</span>
+                  <p className="font-semibold text-brand-900">
+                    <span className="mr-2 inline-block rounded bg-brand-900 px-1.5 py-px align-[1px] text-[11px] font-semibold text-white">
+                      {p.ref}
+                    </span>
                     {p.title}
                   </p>
-                  <p className="text-xs text-brand-500">
+                  <p className="mt-0.5 text-xs text-brand-500">
                     {[p.citation, p.court, p.year].filter(Boolean).join(' · ')}
                   </p>
                 </div>
@@ -324,54 +386,21 @@ function AssessmentResultView({ result: r }: { result: AssessmentResult }) {
                   <Chip {...STANCE[p.stance]} />
                 </div>
               </div>
-              <blockquote className="mt-2 border-l-2 border-brand-200 pl-3 text-sm italic text-brand-600">
+              <blockquote className="mt-2 rounded-md bg-canvas px-3 py-2 font-serif text-[13px] leading-relaxed text-brand-700">
                 &ldquo;{p.quote}&rdquo;
               </blockquote>
-              <p className="mt-1.5 text-sm text-brand-700">{p.explanation}</p>
+              <p className="mt-2 text-sm text-brand-800">{p.explanation}</p>
               <Link
                 to={judgmentPath(p.judgmentId, p.passage.sectionNumber)}
-                className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-brand-700 underline-offset-2 hover:underline"
+                className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-brand-800 underline-offset-2 hover:underline"
               >
-                <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+                <BookOpen className="h-3.5 w-3.5 text-accent-600" aria-hidden="true" />
                 Read the passage ({place(p.passage.pageNumber, p.passage.sectionNumber)})
               </Link>
             </li>
           ))}
         </ul>
       </div>
-
-      <div>
-        <h4 className="text-xs font-medium uppercase tracking-wide text-brand-400">Reasoning</h4>
-        <ol className="mt-1.5 list-decimal space-y-1.5 pl-5 text-sm text-brand-800">
-          {r.reasoning.map((step) => (
-            <li key={step.id}>
-              {step.text}{' '}
-              <span className="text-xs text-brand-500">
-                (rests on {[...step.findingIds, ...step.precedentRefs].join(', ')})
-              </span>
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      {[
-        { title: 'Missing evidence', points: r.missingEvidence },
-        { title: 'Limitations', points: r.limitations },
-      ].map(
-        ({ title, points }) =>
-          points.length > 0 && (
-            <div key={title}>
-              <h4 className="text-xs font-medium uppercase tracking-wide text-brand-400">
-                {title}
-              </h4>
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-brand-700">
-                {points.map((point, i) => (
-                  <li key={`${i}-${point}`}>{point}</li>
-                ))}
-              </ul>
-            </div>
-          ),
-      )}
     </div>
   );
 }

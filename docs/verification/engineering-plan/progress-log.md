@@ -973,3 +973,52 @@ push, nothing staged.
   same 20-line formatting difference. All are pre-existing; the C-1 change
   adds none. The file is outside the server lint scope, and nothing was
   refactored.
+
+## Submission verification (2026-10-27)
+
+On `bb67d65`, no code change:
+- pytest: 1246 passed;
+- ruff, format, mypy, OpenAPI check: exit 0;
+- `npm run check`: 212 passed, build OK;
+- **Playwright: 47 passed, 0 failed** (first run since Batch 3, in
+  `lexflow_e2e_playwright`);
+- demo API smoke test against `lexflow_e2e`: health ok, 401 without
+  sign-in;
+- corpus integrity: 17 judgments, 0 problems;
+- live `lexflow`: unchanged at 0012.
+
+Documentation corrections: README (Playwright database, real-model status),
+SRS §1 (Phase 7 demo scope), traceability (FR-13, NFR-6). Report:
+`docs/verification/submission/SUBMISSION_VERIFICATION.md`. No commit.
+
+## Fixes for submission (2026-10-28)
+
+- **Global search:** new `GET /api/search` (names and numbers only;
+  visibility as the lists; staff only), with a debounced dropdown in the top
+  bar (loading, empty and error states; keyboard navigation). Tests:
+  `test_global_search.py` (6), `globalSearch.test.tsx` (5).
+- **Notifications:** the disabled bell and the "Soon" sidebar item were
+  removed.
+- **Generate assessment, root cause:** in `lexflow_e2e`, analyses run after
+  the genuine import compared the case with genuine judgments only. Read-only
+  check: runs of 2026-10-27 used 8 genuine passages each; runs of 2026-10-25
+  used synthetic ones. Accepting those comparisons trips the Batch 5
+  `genuine-precedents` gate, so the button stayed disabled, and its reason
+  was small grey text.
+- **Generate assessment, fix:** while `LEXFLOW_OUTCOME_ASSESSMENT` is on (test
+  and e2e databases only), the analysis compares the case with synthetic
+  judgments only. The gate and the validation are unchanged. The reason is
+  now an amber notice that describes the button. Existing runs are
+  unchanged. Tests: 2 in `test_analysis_evidence.py`, plus an
+  accessible-description assertion.
+- **UI:** the selected tab's count is highlighted; the assessment summary
+  and its button share one toolbar row.
+- **Verification:**
+  - pytest: 1254 passed;
+  - ruff, format, mypy, OpenAPI check: clean;
+  - `npm run check`: 217 passed, build OK;
+  - Playwright: 47 passed (ports 8021 and 5184, because the owner's demo
+    was running on 8001 and 5174);
+  - corpus integrity: 0 problems;
+  - live `lexflow`: unchanged at 0012.
+- No commit.

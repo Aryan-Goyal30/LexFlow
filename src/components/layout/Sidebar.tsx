@@ -6,7 +6,6 @@ import {
   CalendarClock,
   BookOpenText,
   Users,
-  Bell,
   ShieldCheck,
   Scale,
 } from 'lucide-react';
@@ -15,21 +14,18 @@ interface NavItem {
   to: string;
   label: string;
   icon: typeof LayoutDashboard;
-  enabled: boolean;
   /** Shown only to Administrators. */
   adminOnly?: boolean;
 }
 
-// Documents, analysis and research live inside each case's workspace. The
-// "Soon" items are firm-wide views planned for later milestones.
+// Documents, analysis and research live inside each case's workspace.
 const navItems: NavItem[] = [
-  { to: '/app/cases', label: 'Cases', icon: FolderKanban, enabled: true },
-  { to: '/app/dashboard', label: 'Practice Overview', icon: LayoutDashboard, enabled: true },
-  { to: '/app/precedents', label: 'Precedent Library', icon: BookOpenText, enabled: true },
-  { to: '/app/hearings', label: 'Hearings', icon: CalendarClock, enabled: true },
-  { to: '/app/clients', label: 'Clients', icon: Users, enabled: true },
-  { to: '/app/notifications', label: 'Notifications', icon: Bell, enabled: false },
-  { to: '/app/admin', label: 'Administration', icon: ShieldCheck, enabled: true, adminOnly: true },
+  { to: '/app/cases', label: 'Cases', icon: FolderKanban },
+  { to: '/app/dashboard', label: 'Practice Overview', icon: LayoutDashboard },
+  { to: '/app/precedents', label: 'Precedent Library', icon: BookOpenText },
+  { to: '/app/hearings', label: 'Hearings', icon: CalendarClock },
+  { to: '/app/clients', label: 'Clients', icon: Users },
+  { to: '/app/admin', label: 'Administration', icon: ShieldCheck, adminOnly: true },
 ];
 
 interface SidebarProps {
@@ -52,7 +48,7 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-brand-900 text-brand-100 transition-transform duration-200 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-white/5 bg-brand-900 text-brand-100 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -71,31 +67,16 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {items.map((item) => {
             const Icon = item.icon;
-            if (!item.enabled) {
-              return (
-                <div
-                  key={item.to}
-                  className="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm text-brand-400/70"
-                  title="Coming in a later milestone"
-                >
-                  <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
-                  <span>{item.label}</span>
-                  <span className="ml-auto text-[10px] uppercase tracking-wide text-brand-500">
-                    Soon
-                  </span>
-                </div>
-              );
-            }
             return (
               <NavLink
                 key={item.to}
                 to={item.to}
                 onClick={onNavigate}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
+                  `group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-white/10 text-white'
-                      : 'text-brand-200 hover:bg-white/5 hover:text-white'
+                      ? 'bg-white/[0.09] text-white [&>svg]:text-accent-500'
+                      : 'text-brand-300 hover:bg-white/[0.05] hover:text-white'
                   }`
                 }
               >

@@ -40,6 +40,8 @@ export type HearingInput = Schemas['HearingIn'];
 export type HearingChanges = Schemas['HearingUpdate'];
 export type CaseEvent = Schemas['TimelineEventOut'];
 export type Client = Schemas['ClientOut'];
+/** The top bar's quick search: cases, clients and documents you may see, by name. */
+export type GlobalSearchResult = Schemas['GlobalSearchOut'];
 /** A client as offered in the new-case form (no contact details). */
 export type ClientOption = Schemas['ClientOption'];
 /** An account as administrators see it (never any password or session detail). */

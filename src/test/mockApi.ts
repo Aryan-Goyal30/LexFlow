@@ -1297,6 +1297,45 @@ export const handlers = [
     );
   }),
 
+  http.get('*/api/search', ({ request }) => {
+    // The top bar's quick search, with the server's visibility rules and limits.
+    const q = (new URL(request.url).searchParams.get('q') ?? '').trim().toLowerCase();
+    if (q.length < 2) return problem(422, 'validation-error', 'Type at least 2 characters.');
+    const user = currentMockUser();
+    const visible = state.cases.filter((c) => allows(relationTo(c, user), 'view'));
+    const has = (...values: (string | null | undefined)[]) =>
+      values.some((v) => v?.toLowerCase().includes(q));
+    const clientIds = new Set(visible.map((c) => c.clientId));
+    return HttpResponse.json({
+      cases: visible
+        .filter((c) => has(c.caseNumber, c.title, c.courtName, c.opposingParty))
+        .slice(0, 5)
+        .map((c) => ({
+          id: c.id,
+          caseNumber: c.caseNumber,
+          title: c.title,
+          clientName: c.clientName,
+          archived: c.archivedAt !== null,
+        })),
+      clients: state.clients
+        .filter((c) => user?.role === 'Administrator' || clientIds.has(c.id))
+        .filter((c) => has(c.name, c.company, c.email))
+        .slice(0, 5)
+        .map((c) => ({ id: c.id, name: c.name, company: c.company ?? null })),
+      documents: visible
+        .flatMap((c) => c.documents.map((d) => ({ d, c })))
+        .filter(({ d }) => has(d.name))
+        .slice(0, 5)
+        .map(({ d, c }) => ({
+          id: d.id,
+          name: d.name,
+          caseId: c.id,
+          caseNumber: c.caseNumber,
+          caseTitle: c.title,
+        })),
+    });
+  }),
+
   http.get('*/api/advocates', () =>
     HttpResponse.json([...state.advocates].sort((a, b) => a.name.localeCompare(b.name))),
   ),

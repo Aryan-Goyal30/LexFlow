@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 import type { AnalysisPrecedent } from '../../types/ai';
 import { judgmentPath } from '../../lib/paths';
-import { SyntheticBadge } from '../research/Judgments';
+import { GenuineBadge, SyntheticBadge } from '../research/Judgments';
 
 const place = (page: number | null, section: number) =>
   page !== null ? `page ${page}` : `part ${section}`;
@@ -24,7 +24,7 @@ export function PrecedentCard({ precedent: p }: { precedent: AnalysisPrecedent }
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {p.synthetic && <SyntheticBadge />}
+          {p.synthetic ? <SyntheticBadge /> : <GenuineBadge />}
           <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-600">
             Retrieved #{p.retrievalRank}
           </span>

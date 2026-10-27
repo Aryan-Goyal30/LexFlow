@@ -1,0 +1,13 @@
+HEAD bb67d65 (code unchanged; working tree differs only in documentation)
+$ ruff check .
+All checks passed!
+exit=0
+$ ruff format --check .
+205 files already formatted
+exit=0
+$ mypy
+Success: no issues found in 186 source files
+exit=0
+$ python scripts/export_openapi.py --check
+server/openapi.json is up to date
+exit=0

@@ -11,13 +11,29 @@
   }
 
   body {
-    @apply bg-brand-50 text-brand-900 font-sans;
+    @apply bg-canvas text-brand-900 font-sans;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  ::selection {
+    @apply bg-accent-500/25 text-brand-900;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.brand.200') transparent;
+  }
+
+  table,
+  time {
+    font-variant-numeric: tabular-nums;
   }
 
   h1,
   h2,
   h3 {
     @apply font-serif;
+    text-wrap: balance;
   }
 
   /* Consistent focus ring across the app */
@@ -29,8 +45,9 @@
 @layer components {
   .input-field {
     @apply w-full rounded-md border border-brand-200 bg-white px-3 py-2 text-sm text-brand-900
-      placeholder:text-brand-400 shadow-sm transition
-      focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30;
+      placeholder:text-brand-400 shadow-sm transition hover:border-brand-300
+      focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20
+      disabled:cursor-not-allowed disabled:bg-brand-50 disabled:text-brand-500;
   }
 
   .label-text {

@@ -491,6 +491,42 @@ class CaseSearchOut(ApiModel):
     results: list[CaseSearchHitOut]
 
 
+class GlobalSearchCaseOut(ApiModel):
+    """A case whose number, title, court or opposing party matches."""
+
+    id: uuid.UUID
+    case_number: str
+    title: str
+    client_name: str
+    archived: bool
+
+
+class GlobalSearchClientOut(ApiModel):
+    """A client whose name, company or e-mail matches."""
+
+    id: uuid.UUID
+    name: str
+    company: str | None
+
+
+class GlobalSearchDocumentOut(ApiModel):
+    """A live document whose name matches, with the case it belongs to."""
+
+    id: uuid.UUID
+    name: str
+    case_id: uuid.UUID
+    case_number: str
+    case_title: str
+
+
+class GlobalSearchOut(ApiModel):
+    """The top bar's quick search: cases, clients and documents you may see, by name."""
+
+    cases: list[GlobalSearchCaseOut]
+    clients: list[GlobalSearchClientOut]
+    documents: list[GlobalSearchDocumentOut]
+
+
 class JudgmentSummaryOut(ApiModel):
     """A judgment in the collection, with the metadata its import supplied."""
 

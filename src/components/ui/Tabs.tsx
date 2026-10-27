@@ -69,7 +69,11 @@ export function Tabs<K extends string>({ items, active, onChange, idBase, label 
               <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
               {tabLabel}
               {meta !== undefined && (
-                <span className="rounded-full bg-brand-50 px-1.5 py-px text-[11px] font-semibold text-brand-500">
+                <span
+                  className={`rounded-full px-1.5 py-px text-[11px] font-semibold ${
+                    selected ? 'bg-brand-800 text-white' : 'bg-brand-50 text-brand-500'
+                  }`}
+                >
                   {meta}
                 </span>
               )}

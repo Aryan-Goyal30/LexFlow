@@ -28,9 +28,9 @@ from lexflow.db import get_session
 from lexflow.embeddings import EmbeddingProvider, EmbeddingsUnavailableError, provider_for
 from lexflow.errors import ProblemError, problem_responses
 from lexflow.models import User
-from lexflow.schemas import CaseSearchHitOut, CaseSearchOut
+from lexflow.schemas import CaseSearchHitOut, CaseSearchOut, GlobalSearchOut
 from lexflow.services import cases as case_service
-from lexflow.services import retrieval
+from lexflow.services import global_search, retrieval
 
 router = APIRouter(tags=["search"])
 
@@ -53,6 +53,25 @@ def get_search_provider(
             except EmbeddingsUnavailableError as exc:
                 return f"Semantic search is unavailable: {exc}"
         return _loaded[key]
+
+
+@router.get("/search", response_model=GlobalSearchOut, responses=problem_responses(422))
+def quick_search(
+    q: str = Query(
+        min_length=global_search.QUERY_MIN,
+        max_length=global_search.QUERY_MAX,
+        description="Part of a case number, title, court, opposing party, client or file name.",
+    ),
+    limit: int = Query(default=5, ge=1, le=10, description="At most this many of each kind."),
+    user: User = Depends(require_user),
+    session: Session = Depends(get_session),
+) -> GlobalSearchOut:
+    """The top bar's search: cases, clients and documents you may see, by name.
+
+    Matches names and numbers only, never document text (the case workspace
+    searches text). Clients see nothing here (staff only).
+    """
+    return global_search.search(session, user, q, limit)
 
 
 def _unavailable(reason: str) -> ProblemError:

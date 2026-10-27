@@ -21,7 +21,7 @@ import hashlib
 import re
 import uuid
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 
 from sqlalchemy import func, select, text
@@ -33,6 +33,7 @@ from lexflow.models import (
     DocumentChunk,
     DocumentExtraction,
     Judgment,
+    JudgmentChunk,
     JudgmentSource,
     TimelineEvent,
 )
@@ -173,6 +174,14 @@ class Limits:
     max_passages: int
     max_precedents: int
     max_chars: int
+    # Which judgments the analysis may compare the case with (None: all). While
+    # the outcome-assessment demo is on, synthetic ones only: the assessment
+    # never uses a genuine judgment (genuine-precedents gate), so a demo
+    # analysis built on genuine judgments could never be assessed.
+    judgment_origin: judgment_search.Origin | None = None
+    # (judgment title prefix, words): passages that must be included, for the
+    # prepared demonstration provider (``lexflow/analysis/prepared.py``).
+    pinned: tuple[tuple[str, str], ...] = ()
 
 
 def terms(text_: str) -> list[str]:
@@ -235,13 +244,18 @@ def _judgment_query(context: CaseContext) -> str:
     return " or ".join(top)
 
 
-def _judgments(session: Session, context: CaseContext, limit: int) -> list[JudgmentPassage]:
+def _judgments(
+    session: Session,
+    context: CaseContext,
+    limit: int,
+    origin: judgment_search.Origin | None = None,
+) -> list[JudgmentPassage]:
     if limit == 0 or session.scalar(text("SELECT to_regclass('judgments')")) is None:
         return []
     query = _judgment_query(context)
     if not query:
         return []
-    ranked = judgment_search.keyword(session, query, judgment_search.Filters(), limit)
+    ranked = judgment_search.keyword(session, query, judgment_search.Filters(origin=origin), limit)
     if not ranked:
         return []
     meta = {
@@ -275,6 +289,51 @@ def _judgments(session: Session, context: CaseContext, limit: int) -> list[Judgm
     return found
 
 
+def _with_pinned(
+    session: Session, found: list[JudgmentPassage], limits: Limits
+) -> list[JudgmentPassage]:
+    """``found`` plus the chunks holding each pinned passage (by judgment title and words)."""
+    if not limits.pinned or session.scalar(text("SELECT to_regclass('judgments')")) is None:
+        return found
+    have = {p.chunk_id for p in found}
+    pinned: list[JudgmentPassage] = []
+    for title, words in limits.pinned:
+        want = " ".join(words.split()).casefold()
+        rows = session.execute(
+            select(Judgment, JudgmentSource, JudgmentChunk)
+            .join(JudgmentSource, JudgmentSource.id == Judgment.source_id)
+            .join(JudgmentChunk, JudgmentChunk.judgment_id == Judgment.id)
+            .where(Judgment.title.ilike(f"{title}%"))
+            .order_by(JudgmentChunk.number)
+        ).all()
+        for judgment, source, chunk in rows:
+            if chunk.id in have or want not in " ".join(chunk.text.split()).casefold():
+                continue
+            if limits.judgment_origin == "synthetic" and not source.is_synthetic:
+                continue
+            have.add(chunk.id)
+            pinned.append(
+                JudgmentPassage(
+                    id="",
+                    judgment_id=judgment.id,
+                    title=judgment.title,
+                    court=judgment.court,
+                    citation=judgment.citation,
+                    year=judgment.year,
+                    synthetic=source.is_synthetic,
+                    rank=0,
+                    chunk_id=chunk.id,
+                    section_number=chunk.section_number,
+                    page_number=chunk.page_number,
+                    text=chunk.text,
+                    content_sha256=hashlib.sha256(chunk.text.encode()).hexdigest(),
+                )
+            )
+            break
+    merged = [*pinned, *found]
+    return [replace(p, id=f"J{i}", rank=i) for i, p in enumerate(merged, start=1)]
+
+
 def assemble(
     session: Session, case: Case, document_ids: list[uuid.UUID], limits: Limits
 ) -> Evidence:
@@ -289,7 +348,8 @@ def assemble(
     budget = limits.max_chars - context_chars(context)
 
     # Judgment passages first take at most a quarter of the budget.
-    judgments = _judgments(session, context, limits.max_precedents)
+    judgments = _judgments(session, context, limits.max_precedents, limits.judgment_origin)
+    judgments = _with_pinned(session, judgments, limits)
     judgment_budget = budget // 4
     for passage in judgments:
         if len(passage.text) > judgment_budget:

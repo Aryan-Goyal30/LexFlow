@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import uuid
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -28,6 +29,10 @@ def is_test_database_name(name: str) -> bool:
     part of the name (split on non-letters) is "test" or "e2e". Not for names
     that merely contain the letters (lexflow_latest, contest)."""
     return bool(TEST_DATABASE_PARTS & set(re.split(r"[^a-z0-9]+", name.lower())))
+
+
+def is_test_database(database_url: str) -> bool:
+    return _is_test_database(database_url)
 
 
 def _is_test_database(database_url: str) -> bool:
@@ -145,7 +150,7 @@ class Settings(BaseSettings):
     # "scripted": a canned test double (lexflow/analysis/scripted.py), refused
     # outside test and e2e databases. A missing key or model does not stop the
     # API or the worker: analysis is reported unavailable, with the reason.
-    ai_provider: Literal["disabled", "gemini", "scripted"] = Field(
+    ai_provider: Literal["disabled", "gemini", "scripted", "prepared"] = Field(
         default="disabled", alias="LEXFLOW_AI_PROVIDER"
     )
     # Never logged, audited, returned by the API or shown in the app.
@@ -170,6 +175,12 @@ class Settings(BaseSettings):
     # Only sample (fictional) cases may be analysed unless this is true: real
     # client material needs a privacy, confidentiality and provider-terms review.
     ai_allow_client_data: bool = Field(default=False, alias="LEXFLOW_AI_ALLOW_CLIENT_DATA")
+    # Narrower than the flag above: cases the owner has approved, one by one, for
+    # analysis by an external provider (e.g. a fictional demonstration matter).
+    # A JSON list of case ids; every other case keeps the D1 restriction.
+    ai_approved_case_ids: list[uuid.UUID] = Field(
+        default_factory=list, alias="LEXFLOW_AI_APPROVED_CASE_IDS"
+    )
 
     # --- Outcome assessment (Phase 7: synthetic engineering demo) ------------------------
     # Off by default. Allowed only with a test or e2e database (like the scripted
@@ -244,8 +255,10 @@ class Settings(BaseSettings):
                 "LEXFLOW_AI_PROVIDER=scripted is a test double: it is only allowed with a "
                 "test or e2e database (a name part 'test' or 'e2e', e.g. lexflow_test)"
             )
-        if self.outcome_assessment and not (
-            self.env in ("test", "development") and _is_test_database(self.database_url)
+        if (
+            self.outcome_assessment
+            and not self.ai_approved_case_ids  # owner-approved cases only (see below)
+            and not (self.env in ("test", "development") and _is_test_database(self.database_url))
         ):
             raise ValueError(
                 "LEXFLOW_OUTCOME_ASSESSMENT=true is a synthetic-only demo: it is only allowed "

@@ -219,8 +219,11 @@ available for comparison.
    - It is **Unreviewed**: not a lawyer's view and not in the brief.
    - **Accept** it, or **Edit summary**. Export the brief again: it now has
      a separate *Outcome assessment (decision support)* section.
-   - Before anything is accepted, the button explains why no assessment can
-     be made (the evidence gate).
+   - Before anything is accepted, the button is disabled and an amber notice
+     explains why no assessment can be made (the evidence gate).
+   - Use an analysis started **after** this change. Analyses made before it
+     in `lexflow_e2e` (for example on 2026-10-27) compared the case with
+     genuine judgments, so they can never be assessed: start a new analysis.
 9. **Roles.**
    - Sign in as the **paralegal**: the analysis, decisions and assessment
      are readable; there are no review controls and no notes.
@@ -240,9 +243,14 @@ available for comparison.
     legal relevance.
 
   Provenance: `docs/verification/batch2/FINAL_IMPORT_REVIEW_sci-tm-v2.md`.
-- **The outcome assessment never uses a genuine judgment.** If an accepted
-  precedent comparison is genuine, it answers "insufficient"
-  (`genuine-precedents`).
+- **The outcome assessment never uses a genuine judgment.**
+  - If an accepted precedent comparison is genuine, the button is disabled
+    with the reason, and a direct request answers "insufficient"
+    (`genuine-precedents`).
+  - So that a demo analysis can be assessed, while the assessment demo is on
+    (`LEXFLOW_OUTCOME_ASSESSMENT`, test and e2e databases only) the analysis
+    compares the case with **synthetic judgments only**.
+  - Research and the Precedent Library still show the genuine judgments.
 - In the demo environment, analysis and assessment are written by a
   **scripted provider, not AI**. The assessment's stances are assigned by
   position, to show the workflow.

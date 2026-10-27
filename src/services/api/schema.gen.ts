@@ -606,6 +606,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quick Search
+         * @description The top bar's search: cases, clients and documents you may see, by name.
+         *
+         *     Matches names and numbers only, never document text (the case workspace
+         *     searches text). Clients see nothing here (staff only).
+         */
+        get: operations["quick_search_api_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases/{case_id}/search": {
         parameters: {
             query?: never;
@@ -2880,6 +2903,74 @@ export interface components {
             /** Message */
             message: string;
         };
+        /**
+         * GlobalSearchCaseOut
+         * @description A case whose number, title, court or opposing party matches.
+         */
+        GlobalSearchCaseOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Casenumber */
+            caseNumber: string;
+            /** Title */
+            title: string;
+            /** Clientname */
+            clientName: string;
+            /** Archived */
+            archived: boolean;
+        };
+        /**
+         * GlobalSearchClientOut
+         * @description A client whose name, company or e-mail matches.
+         */
+        GlobalSearchClientOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Company */
+            company: string | null;
+        };
+        /**
+         * GlobalSearchDocumentOut
+         * @description A live document whose name matches, with the case it belongs to.
+         */
+        GlobalSearchDocumentOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Caseid
+             * Format: uuid
+             */
+            caseId: string;
+            /** Casenumber */
+            caseNumber: string;
+            /** Casetitle */
+            caseTitle: string;
+        };
+        /**
+         * GlobalSearchOut
+         * @description The top bar's quick search: cases, clients and documents you may see, by name.
+         */
+        GlobalSearchOut: {
+            /** Cases */
+            cases: components["schemas"]["GlobalSearchCaseOut"][];
+            /** Clients */
+            clients: components["schemas"]["GlobalSearchClientOut"][];
+            /** Documents */
+            documents: components["schemas"]["GlobalSearchDocumentOut"][];
+        };
         /** Health */
         Health: {
             /**
@@ -4902,6 +4993,40 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    quick_search_api_search_get: {
+        parameters: {
+            query: {
+                /** @description Part of a case number, title, court, opposing party, client or file name. */
+                q: string;
+                /** @description At most this many of each kind. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GlobalSearchOut"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

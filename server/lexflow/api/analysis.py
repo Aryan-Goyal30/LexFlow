@@ -33,7 +33,13 @@ from sqlalchemy.orm import Session
 
 from lexflow import authz
 from lexflow.analysis import prompt, runs
-from lexflow.analysis.provider import PROVIDER_LABELS, configured_model, unavailable_reason
+from lexflow.analysis.provider import (
+    PROVIDER_LABELS,
+    client_data_allowed,
+    configured_model,
+    unavailable_reason,
+)
+from lexflow.assessment import provider as assessment_provider
 from lexflow.assessment.service import table_exists as assessments_exist
 from lexflow.audit import AuditLog, get_audit_log
 from lexflow.auth.deps import require_user
@@ -230,7 +236,7 @@ def analysis_setup(
         session, user, case_service.parse_case_id(case_id), Action.VIEW, audit
     )
     unavailable = _unavailable(settings, session, user)
-    sample_only = not settings.ai_allow_client_data
+    sample_only = not client_data_allowed(settings, case.id)
     active = runs.active_run(session, case.id) if unavailable is None else None
     cannot: str | None = None
     if unavailable is not None:
@@ -267,7 +273,8 @@ def analysis_setup(
             runs_per_hour=settings.ai_runs_per_user_per_hour,
         ),
         active_run_id=active.id if active is not None else None,
-        assessment_enabled=assessment_enabled(settings, session),
+        assessment_enabled=assessment_enabled(settings, session)
+        and assessment_provider.allowed_for(settings, case.id),
     )
 
 
@@ -299,7 +306,7 @@ def start_analysis(
             "confirmation-required",
             "Confirm that the selected text may be sent to the AI provider.",
         )
-    if not settings.ai_allow_client_data and not case.is_sample:
+    if not client_data_allowed(settings, case.id) and not case.is_sample:
         raise ProblemError(
             403,
             "client-data-not-allowed",

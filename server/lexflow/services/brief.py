@@ -183,14 +183,22 @@ def build(
     versions = f"prompt {run.prompt_version}"
     if pipeline.get("validatorVersion"):
         versions += f", validation {pipeline['validatorVersion']}"
+    kind = "prepared demonstration analysis" if run.provider == "prepared" else "AI analysis"
     w.labelled(
         "Prepared",
-        f"{w.day(now)} by {prepared_by.name}, from the AI analysis of {w.day(run.created_at)} "
+        f"{w.day(now)} by {prepared_by.name}, from the {kind} of {w.day(run.created_at)} "
         f"(provider {run.provider}, model {run.model}; {versions}).",
     )
     if run.provider == "scripted":
         w.line(
             "Produced by the scripted test provider: not AI, for checking LexFlow only.",
+            italic=True,
+        )
+    if run.provider == "prepared":
+        w.line(
+            "Prepared demonstration material, not AI and not legal advice: the findings were "
+            "written in advance for this fictional academic matter. Each quotation was checked "
+            "against the uploaded documents and the stored Supreme Court judgment text.",
             italic=True,
         )
 

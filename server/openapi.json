@@ -1648,6 +1648,67 @@
         }
       }
     },
+    "/api/search": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Quick Search",
+        "description": "The top bar's search: cases, clients and documents you may see, by name.\n\nMatches names and numbers only, never document text (the case workspace\nsearches text). Clients see nothing here (staff only).",
+        "operationId": "quick_search_api_search_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100,
+              "description": "Part of a case number, title, court, opposing party, client or file name.",
+              "title": "Q"
+            },
+            "description": "Part of a case number, title, court, opposing party, client or file name."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10,
+              "minimum": 1,
+              "description": "At most this many of each kind.",
+              "default": 5,
+              "title": "Limit"
+            },
+            "description": "At most this many of each kind."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GlobalSearchOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases/{case_id}/search": {
       "get": {
         "tags": [
@@ -7952,6 +8013,142 @@
         ],
         "title": "FieldError",
         "description": "One invalid field. ``field`` uses the request's camelCase name."
+      },
+      "GlobalSearchCaseOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "caseNumber": {
+            "type": "string",
+            "title": "Casenumber"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "clientName": {
+            "type": "string",
+            "title": "Clientname"
+          },
+          "archived": {
+            "type": "boolean",
+            "title": "Archived"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "caseNumber",
+          "title",
+          "clientName",
+          "archived"
+        ],
+        "title": "GlobalSearchCaseOut",
+        "description": "A case whose number, title, court or opposing party matches."
+      },
+      "GlobalSearchClientOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "company"
+        ],
+        "title": "GlobalSearchClientOut",
+        "description": "A client whose name, company or e-mail matches."
+      },
+      "GlobalSearchDocumentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "caseId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Caseid"
+          },
+          "caseNumber": {
+            "type": "string",
+            "title": "Casenumber"
+          },
+          "caseTitle": {
+            "type": "string",
+            "title": "Casetitle"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "caseId",
+          "caseNumber",
+          "caseTitle"
+        ],
+        "title": "GlobalSearchDocumentOut",
+        "description": "A live document whose name matches, with the case it belongs to."
+      },
+      "GlobalSearchOut": {
+        "properties": {
+          "cases": {
+            "items": {
+              "$ref": "#/components/schemas/GlobalSearchCaseOut"
+            },
+            "type": "array",
+            "title": "Cases"
+          },
+          "clients": {
+            "items": {
+              "$ref": "#/components/schemas/GlobalSearchClientOut"
+            },
+            "type": "array",
+            "title": "Clients"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/GlobalSearchDocumentOut"
+            },
+            "type": "array",
+            "title": "Documents"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cases",
+          "clients",
+          "documents"
+        ],
+        "title": "GlobalSearchOut",
+        "description": "The top bar's quick search: cases, clients and documents you may see, by name."
       },
       "Health": {
         "properties": {

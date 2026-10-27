@@ -11,14 +11,18 @@ closed.
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, cast, runtime_checkable
 
 from lexflow.analysis.provider import ASK_AN_ADMINISTRATOR, Response, Unavailable
 from lexflow.assessment.inputs import Inputs
-from lexflow.config import Settings
+from lexflow.config import Settings, is_test_database
 
-PROVIDER_LABELS = {"scripted": "Scripted test provider (not AI)"}
+PROVIDER_LABELS = {
+    "scripted": "Scripted test provider (not AI)",
+    "gemini": "Google Gemini API (AI)",
+}
 
 
 @dataclass(frozen=True)
@@ -48,6 +52,8 @@ def unavailable_reason(settings: Settings) -> Unavailable | None:
         )
     if settings.ai_provider == "scripted":
         return None
+    if settings.ai_provider == "gemini" and settings.ai_approved_case_ids:
+        return None  # the owner approved a real model for listed cases (allowed_for)
     if settings.ai_provider == "gemini":
         return Unavailable(
             "assessment-model-not-approved",
@@ -69,6 +75,40 @@ def provider_for(settings: Settings) -> AssessmentProvider | Unavailable:
     missing = unavailable_reason(settings)
     if missing is not None:
         return missing
+    if settings.ai_provider == "gemini":
+        return GeminiAssessmentProvider(settings)
     from lexflow.assessment.scripted import ScriptedAssessmentProvider
 
     return ScriptedAssessmentProvider()
+
+
+def allowed_for(settings: Settings, case_id: uuid.UUID) -> bool:
+    """May this case be assessed here? Always on a test or e2e database (the
+    synthetic demo); elsewhere only a case the owner listed in
+    LEXFLOW_AI_APPROVED_CASE_IDS."""
+    return is_test_database(settings.database_url) or case_id in settings.ai_approved_case_ids
+
+
+class GeminiAssessmentProvider:
+    """The analysis' Gemini client, asked with the assessment prompt and schema.
+
+    It is AI: its answer goes through the same assessment validation as any
+    provider's (accepted findings and precedents only, no probabilities, no
+    invented citations) before anything is stored or shown."""
+
+    name = "gemini"
+
+    def __init__(self, settings: Settings) -> None:
+        from lexflow.analysis.provider import GeminiProvider
+
+        if settings.gemini_api_key is None or settings.gemini_model is None:
+            raise ValueError("Gemini is not configured (unavailable_reason reports it).")
+        self.model = settings.gemini_model
+        self._inner = GeminiProvider(
+            settings.gemini_api_key, self.model, timeout_seconds=settings.ai_timeout_seconds
+        )
+
+    def generate(self, request: AssessmentRequest) -> Response:
+        # GeminiProvider reads only the instruction, prompt, schema and token limit,
+        # which an assessment request carries under the same names.
+        return self._inner.generate(cast(Any, request))

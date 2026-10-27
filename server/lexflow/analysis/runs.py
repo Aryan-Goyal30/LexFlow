@@ -25,7 +25,7 @@ import logging
 import uuid
 from collections.abc import Callable
 from contextlib import AbstractContextManager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -34,7 +34,12 @@ from sqlalchemy.orm import Session
 
 from lexflow.analysis import evidence as evidence_mod
 from lexflow.analysis import output, prompt, validation
-from lexflow.analysis.provider import AnalysisProvider, ProviderError, Request
+from lexflow.analysis.provider import (
+    AnalysisProvider,
+    ProviderError,
+    Request,
+    client_data_allowed,
+)
 from lexflow.audit import Actor, build_event
 from lexflow.config import Settings
 from lexflow.models import AnalysisRun, Case
@@ -62,6 +67,7 @@ def limits_from(settings: Settings) -> evidence_mod.Limits:
         max_passages=settings.ai_max_passages,
         max_precedents=settings.ai_max_precedents,
         max_chars=settings.ai_max_input_chars,
+        judgment_origin="synthetic" if settings.outcome_assessment else None,
     )
 
 
@@ -303,7 +309,7 @@ def _gate(case: Case | None, settings: Settings) -> Failed | None:
         return Failed("case-missing", "The case no longer exists.")
     if case.archived_at is not None:
         return Failed("case-archived", "The case was archived before the analysis ran.")
-    if not case.is_sample and not settings.ai_allow_client_data:
+    if not case.is_sample and not client_data_allowed(settings, case.id):
         return Failed(
             "client-data-not-allowed",
             "Only sample (fictional) cases may be analysed on this server.",
@@ -354,7 +360,14 @@ def analyse(
         if refused is not None or case is None:
             return refused
         document_ids = [uuid.UUID(d) for d in run.selection.get("documentIds", [])]
-        evidence = evidence_mod.assemble(session, case, document_ids, limits_from(settings))
+        limits = limits_from(settings)
+        if settings.ai_provider == "prepared" or case.id in settings.ai_approved_case_ids:
+            from lexflow.analysis.prepared import pinned_judgments
+
+            limits = replace(limits, pinned=pinned_judgments(case.title))
+        if case.id in settings.ai_approved_case_ids:
+            limits = replace(limits, judgment_origin=None)  # genuine judgments approved
+        evidence = evidence_mod.assemble(session, case, document_ids, limits)
     return check_answer(provider, evidence, settings.ai_max_output_tokens, label=str(run_id))
 
 

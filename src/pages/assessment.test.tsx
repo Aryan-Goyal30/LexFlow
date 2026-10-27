@@ -172,10 +172,11 @@ describe('The outcome assessment (Phase 7 demo)', () => {
       name: /Outcome assessment \(decision support\)/,
     });
     expect(within(panel).getByText(/Decision support, not a prediction/)).toBeVisible();
-    expect(
-      await within(panel).findByRole('button', { name: /Generate assessment/ }),
-    ).toBeDisabled();
+    const button = await within(panel).findByRole('button', { name: /Generate assessment/ });
+    expect(button).toBeDisabled();
     expect(within(panel).getByText(/has been accepted by a lawyer yet/)).toBeVisible();
+    // The reason is a visible notice that also describes the disabled button.
+    expect(button).toHaveAccessibleDescription(/Why no assessment can be generated/);
     expect(
       within(panel).getByText(/Uses 0 accepted findings and 0 accepted precedent/),
     ).toBeVisible();

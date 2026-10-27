@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import logging
 import re
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
@@ -43,9 +44,13 @@ from lexflow.config import Settings
 
 logger = logging.getLogger("lexflow.analysis")
 
-PROVIDER_LABELS = {"gemini": "Google Gemini API", "scripted": "Scripted test provider (not AI)"}
+PROVIDER_LABELS = {
+    "gemini": "Google Gemini API",
+    "scripted": "Scripted test provider (not AI)",
+    "prepared": "Prepared demonstration analysis (not AI)",
+}
 # The providers this code can build. Anything else fails closed.
-SUPPORTED_PROVIDERS = frozenset({"gemini", "scripted"})
+SUPPORTED_PROVIDERS = frozenset({"gemini", "scripted", "prepared"})
 # Shown to staff when the configuration needs an administrator.
 ASK_AN_ADMINISTRATOR = "An administrator needs to check the AI configuration of this server."
 
@@ -389,7 +394,27 @@ def configured_model(settings: Settings) -> str | None:
         from lexflow.analysis.scripted import MODEL
 
         return MODEL
+    if settings.ai_provider == "prepared":
+        from lexflow.analysis.prepared import MODEL as PREPARED_MODEL
+
+        return PREPARED_MODEL
     return None
+
+
+def client_data_allowed(settings: Settings, case_id: uuid.UUID | None = None) -> bool:
+    """May a case that is not sample data be analysed (decision D1)?
+
+    D1 keeps client material away from external AI services until a privacy
+    review. The prepared demonstration provider sends nothing anywhere (it
+    runs on this computer and answers only for its own fictional case), so D1
+    does not restrict it; every other provider needs LEXFLOW_AI_ALLOW_CLIENT_DATA,
+    or the case's id in LEXFLOW_AI_APPROVED_CASE_IDS (approved one by one).
+    """
+    return (
+        settings.ai_allow_client_data
+        or settings.ai_provider == "prepared"
+        or (case_id is not None and case_id in settings.ai_approved_case_ids)
+    )
 
 
 def provider_for(settings: Settings) -> AnalysisProvider | Unavailable:
@@ -402,6 +427,10 @@ def provider_for(settings: Settings) -> AnalysisProvider | Unavailable:
         from lexflow.analysis.scripted import ScriptedProvider
 
         return ScriptedProvider()
+    if settings.ai_provider == "prepared":  # local, written in advance: not AI
+        from lexflow.analysis.prepared import PreparedProvider
+
+        return PreparedProvider()
     if settings.ai_provider == "gemini":
         key, model = settings.gemini_api_key, settings.gemini_model
         if key is not None and model is not None:

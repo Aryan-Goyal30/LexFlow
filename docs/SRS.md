@@ -13,7 +13,9 @@ extracts and searches document text, and keeps a searchable collection of
 judgments, and offers AI case analysis whose every claim is checked against
 its source before it is shown (Phase 5), lawyer review of every AI finding
 and a case brief of the accepted findings (Phase 6). Outcome assessment
-(Phase 7) is **not** part of this version.
+(Phase 7) is included only as a synthetic, off-by-default engineering
+demonstration (FR-20): it is not available on real judgments or with a real
+model.
 Any AI is decision support only; LexFlow never replaces the lawyer or the
 judge.
 
@@ -36,6 +38,7 @@ Status: **Done** = implemented and tested; **Later** = a future phase.
 | FR-1 | Sign in with accounts created by an Administrator; lockout after 5 failures; session expiry | Done (Phase 2) |
 | FR-2 | Four roles enforced on the server; inaccessible cases answer "not found" | Done (Phase 2) |
 | FR-3 | Create, view, edit and archive cases; server-allocated case numbers | Done (Phases 1–2) |
+| FR-3a | Top-bar quick search of the cases, clients and documents the user may see, by case number, title, court, opposing party, client name or file name (names only, never document text) | Done (2026-10-28) |
 | FR-4 | Every case change recorded on its timeline with who and when | Done (Phase 2) |
 | FR-5 | Case teams (associates, paralegals) managed by the lead or Administrator | Done (Phase 2b) |
 | FR-6 | Schedule, change and cancel hearings; firm-wide hearing view | Done (Phases 1–2b) |

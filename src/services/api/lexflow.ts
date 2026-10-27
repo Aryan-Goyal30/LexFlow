@@ -23,6 +23,7 @@ import type {
   CaseDocument,
   CaseSummary,
   Client,
+  GlobalSearchResult,
   ClientChanges,
   ClientDetail,
   ClientInput,
@@ -194,6 +195,9 @@ export const lexflowApi = {
     }),
 
   listClients: () => apiFetch<Client[]>('/clients'),
+
+  quickSearch: (q: string) =>
+    apiFetch<GlobalSearchResult>(`/search?${new URLSearchParams({ q }).toString()}`),
 
   listClientOptions: () => apiFetch<ClientOption[]>('/clients/options'),
 

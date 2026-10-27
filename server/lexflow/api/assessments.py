@@ -37,7 +37,7 @@ from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from lexflow import authz
-from lexflow.analysis.provider import Unavailable
+from lexflow.analysis.provider import Unavailable, client_data_allowed
 from lexflow.api.analysis import assessment_enabled
 from lexflow.assessment import inputs as inputs_mod
 from lexflow.assessment import provider as provider_mod
@@ -206,12 +206,14 @@ def _cannot_generate(
         return "Only the case's advocates and administrators may generate an assessment."
     if case.archived_at is not None:
         return "This case is archived."
-    if not case.is_sample and not settings.ai_allow_client_data:
+    if not provider_mod.allowed_for(settings, case.id):
+        return "Outcome assessment is enabled on this server only for cases the owner approved."
+    if not case.is_sample and not client_data_allowed(settings, case.id):
         return (
             "Only sample (fictional) cases may be assessed on this server until a privacy "
             "review allows client material."
         )
-    gate = gathered.gate()
+    gate = gathered.gate(case.id in settings.ai_approved_case_ids)
     if gate is not None:
         return inputs_mod.GATE_REASONS[gate]
     return None
@@ -297,7 +299,11 @@ def generate_assessment(
             reason = f"{reason} ({provider.detail})"
         raise ProblemError(503, provider.code, reason)
     run = _ready_run(session, case, run_id)
-    if not case.is_sample and not settings.ai_allow_client_data:
+    if not provider_mod.allowed_for(settings, case.id):
+        raise ProblemError(
+            403, "assessment-not-approved", "Outcome assessment is not enabled for this case."
+        )
+    if not case.is_sample and not client_data_allowed(settings, case.id):
         raise ProblemError(
             403,
             "client-data-not-allowed",
@@ -313,7 +319,14 @@ def generate_assessment(
             "assessment-rate-limited",
             "You have generated the most assessments allowed in one hour. Try again later.",
         )
-    generated = service.generate(session, run, provider, requested_by=user.id, now=now)
+    generated = service.generate(
+        session,
+        run,
+        provider,
+        requested_by=user.id,
+        now=now,
+        allow_genuine=case.id in settings.ai_approved_case_ids,
+    )
     assessment = generated.assessment
     session.commit()
     recorded = assessment.inputs or {}

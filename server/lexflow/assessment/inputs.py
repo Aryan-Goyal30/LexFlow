@@ -122,7 +122,7 @@ class Inputs:
             "excluded": dict(sorted(self.excluded.items())),
         }
 
-    def gate(self) -> str | None:
+    def gate(self, allow_genuine: bool = False) -> str | None:
         """The reason code when there is no basis for an assessment, else None."""
         if not self.findings:
             return "no-accepted-findings"
@@ -130,7 +130,7 @@ class Inputs:
             if self.excluded.get("passage-changed"):
                 return "precedent-passages-changed"
             return "no-accepted-precedents"
-        if any(not p.synthetic for p in self.precedents):
+        if not allow_genuine and any(not p.synthetic for p in self.precedents):
             return "genuine-precedents"
         return None
 

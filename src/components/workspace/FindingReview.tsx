@@ -170,9 +170,9 @@ export function FindingReview({
   return (
     <section
       aria-label={`Review of ${label}`}
-      className="mt-2 rounded-md border border-brand-200 bg-white px-3 py-2 text-sm"
+      className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-brand-100 pt-2.5 text-sm"
     >
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="order-1 flex min-w-0 flex-1 flex-wrap items-center gap-2">
         <ReviewStatusBadge status={review.status} />
         {review.reviewedAt && (
           <span className="text-xs text-brand-500">
@@ -182,7 +182,7 @@ export function FindingReview({
         )}
       </div>
       {review.status === 'edited' && review.reviewedText && (
-        <p className="mt-1.5 text-brand-900">
+        <p className="order-3 basis-full text-brand-900">
           <span className="font-medium">Lawyer’s wording: </span>
           {review.reviewedText}
           <span className="block text-xs text-brand-500">
@@ -191,29 +191,29 @@ export function FindingReview({
         </p>
       )}
       {review.note && (
-        <p className="mt-1 text-xs text-brand-600">
+        <p className="order-3 basis-full text-xs text-brand-600">
           <span className="font-medium">Reviewer’s note (not in the brief): </span>
           {review.note}
         </p>
       )}
       {sourceChanged && (
-        <p className="mt-1 text-xs font-medium text-amber-800">
+        <p className="order-3 basis-full text-xs font-medium text-amber-800">
           A source of this finding changed after the analysis ran. Check it before accepting.
         </p>
       )}
 
       {canReview && mode === 'idle' && (
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="order-2 flex flex-wrap items-center gap-1">
           {review.status !== 'accepted' && (
             <Button size="sm" disabled={busy} onClick={() => submit({ status: 'accepted' })}>
               Accept
             </Button>
           )}
-          <Button size="sm" variant="secondary" disabled={busy} onClick={() => open('edit')}>
+          <Button size="sm" variant="ghost" disabled={busy} onClick={() => open('edit')}>
             Edit wording
           </Button>
           {review.status !== 'rejected' && (
-            <Button size="sm" variant="secondary" disabled={busy} onClick={() => open('reject')}>
+            <Button size="sm" variant="ghost" disabled={busy} onClick={() => open('reject')}>
               Reject
             </Button>
           )}
@@ -227,7 +227,7 @@ export function FindingReview({
 
       {canReview && mode === 'edit' && (
         <form
-          className="mt-2 space-y-2"
+          className="order-3 basis-full space-y-2"
           onSubmit={(e) => {
             e.preventDefault();
             submit({ status: 'edited', reviewedText: text, note: note || null });
@@ -266,7 +266,7 @@ export function FindingReview({
 
       {canReview && mode === 'reject' && (
         <form
-          className="mt-2 space-y-2"
+          className="order-3 basis-full space-y-2"
           onSubmit={(e) => {
             e.preventDefault();
             submit({ status: 'rejected', note: note || null });
@@ -294,7 +294,7 @@ export function FindingReview({
       )}
 
       {canReview && mode === 'clear' && (
-        <div className="mt-2 space-y-2">
+        <div className="order-3 basis-full space-y-2">
           <p className="text-xs text-brand-700">
             Return {label} to unreviewed? The history keeps this decision.
           </p>
@@ -315,12 +315,12 @@ export function FindingReview({
       )}
 
       {busy && (
-        <p role="status" className="mt-1 text-xs text-brand-500">
+        <p role="status" className="order-3 basis-full text-xs text-brand-500">
           Saving…
         </p>
       )}
       {mutation.isError && (
-        <p role="alert" className="mt-1 text-xs text-red-700">
+        <p role="alert" className="order-3 basis-full text-xs text-red-700">
           {errorMessage(mutation.error)}
         </p>
       )}
@@ -328,14 +328,18 @@ export function FindingReview({
       {review.version > 0 && (
         <button
           type="button"
-          className="mt-1.5 text-xs font-medium text-brand-700 underline-offset-2 hover:underline"
+          className="order-2 text-xs font-medium text-brand-500 underline-offset-2 hover:text-brand-800 hover:underline"
           aria-expanded={showHistory}
           onClick={() => setShowHistory((v) => !v)}
         >
           {showHistory ? 'Hide history' : 'Show history'}
         </button>
       )}
-      {showHistory && <ReviewHistory caseId={caseId} runId={runId} findingId={review.findingId} />}
+      {showHistory && (
+        <div className="order-3 basis-full">
+          <ReviewHistory caseId={caseId} runId={runId} findingId={review.findingId} />
+        </div>
+      )}
     </section>
   );
 }

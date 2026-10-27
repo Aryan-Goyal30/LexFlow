@@ -170,8 +170,10 @@ clients never reach the staff app.
   [`docs/DEMO_GUIDE.md`](docs/DEMO_GUIDE.md).
 - LexFlow's AI is **decision support**; it does not replace a lawyer's
   judgment or a court's decision.
-- The top-bar search and notifications are placeholders; "Notifications" in
-  the sidebar is marked "Soon".
+- The top-bar search finds the cases, clients and documents you may see, by
+  case number, title, court, opposing party, client name or file name
+  (`GET /api/search`; names only, never document text). There are no
+  notifications.
 
 ---
 
@@ -261,7 +263,7 @@ The API's OpenAPI document is the contract between the two halves:
 | --- | --- | --- |
 | Back end (pytest) | `server/tests/` | the real FastAPI app and a real PostgreSQL test database, rebuilt with the migrations each run |
 | Front end (Vitest) | `src/**/*.test.ts(x)` | the real routes, providers and pages in jsdom; the API is faked **at the network boundary** with MSW (`src/test/mockApi.ts`), mirroring the server's rules, shapes, codes and messages |
-| End-to-end (Playwright) | `e2e/` | Chromium, the Vite dev server, the real API and a separate `lexflow_e2e` database |
+| End-to-end (Playwright) | `e2e/` | Chromium, the Vite dev server, the real API and a separate throwaway `lexflow_e2e_playwright` database |
 
 The back-end tests cover, besides the Phase 1 ground (schema and migrations,
 validation, uploads and downloads, local-only protections): sign-in, sessions,
@@ -286,8 +288,10 @@ npx playwright install chromium     # first time only
 npm run e2e
 ```
 
-Global setup drops and recreates the **`lexflow_e2e`** database (same server and
-credentials as `DATABASE_URL`), applies the migrations, loads the sample data,
+Global setup drops and recreates the throwaway **`lexflow_e2e_playwright`**
+database (same server and credentials as `DATABASE_URL`; never the persistent
+demo database `lexflow_e2e`, and `e2e.py prepare` refuses to drop any database
+that holds genuine judgments), applies the migrations, loads the sample data,
 creates the test accounts with a **random password for that run** (kept in the
 git-ignored `e2e/.state`, passed through an environment variable, never on a
 command line), empties `server/var/e2e-uploads` and starts an API on
@@ -479,6 +483,9 @@ traceability: `docs/SRS.md`, `docs/ARCHITECTURE.md`, `docs/TRACEABILITY.md`.
   - Playwright isolated in `lexflow_e2e_playwright`.
 - **Reviews:** a focused security and privacy review
   (`docs/verification/batch4/`).
-- **Pending:** the real-model evaluation is prepared but needs the owner's
-  approval (`docs/verification/batch3/REAL_MODEL_APPROVAL_REQUEST.md`).
+- **Real-model evaluation:** a synthetic-only run was approved and made on
+  2026-10-27: 15 of 21 runs completed; the other 6 failed on provider
+  HTTP 503/504 errors (`docs/verification/batch5/BATCH5_REPORT.md`). Further
+  model calls were stopped by the owner. The evaluation on genuine judgments
+  is not approved and was not run.
 - **Nothing here claims legal accuracy or release readiness.**

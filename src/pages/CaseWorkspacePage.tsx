@@ -129,9 +129,9 @@ function Workspace({ legalCase: c }: { legalCase: Case }) {
         All Cases
       </Link>
 
-      <header className="mb-5">
+      <header className="mb-6 rounded-lg border border-brand-100 bg-white px-6 py-5 shadow-card">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-brand-400">
+          <span className="text-xs font-semibold tabular-nums tracking-wide text-accent-600">
             {c.caseNumber}
           </span>
           <StatusBadge status={c.status} />
@@ -140,17 +140,20 @@ function Workspace({ legalCase: c }: { legalCase: Case }) {
           {c.isSample && <SampleBadge />}
         </div>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <h1 className="text-2xl font-bold text-brand-900">{c.title}</h1>
+          <h1 className="max-w-3xl text-[1.65rem] font-bold leading-tight tracking-[-0.02em] text-brand-900">
+            {c.title}
+          </h1>
           <CaseActions legalCase={c} />
         </div>
-        <p className="mt-1 text-sm text-brand-500">
-          {c.practiceArea} · {c.clientName} · Opened {formatDate(c.openedOn)}
+        <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 border-t border-brand-100 pt-3 text-sm text-brand-600">
+          <span>{c.practiceArea}</span>
+          <span>{c.clientName}</span>
+          <span>Opened {formatDate(c.openedOn)}</span>
           {c.nextHearing && (
-            <>
-              {' '}
-              · Next hearing {formatDate(c.nextHearing)}
+            <span className="font-medium text-brand-800">
+              Next hearing {formatDate(c.nextHearing)}
               {isPastDate(c.nextHearing) && ' (date has passed)'}
-            </>
+            </span>
           )}
         </p>
         {relationLabel(c.permissions.relation) && (
