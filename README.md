@@ -328,8 +328,9 @@ requests, with three jobs:
   and the API's request log (method, path, status; no credentials) are kept as
   an artifact when a test fails.
 
-The repository has no GitHub remote, so the workflow has not run on GitHub. The
-same commands have been run locally.
+The workflow runs on GitHub Actions
+([Actions tab](https://github.com/Aryan-Goyal30/LexFlow/actions)); the same
+commands can be run locally.
 
 ---
 
