@@ -24,9 +24,10 @@ All steps work and are **saved** in PostgreSQL (files on the local disk) behind
 a FastAPI server, with real sign-in and role-based access. Two inputs are
 external and not provided: the **licensing basis for wider use of real
 judgments is unsettled** (17 genuine Supreme Court judgments, imported with the
-owner's approval, exist only in the isolated demo database `lexflow_e2e`;
-everything else is labelled SYNTHETIC), and analysing **real client material**
-needs a privacy review first (only sample cases may be analysed).
+owner's approval, are held in the demo database `lexflow_e2e` and the main
+database; the three other judgments are labelled SYNTHETIC), and analysing
+**real client material** needs a privacy review first (an external AI may
+analyse only sample cases, or cases the owner approved by id).
 
 The sample data is set in an **Indian legal context** (Supreme Court of India,
 High Courts, District & Sessions Courts; "Advocate" terminology). All people,
@@ -158,15 +159,17 @@ clients never reach the staff app.
   visible), reject or clear it, with optional private notes and a full
   history. A **DOCX case brief** contains only accepted findings with their
   citations, and says how many were left out.
-- **Outcome assessment** (Phase 7, **synthetic-only demo, off by default**):
-  when enabled on a test or e2e database, an assessment of a reviewed run uses
+- **Outcome assessment** (Phase 7, **off by default; decision support only**):
+  where enabled (a test or e2e database, or a case the owner listed in
+  `LEXFLOW_AI_APPROVED_CASE_IDS`), an assessment of a reviewed run uses
   only the findings and precedent comparisons a lawyer accepted. It lists the
   precedents it relies on with verified quotes and a stance, gives reasoning
   steps that each rest on accepted findings or cited precedents, an
   **uncertainty category (never a number or probability)**, missing evidence
-  and limitations. It is produced by a scripted provider (not AI), validated
-  strictly, labelled as decision support and as a demonstration on synthetic
-  data, and becomes part of the brief only after a lawyer accepts it. See
+  and limitations. Its provider is always named: the scripted provider is
+  **not AI**, and Gemini is used only for an owner-approved case. It is
+  validated strictly, labelled as decision support, and becomes part of the
+  brief only after a lawyer accepts it. See
   [`docs/DEMO_GUIDE.md`](docs/DEMO_GUIDE.md).
 - LexFlow's AI is **decision support**; it does not replace a lawyer's
   judgment or a court's decision.
@@ -407,7 +410,7 @@ src/
 └── test/                        # setup, renderApp, mockApi (MSW fake API)
 server/
 ├── lexflow/                     # FastAPI app: api/, services/, auth/, cli/, seed/, extraction/, analysis/, assessment/, worker, authz, audit, models, schemas
-├── migrations/                  # Alembic (0001 to 0013)
+├── migrations/                  # Alembic (0001 to 0014)
 ├── tests/                       # pytest
 └── scripts/                     # export_openapi.py, e2e.py, evaluate_*.py (offline SYNTHETIC evaluations)
 e2e/                             # Playwright tests and the API start/stop helpers
@@ -429,20 +432,22 @@ scripts/                         # api-types.mjs, export-sample-data.mjs
   can be verified while the reading of it is wrong, so every finding needs a
   lawyer's review. The real model's behaviour under the current prompt is
   unverified (owner decision R7).
-- **Outcome assessment is a synthetic-only engineering demonstration.** It
-  runs only on test or e2e databases, with SYNTHETIC judgments and a scripted
-  (non-AI) provider. It never gives probabilities or numeric scores and says
-  **nothing about legal accuracy**. Real use is blocked until a judgment source
-  is approved, lawyer-labelled evaluation sets with agreed thresholds exist,
-  the privacy review is signed off and real-model checks are approved
+- **Outcome assessment is an engineering demonstration, not a prediction.** It
+  runs only on test or e2e databases (SYNTHETIC judgments, scripted non-AI
+  provider) or for cases the owner approved by id (needs migration 0013). It
+  never gives probabilities or numeric scores and says **nothing about legal
+  accuracy**. General use is blocked until a judgment source is approved,
+  lawyer-labelled evaluation sets with agreed thresholds exist, the privacy
+  review is signed off and real-model checks are approved
   (`docs/PHASE7_PLAN.md`, `docs/verification/post-phase6/README.md`).
-- **Real judgments are limited to the isolated demo database.**
-  - **Corpus:** 17 genuine Supreme Court judgments, imported into
-    `lexflow_e2e` with the owner's approval, with provenance, attribution
-    and an integrity lock (`docs/verification/batch2/`).
+- **Real judgments are a small, unreviewed corpus.**
+  - **Corpus:** 17 genuine Supreme Court judgments, imported with the
+    owner's approval into `lexflow_e2e` (with provenance, attribution and an
+    integrity lock, `docs/verification/batch2/`) and, without the provenance
+    tables (migration 0014), into the main database `lexflow`.
   - **Licensing:** it is not settled for wider use. Storage and indexing
     rights, the editorial headnotes and section 52 await a lawyer's
-    opinion. The live database holds no genuine judgments.
+    opinion.
   - **Evaluation:** a first retrieval evaluation was run on these judgments,
     with model-generated and citation-proxy labels only
     (`docs/verification/batch2/EVALUATION_REPORT.md`). Earlier

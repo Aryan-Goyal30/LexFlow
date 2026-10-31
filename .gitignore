@@ -46,3 +46,13 @@ pnpm-debug.log*
 *.sln
 *.sw?
 Thumbs.db
+
+# Local AI-assistant tooling and installed third-party skills: not project source.
+# (.claude/settings.local.json holds local permissions and must never be published.)
+/.agents/
+/.claude/
+/.codex/
+/.impeccable/
+/.github/agents/
+/.github/hooks/
+/.github/skills/
