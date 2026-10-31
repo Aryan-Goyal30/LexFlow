@@ -2,6 +2,13 @@ import { readFile } from 'node:fs/promises';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { storageStatePath, type Account } from './support/accounts';
 
+/** The analysis shows one section at a time: select the one the next assertions are about. */
+const openSection = (page: Page, name: RegExp) =>
+  page
+    .getByRole('navigation', { name: 'Sections of this analysis' })
+    .getByRole('button', { name })
+    .click({ timeout: 60_000 }); // the analysis may still be loading
+
 // AI case analysis end to end: the real API, the real worker process and the
 // SCRIPTED test provider (scripts/e2e.py sets LEXFLOW_AI_PROVIDER=scripted for
 // the e2e database), so no request ever reaches Google. The document is
@@ -60,6 +67,7 @@ test('an advocate analyses a sample case and every claim links to its source', a
   await expect(lead.getByText(/decision support for the advocate/).first()).toBeVisible();
 
   // A precedent from the SYNTHETIC collection, labelled, linked to its passage.
+  await openSection(lead, /^Precedents/);
   const precedent = lead.getByRole('article', { name: /Golden Grain Foods/ });
   await expect(precedent).toContainText('Synthetic test data');
   const passageLink = precedent.getByRole('link', { name: /Read the passage/ });
@@ -67,6 +75,7 @@ test('an advocate analyses a sample case and every claim links to its source', a
   expect(judgmentHref).toMatch(/^\/app\/precedents\/[0-9a-f-]{36}/);
 
   // Every fact's source link opens the document text it quotes.
+  await openSection(lead, /^Key facts/);
   const factLink = lead.getByRole('link', { name: /e2e-analysis-notice\.txt, part 1/ });
   await expect(factLink).toBeVisible();
   await factLink.click();
@@ -94,6 +103,7 @@ test('a lawyer reviews the findings and exports a brief of the accepted ones (Ph
   await fact.getByRole('button', { name: 'Accept' }).click();
   await expect(fact.getByText('Accepted', { exact: true })).toBeVisible();
 
+  await openSection(lead, /^Precedents/);
   const precedent = lead.getByRole('region', { name: 'Review of Precedent comparison P1' });
   await precedent.getByRole('button', { name: 'Edit wording' }).click();
   const wording = 'SYNTHETIC: the precedent weighs prior use (lawyer’s wording, e2e).';
@@ -151,6 +161,7 @@ test('the outcome assessment demo: generated from accepted findings, labelled, r
   const lead = await signedIn(browser, 'advocate');
   const id = await sattvikId(lead);
   await lead.goto(`/app/cases/${id}?tab=analysis`);
+  await openSection(lead, /^Outcome assessment/);
   const panel = lead.getByRole('region', { name: 'Outcome assessment (decision support)' });
   await expect(panel.getByText(/Decision support, not a prediction/)).toBeVisible({
     timeout: 60_000,
@@ -187,6 +198,7 @@ test('the outcome assessment demo: generated from accepted findings, labelled, r
   // Read-only for a paralegal; unreachable for outsiders and clients.
   const paralegal = await signedIn(browser, 'paralegal');
   await paralegal.goto(`/app/cases/${id}?tab=analysis`);
+  await openSection(paralegal, /^Outcome assessment/);
   const readOnly = paralegal.getByRole('region', { name: 'Outcome assessment (decision support)' });
   await expect(readOnly.getByText('Accepted', { exact: true })).toBeVisible({ timeout: 60_000 });
   await expect(readOnly.getByRole('button', { name: 'Generate assessment' })).toBeDisabled();

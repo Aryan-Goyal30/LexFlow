@@ -27,7 +27,7 @@ import { AssessmentPanel } from './OutcomeAssessment';
 import { useFindingReviews } from '../../hooks/useFindingReviews';
 import { errorMessage } from '../../services/api/client';
 
-type SectionId = 'overview' | 'facts' | 'issues' | 'precedents' | 'contradictions' | 'assessment';
+type SectionId = 'facts' | 'issues' | 'precedents' | 'contradictions' | 'assessment';
 
 const alertClass =
   'rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-600/20';
@@ -397,7 +397,6 @@ function AnalysisResults({
   const isAi = run.provider === 'gemini';
   const [section, setSection] = useState<SectionId>('facts');
   const sections: { id: SectionId; label: string; n: number | null }[] = [
-    { id: 'overview', label: 'Overview', n: null },
     { id: 'facts', label: 'Key facts', n: result.facts.length },
     { id: 'issues', label: 'Legal issues', n: result.issues.length },
     { id: 'precedents', label: 'Precedents', n: result.precedents.length },
@@ -439,6 +438,22 @@ function AnalysisResults({
             </p>
           )}
         </div>
+        {(run.provider === 'scripted' || run.provider === 'prepared') && (
+          <div className="space-y-2 px-5 pb-3 text-sm">
+            {run.provider === 'scripted' && (
+              <p className="rounded-md bg-amber-50 px-3 py-2 font-medium text-amber-900 ring-1 ring-inset ring-amber-600/30">
+                Scripted test output — not AI. Produced by the test provider for checking LexFlow.
+              </p>
+            )}
+            {run.provider === 'prepared' && (
+              <p className="rounded-md bg-amber-50 px-3 py-2 font-medium text-amber-900 ring-1 ring-inset ring-amber-600/30">
+                Prepared demonstration analysis — not AI and not legal advice. Written in advance
+                for this fictional academic matter; each quotation was checked against its source.
+                Statements are marked documented, alleged, disputed or missing.
+              </p>
+            )}
+          </div>
+        )}
         {reviews.data && (
           <div className="grid gap-3 border-t border-brand-100 bg-brand-50/50 px-5 py-3 lg:grid-cols-2">
             <ReviewProgress summary={reviews.data.summary} />
@@ -477,21 +492,9 @@ function AnalysisResults({
         </nav>
 
         <div className="min-w-0 space-y-6">
-          <Card className={section !== 'overview' ? 'hidden' : ''}>
+          <Card>
             <CardHeader title="Analysis result" />
             <CardBody className="space-y-3 text-sm text-brand-700">
-              {run.provider === 'scripted' && (
-                <p className="rounded-md bg-amber-50 px-3 py-2 font-medium text-amber-900 ring-1 ring-inset ring-amber-600/30">
-                  Scripted test output — not AI. Produced by the test provider for checking LexFlow.
-                </p>
-              )}
-              {run.provider === 'prepared' && (
-                <p className="rounded-md bg-amber-50 px-3 py-2 font-medium text-amber-900 ring-1 ring-inset ring-amber-600/30">
-                  Prepared demonstration analysis — not AI and not legal advice. Written in advance
-                  for this fictional academic matter; each quotation was checked against its source.
-                  Statements are marked documented, alleged, disputed or missing.
-                </p>
-              )}
               {changed.size > 0 && (
                 <p
                   role="status"

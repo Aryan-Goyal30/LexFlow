@@ -3,6 +3,13 @@ import { fileURLToPath } from 'node:url';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { storageStatePath, type Account } from './support/accounts';
 
+/** The analysis shows one section at a time: select the one the next assertions are about. */
+const openSection = (page: Page, name: RegExp) =>
+  page
+    .getByRole('navigation', { name: 'Sections of this analysis' })
+    .getByRole('button', { name })
+    .click({ timeout: 60_000 }); // the analysis may still be loading
+
 // Milestone 1: the complete demonstration on a NEW, FICTIONAL case in the
 // isolated e2e database (lexflow_e2e_playwright, marked and verified by the server).
 // Everything is invented: the client, the case and the documents come from
@@ -122,9 +129,11 @@ test('analyse, review (accept, edit, reject), export the brief and assess the fi
   // A fact's source link opens the document page it quotes.
   await expect(lead.getByRole('link', { name: /01-plaint\.pdf, page 1/ }).first()).toBeVisible();
   // A SYNTHETIC precedent was retrieved and labelled.
+  await openSection(lead, /^Precedents/);
   const firstPrecedent = lead.getByRole('article').first();
   await expect(firstPrecedent).toContainText('Synthetic test data');
 
+  await openSection(lead, /^Key facts/);
   const fact1 = lead.getByRole('region', { name: 'Review of Fact F1' });
   await fact1.getByRole('button', { name: 'Accept' }).click();
   await expect(fact1.getByText('Accepted', { exact: true })).toBeVisible();
@@ -137,15 +146,18 @@ test('analyse, review (accept, edit, reject), export the brief and assess the fi
   await fact2.getByRole('button', { name: 'Save wording' }).click();
   await expect(fact2.getByText('Edited by lawyer')).toBeVisible();
 
+  await openSection(lead, /^Contradictions/);
   const contradiction = lead.getByRole('region', { name: 'Review of Contradiction C1' });
   await contradiction.getByRole('button', { name: 'Reject' }).click();
   await contradiction.getByRole('button', { name: 'Reject finding' }).click();
   await expect(contradiction.getByText('Rejected', { exact: true })).toBeVisible();
+  await openSection(lead, /^Key facts/);
   await fact2.getByRole('button', { name: 'Show history' }).click();
   await expect(fact2.getByRole('list', { name: /History of F2/ })).toContainText(
     'Accepted with edits',
   );
 
+  await openSection(lead, /^Precedents/);
   const precedent = lead.getByRole('region', { name: 'Review of Precedent comparison P1' });
   await precedent.getByRole('button', { name: 'Accept' }).click();
   await expect(precedent.getByText('Accepted', { exact: true })).toBeVisible();
@@ -155,6 +167,7 @@ test('analyse, review (accept, edit, reject), export the brief and assess the fi
   const bytes = await readFile(await (await downloading).path());
   expect(bytes.subarray(0, 2).toString()).toBe('PK');
 
+  await openSection(lead, /^Outcome assessment/);
   const panel = lead.getByRole('region', { name: 'Outcome assessment (decision support)' });
   await panel.getByRole('button', { name: 'Generate assessment' }).click();
   const view = panel.getByRole('region', { name: /Assessment of/ });
