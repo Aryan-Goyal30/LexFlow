@@ -206,7 +206,7 @@ def test_gemini_assessment_only_for_owner_approved_cases() -> None:
     }
     with pytest.raises(ValueError, match="synthetic-only demo"):
         Settings(**base)  # no approved case: still refused outside test databases
-    settings = Settings(**base, LEXFLOW_AI_APPROVED_CASE_IDS=[str(approved)])
+    settings = Settings(**{**base, "LEXFLOW_AI_APPROVED_CASE_IDS": [str(approved)]})
     provider = assessment_provider.provider_for(settings)
     assert isinstance(provider, assessment_provider.GeminiAssessmentProvider)
     assert assessment_provider.PROVIDER_LABELS["gemini"] == "Google Gemini API (AI)"

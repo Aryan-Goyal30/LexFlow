@@ -79,6 +79,8 @@ os.environ["GEMINI_API_KEY"] = ""
 os.environ["GEMINI_MODEL"] = ""
 os.environ["LEXFLOW_AI_ALLOW_CLIENT_DATA"] = "false"
 os.environ["LEXFLOW_AI_APPROVED_CASE_IDS"] = "[]"  # no owner-approved cases in tests
+# Like the AI settings above: a developer's server/.env must not change what the tests see.
+os.environ["LEXFLOW_OUTCOME_ASSESSMENT"] = "false"
 
 # What the browser app sends with every change: its origin and the CSRF header.
 APP_ORIGIN = "http://localhost:5173"
